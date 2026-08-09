@@ -149,13 +149,14 @@ describe('boss combat configuration', () => {
     });
     expect(
       ARCHITECT_BOSS_SPRITES['returning-architect']!.scale * 267,
-    ).toBe(220);
+    ).toBe(350);
     expect(STAGE_FIVE_BOSS_TAG_FRAMES).toMatchObject({
-      eyeTrack: [{ frame: '2' }],
-      eyeFire: [{ frame: '8' }],
-      falseSalvation: [{ frame: '7' }],
-      coreExposed: [{ frame: '10' }],
-      death: [{ frame: '13' }],
+      idle: [{ frame: '0' }],
+      eyeTrack: [{ frame: '1' }],
+      eyeFire: [{ frame: '7' }],
+      falseSalvation: [{ frame: '6' }],
+      coreExposed: [{ frame: '9' }],
+      death: [{ frame: '12' }],
     });
   });
 });

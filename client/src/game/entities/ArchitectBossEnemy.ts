@@ -147,6 +147,7 @@ export class ArchitectBossEnemy extends BossEnemy<ArchitectBossPatternConfig> {
       return;
     }
 
+    this.texture.setFilter(Phaser.Textures.FilterMode.LINEAR);
     this.setScale(this.sprite.scale);
     this.playSpriteAnimation(animation);
     (this.body as Phaser.Physics.Arcade.Body).setSize(

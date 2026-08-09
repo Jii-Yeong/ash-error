@@ -326,19 +326,19 @@ export const STAGE_FIVE_BOSS_TAG_FRAMES: Record<
   StageFiveBossTag,
   readonly { frame: string; duration: number }[]
 > = {
-  idle: [0, 1].map((frame) => ({ frame: String(frame), duration: 100 })),
-  eyeTrack: [{ frame: '2', duration: 100 }],
-  eyeFire: [{ frame: '8', duration: 100 }],
-  haloCharge: [{ frame: '3', duration: 100 }],
-  haloFire: [{ frame: '12', duration: 100 }],
-  wingsLeft: [{ frame: '4', duration: 100 }],
-  wingsRight: [{ frame: '5', duration: 100 }],
-  wingsBoth: [{ frame: '6', duration: 100 }],
-  falseSalvation: [{ frame: '7', duration: 100 }],
-  phaseTransition: [{ frame: '9', duration: 100 }],
-  coreExposed: [{ frame: '10', duration: 100 }],
-  chorus: [{ frame: '11', duration: 100 }],
-  death: [{ frame: '13', duration: 100 }],
+  idle: [{ frame: '0', duration: 100 }],
+  eyeTrack: [{ frame: '1', duration: 100 }],
+  eyeFire: [{ frame: '7', duration: 100 }],
+  haloCharge: [{ frame: '2', duration: 100 }],
+  haloFire: [{ frame: '11', duration: 100 }],
+  wingsLeft: [{ frame: '3', duration: 100 }],
+  wingsRight: [{ frame: '4', duration: 100 }],
+  wingsBoth: [{ frame: '5', duration: 100 }],
+  falseSalvation: [{ frame: '6', duration: 100 }],
+  phaseTransition: [{ frame: '8', duration: 100 }],
+  coreExposed: [{ frame: '9', duration: 100 }],
+  chorus: [{ frame: '10', duration: 100 }],
+  death: [{ frame: '12', duration: 100 }],
 };
 
 export const STAGE_FIVE_BOSS_LOOPING_TAGS = new Set<StageFiveBossTag>([

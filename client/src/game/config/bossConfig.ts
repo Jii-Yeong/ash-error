@@ -352,8 +352,8 @@ export const ARCHITECT_BOSS_SPRITES: Partial<
 > = {
   'returning-architect': {
     animations: STAGE_FIVE_BOSS_ANIMATIONS,
-    // 원본 불투명 높이 267px를 게임 내 보스 높이 220px로 표시함.
-    scale: 220 / 267,
+    // 원본 불투명 높이 267px를 게임 내 보스 높이 350px로 표시함.
+    scale: 350 / 267,
     bodyWidth: 110,
     bodyHeight: 190,
   },
