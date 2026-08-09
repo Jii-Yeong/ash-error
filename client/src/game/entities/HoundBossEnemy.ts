@@ -4,6 +4,7 @@ import type {
   HoundBossCombatConfig,
   HoundBossSpriteConfig,
 } from '@/game/config/bossConfigTypes';
+import { STAGE_TWO_BOSS_HEAD } from '@/game/config/bossAnimationConfig';
 import { isPointInsideCone } from '@/game/combat/coneGeometry';
 import { BossEnemy } from '@/game/entities/BossEnemy';
 import type { EnemyProjectileAttack } from '@/game/entities/Enemy';
@@ -26,6 +27,15 @@ const ATTACK_POSE_HOLD_MS = 320;
 /** 죽음 포즈를 보여주는 시간과, 그 뒤 페이드아웃에 걸리는 시간. */
 const DEATH_POSE_HOLD_MS = 1600;
 const DEATH_FADE_MS = 600;
+/** 분리된 머리 이미지에서 목 관절의 원점. */
+const TRACKING_HEAD_ORIGIN_X = 80 / 86;
+const TRACKING_HEAD_ORIGIN_Y = 6 / 97;
+/** `quest` 프레임 중심에서 목 관절까지의 거리. */
+const TRACKING_HEAD_OFFSET_X = -10;
+const TRACKING_HEAD_OFFSET_Y = -2;
+/** 기본 좌향 머리의 목 관절에서 눈까지 향하는 각도. */
+const TRACKING_HEAD_FORWARD_ANGLE = Math.atan2(68, -62);
+const TRACKING_HEAD_MAX_ROTATION = Phaser.Math.DegToRad(55);
 
 /**
  * Stage-2 boss (the searchlight hound). It sweeps a wide red detection fan
@@ -48,6 +58,7 @@ export class HoundBossEnemy extends BossEnemy<HoundBossPatternConfig> {
   private attackPoseUntil = 0;
   private dying = false;
   private scanAudioActive = false;
+  private readonly trackingHead?: Phaser.GameObjects.Image;
 
   constructor(
     scene: Phaser.Scene,
@@ -62,6 +73,14 @@ export class HoundBossEnemy extends BossEnemy<HoundBossPatternConfig> {
 
     this.stateEndsAt = scene.time.now + config.pattern.firstAttackDelay;
     this.cone = new SearchlightCone(scene, config.pattern.cone.color);
+    this.trackingHead = sprite
+      ? scene.add
+          .image(x, y, STAGE_TWO_BOSS_HEAD.texture)
+          .setOrigin(TRACKING_HEAD_ORIGIN_X, TRACKING_HEAD_ORIGIN_Y)
+          .setScale(sprite.scale)
+          .setDepth(this.depth + 0.01)
+          .setVisible(false)
+      : undefined;
     this.applyBossSprite();
   }
 
@@ -97,12 +116,46 @@ export class HoundBossEnemy extends BossEnemy<HoundBossPatternConfig> {
 
     this.activeSpriteAnimation = animation;
     this.play(animation, true);
+    this.trackingHead?.setVisible(animation === this.sprite.animations.quest);
   }
 
   /** 스프라이트가 대상을 바라보도록 flipX 설정(기본 좌향 아트 보정 포함). */
   private faceToward(faceRight: boolean) {
     // 기본 우향 아트는 오른쪽을 볼 때 flip 없음. facesLeft면 반전.
     this.setFlipX(this.sprite?.facesLeft ? faceRight : !faceRight);
+  }
+
+  /** 감시 포즈의 분리된 머리를 플레이어 방향으로 회전함. */
+  private updateTrackingHead(target: Phaser.Physics.Arcade.Sprite) {
+    if (!this.trackingHead?.visible) {
+      return;
+    }
+
+    const facingSign = this.facingSign();
+    const facingRight = facingSign > 0;
+    const headX = this.x + TRACKING_HEAD_OFFSET_X * facingSign;
+    const headY = this.y + TRACKING_HEAD_OFFSET_Y;
+    const baseAngle = facingRight
+      ? Math.PI - TRACKING_HEAD_FORWARD_ANGLE
+      : TRACKING_HEAD_FORWARD_ANGLE;
+    const targetAngle = Phaser.Math.Angle.Between(
+      headX,
+      headY,
+      target.x,
+      target.y,
+    );
+    const rotation = Phaser.Math.Clamp(
+      Phaser.Math.Angle.Wrap(targetAngle - baseAngle),
+      -TRACKING_HEAD_MAX_ROTATION,
+      TRACKING_HEAD_MAX_ROTATION,
+    );
+
+    this.trackingHead
+      .setPosition(headX, headY)
+      .setFlipX(facingRight)
+      .setRotation(rotation)
+      .setDepth(this.depth + 0.01)
+      .setAlpha(this.alpha);
   }
 
   /** 이동 중이면 walk, 멈춰 있으면 idle. 사격 직후 짧은 attack 포즈는 존중함. */
@@ -130,6 +183,7 @@ export class HoundBossEnemy extends BossEnemy<HoundBossPatternConfig> {
     if (!this.active || this.dying) {
       this.endScanAudio();
       this.cone.hide();
+      this.trackingHead?.setVisible(false);
       return false;
     }
 
@@ -205,6 +259,7 @@ export class HoundBossEnemy extends BossEnemy<HoundBossPatternConfig> {
   override destroy(fromScene?: boolean) {
     this.cone.destroy();
     this.orbCleanups.clear();
+    this.trackingHead?.destroy();
     super.destroy(fromScene);
   }
 
@@ -247,6 +302,7 @@ export class HoundBossEnemy extends BossEnemy<HoundBossPatternConfig> {
     this.setVelocityX(0);
     this.playSpriteAnimation(this.sprite?.animations.quest ?? '');
     this.aimConeAt(target);
+    this.updateTrackingHead(target);
     this.cone.draw(
       this.coneApex(),
       this.centerAngle,

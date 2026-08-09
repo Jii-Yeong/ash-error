@@ -89,6 +89,10 @@ export const STAGE_ONE_BOSS_LOOPING_TAGS = new Set<StageOneBossTag>([
 export const STAGE_TWO_BOSS_ATLAS_KEY = 'stage-2-boss';
 export const STAGE_TWO_BOSS_ATLAS_PNG = '/assets/bosses/stage-2-boss.png';
 export const STAGE_TWO_BOSS_ATLAS_JSON = '/assets/bosses/stage-2-boss.json';
+export const STAGE_TWO_BOSS_HEAD = {
+  texture: 'stage-2-boss-head',
+  png: '/assets/bosses/stage-2-boss-head.png',
+} as const;
 
 export const STAGE_TWO_BOSS_TAGS = {
   idle: 'idle',

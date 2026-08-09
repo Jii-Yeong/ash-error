@@ -118,3 +118,45 @@ describe('HoundBossEnemy scan audio', () => {
     expect(cues.slice(0, 2)).toEqual(['end', 'start']);
   });
 });
+
+describe('HoundBossEnemy tracking head', () => {
+  it('감시 머리를 보스 방향 전환에 맞춰 플레이어 쪽으로 회전한다', () => {
+    const head = {
+      visible: true,
+      setPosition: vi.fn(),
+      setFlipX: vi.fn(),
+      setRotation: vi.fn(),
+      setDepth: vi.fn(),
+      setAlpha: vi.fn(),
+    };
+    head.setPosition.mockReturnValue(head);
+    head.setFlipX.mockReturnValue(head);
+    head.setRotation.mockReturnValue(head);
+    head.setDepth.mockReturnValue(head);
+    head.setAlpha.mockReturnValue(head);
+
+    const hound = Object.assign(Object.create(HoundBossEnemy.prototype), {
+      x: 100,
+      y: 200,
+      depth: 6,
+      alpha: 1,
+      flipX: false,
+      sprite: { facesLeft: true },
+      trackingHead: head,
+    }) as unknown as {
+      flipX: boolean;
+      updateTrackingHead: (target: Phaser.Physics.Arcade.Sprite) => void;
+    };
+
+    hound.updateTrackingHead({ x: -510, y: 878 } as Phaser.Physics.Arcade.Sprite);
+    expect(head.setPosition).toHaveBeenLastCalledWith(110, 198);
+    expect(head.setFlipX).toHaveBeenLastCalledWith(false);
+    expect(head.setRotation).toHaveBeenLastCalledWith(0);
+
+    hound.flipX = true;
+    hound.updateTrackingHead({ x: 710, y: 878 } as Phaser.Physics.Arcade.Sprite);
+    expect(head.setPosition).toHaveBeenLastCalledWith(90, 198);
+    expect(head.setFlipX).toHaveBeenLastCalledWith(true);
+    expect(head.setRotation).toHaveBeenLastCalledWith(0);
+  });
+});

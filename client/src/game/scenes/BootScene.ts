@@ -8,6 +8,7 @@ import {
   BOSS_ANIMATION_ATLASES,
   STAGE_FIVE_BOSS_ATLAS_KEY,
   STAGE_ONE_BOSS_LASER_ASSETS,
+  STAGE_TWO_BOSS_HEAD,
 } from '@/game/config/bossAnimationConfig';
 import { BOSS_COMBAT_CONFIGS } from '@/game/config/bossConfig';
 import {
@@ -62,6 +63,7 @@ export class BootScene extends Phaser.Scene {
     for (const atlas of BOSS_ANIMATION_ATLASES) {
       this.load.atlas(atlas.texture, atlas.png, atlas.json);
     }
+    this.load.image(STAGE_TWO_BOSS_HEAD.texture, STAGE_TWO_BOSS_HEAD.png);
     for (const asset of Object.values(STAGE_ONE_BOSS_LASER_ASSETS)) {
       this.load.image(asset.key, asset.url);
     }
