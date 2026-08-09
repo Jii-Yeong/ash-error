@@ -43,7 +43,6 @@ function createHoundBoss(overrides: Record<string, unknown> = {}) {
         preferredDistance: 360,
         distanceTolerance: 90,
         cone: {
-          color: 0xff0000,
           range: 900,
           halfAngleDegrees: 20,
           tiltDegrees: 10,

@@ -124,6 +124,14 @@ export const STAGE_TWO_BOSS_HEAD = {
   texture: 'stage-2-boss-head',
   png: '/assets/bosses/stage-2-boss-head.png',
 } as const;
+export const STAGE_TWO_BOSS_ENERGY_ORB = {
+  texture: 'stage-2-boss-energy-orb',
+  png: '/assets/bosses/stage-2-energy-orb.png',
+} as const;
+export const STAGE_TWO_BOSS_SEARCHLIGHT = {
+  texture: 'stage-2-boss-searchlight-asymmetric',
+  png: '/assets/bosses/stage-2-searchlight-asymmetric.png',
+} as const;
 
 export const STAGE_TWO_BOSS_TAGS = {
   idle: 'idle',

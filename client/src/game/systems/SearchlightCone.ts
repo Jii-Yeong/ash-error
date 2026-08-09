@@ -1,29 +1,26 @@
 import Phaser from 'phaser';
+import { STAGE_TWO_BOSS_SEARCHLIGHT } from '@/game/config/bossAnimationConfig';
 
 type Point = { x: number; y: number };
 
-/** The number of arc points used to approximate the fan's outer edge. */
-const ARC_STEPS = 20;
+const SOURCE_WIDTH = 512;
+const SOURCE_HEIGHT = 298;
+const SOURCE_APEX_X = 30;
+const SOURCE_APEX_Y = 176;
+/** 바닥 스킨(-9) 뒤에 두어 지면 아래 불빛을 가림. */
+const SEARCHLIGHT_DEPTH = -9.5;
 
-/**
- * Draws the hound's red searchlight fan as a translucent wedge. `intensity`
- * (0-1) brightens it as the hound locks on, so the fill doubles as the
- * fire warning.
- *
- * Each downward ray is clamped at the floor so the fan never dips below ground
- * — a searchlight raking the surface, not an x-ray. (A geometry mask was tried
- * for sprite-generality but did not clip reliably under the scrolling camera.)
- */
+/** 보스의 감시 불빛 스프라이트를 감지 부채꼴 크기와 각도에 맞춰 표시함. */
 export class SearchlightCone {
-  private readonly gfx: Phaser.GameObjects.Graphics;
+  private readonly image: Phaser.GameObjects.Image;
 
-  constructor(
-    scene: Phaser.Scene,
-    private readonly color: number,
-  ) {
-    // Above terrain and the player so the cast light reads as an overlay,
-    // kept translucent so nothing it covers is hidden.
-    this.gfx = scene.add.graphics().setDepth(9);
+  constructor(scene: Phaser.Scene) {
+    this.image = scene.add
+      .image(0, 0, STAGE_TWO_BOSS_SEARCHLIGHT.texture)
+      .setOrigin(SOURCE_APEX_X / SOURCE_WIDTH, SOURCE_APEX_Y / SOURCE_HEIGHT)
+      .setDepth(SEARCHLIGHT_DEPTH)
+      .setBlendMode(Phaser.BlendModes.ADD)
+      .setVisible(false);
   }
 
   draw(
@@ -32,37 +29,31 @@ export class SearchlightCone {
     halfAngle: number,
     range: number,
     intensity: number,
-    floorY: number,
   ) {
-    const points: Point[] = [apex];
-    for (let i = 0; i <= ARC_STEPS; i += 1) {
-      const angle = centerAngle - halfAngle + 2 * halfAngle * (i / ARC_STEPS);
-      const sin = Math.sin(angle);
-      let rayRange = range;
-      if (sin > 1e-4 && apex.y < floorY) {
-        rayRange = Math.min(range, (floorY - apex.y) / sin);
-      }
-      points.push({
-        x: apex.x + Math.cos(angle) * rayRange,
-        y: apex.y + Math.sin(angle) * rayRange,
-      });
-    }
+    const displayWidth =
+      (range * SOURCE_WIDTH) / (SOURCE_WIDTH - SOURCE_APEX_X);
+    const displayHeight =
+      (SOURCE_HEIGHT * range * Math.tan(halfAngle)) / SOURCE_APEX_Y;
+    const flipY = Math.cos(centerAngle) < 0;
+    const originY = flipY
+      ? (SOURCE_HEIGHT - SOURCE_APEX_Y) / SOURCE_HEIGHT
+      : SOURCE_APEX_Y / SOURCE_HEIGHT;
 
-    // fillPoints/strokePoints only read x/y, so plain points work at runtime.
-    const polygon = points as unknown as Phaser.Math.Vector2[];
-    this.gfx
-      .clear()
-      .fillStyle(this.color, 0.12 + intensity * 0.34)
-      .fillPoints(polygon, true)
-      .lineStyle(2, this.color, 0.4 + intensity * 0.5)
-      .strokePoints(polygon, true);
+    this.image
+      .setPosition(apex.x, apex.y)
+      .setRotation(centerAngle)
+      .setOrigin(SOURCE_APEX_X / SOURCE_WIDTH, originY)
+      .setFlipY(flipY)
+      .setDisplaySize(displayWidth, displayHeight)
+      .setAlpha(0.12 + intensity * 0.34)
+      .setVisible(true);
   }
 
   hide() {
-    this.gfx.clear();
+    this.image.setVisible(false);
   }
 
   destroy() {
-    this.gfx.destroy();
+    this.image.destroy();
   }
 }

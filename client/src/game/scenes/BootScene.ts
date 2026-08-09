@@ -9,7 +9,9 @@ import {
   STAGE_FIVE_BOSS_ATLAS_KEY,
   STAGE_ONE_BOSS_LASER_ASSETS,
   STAGE_ONE_BOSS_WEAPON_ASSETS,
+  STAGE_TWO_BOSS_ENERGY_ORB,
   STAGE_TWO_BOSS_HEAD,
+  STAGE_TWO_BOSS_SEARCHLIGHT,
 } from '@/game/config/bossAnimationConfig';
 import { BOSS_COMBAT_CONFIGS } from '@/game/config/bossConfig';
 import {
@@ -67,7 +69,15 @@ export class BootScene extends Phaser.Scene {
     for (const asset of Object.values(STAGE_ONE_BOSS_WEAPON_ASSETS)) {
       this.load.image(asset.key, asset.url);
     }
+    this.load.image(
+      STAGE_TWO_BOSS_ENERGY_ORB.texture,
+      STAGE_TWO_BOSS_ENERGY_ORB.png,
+    );
     this.load.image(STAGE_TWO_BOSS_HEAD.texture, STAGE_TWO_BOSS_HEAD.png);
+    this.load.image(
+      STAGE_TWO_BOSS_SEARCHLIGHT.texture,
+      STAGE_TWO_BOSS_SEARCHLIGHT.png,
+    );
     for (const asset of Object.values(STAGE_ONE_BOSS_LASER_ASSETS)) {
       this.load.image(asset.key, asset.url);
     }

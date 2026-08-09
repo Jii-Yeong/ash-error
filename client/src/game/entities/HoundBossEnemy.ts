@@ -4,14 +4,16 @@ import type {
   HoundBossCombatConfig,
   HoundBossSpriteConfig,
 } from '@/game/config/bossConfigTypes';
-import { STAGE_TWO_BOSS_HEAD } from '@/game/config/bossAnimationConfig';
+import {
+  STAGE_TWO_BOSS_ENERGY_ORB,
+  STAGE_TWO_BOSS_HEAD,
+} from '@/game/config/bossAnimationConfig';
 import { isPointInsideCone } from '@/game/combat/coneGeometry';
 import { BossEnemy } from '@/game/entities/BossEnemy';
 import type { EnemyProjectileAttack } from '@/game/entities/Enemy';
 import { gameEvents } from '@/game/events/gameEvents';
 import { destroyCollider } from '@/game/systems/arcadePhysicsCleanup';
 import { CleanupRegistry } from '@/game/systems/CleanupRegistry';
-import { FLOOR_SURFACE_Y } from '@/game/systems/FloorBuilder';
 import { SearchlightCone } from '@/game/systems/SearchlightCone';
 
 type HoundState = 'recover' | 'scanning' | 'locking';
@@ -82,7 +84,7 @@ export class HoundBossEnemy extends BossEnemy<HoundBossPatternConfig> {
     super(scene, x, y, texture, config);
 
     this.stateEndsAt = scene.time.now + config.pattern.firstAttackDelay;
-    this.cone = new SearchlightCone(scene, config.pattern.cone.color);
+    this.cone = new SearchlightCone(scene);
     this.trackingHead = sprite
       ? scene.add
           .image(x, y, STAGE_TWO_BOSS_HEAD.texture)
@@ -327,7 +329,6 @@ export class HoundBossEnemy extends BossEnemy<HoundBossPatternConfig> {
       this.coneHalfAngle(),
       this.pattern.cone.range,
       0.15,
-      FLOOR_SURFACE_Y,
     );
 
     if (this.playerInCone(target)) {
@@ -350,7 +351,6 @@ export class HoundBossEnemy extends BossEnemy<HoundBossPatternConfig> {
       this.coneHalfAngle(),
       this.pattern.cone.range,
       0.15 + 0.85 * this.stateProgress(time),
-      FLOOR_SURFACE_Y,
     );
 
     if (time >= this.stateEndsAt) {
@@ -395,15 +395,16 @@ export class HoundBossEnemy extends BossEnemy<HoundBossPatternConfig> {
     this.playSpriteAnimation(this.sprite?.animations.attack ?? '');
 
     const angle = Phaser.Math.Angle.Between(apex.x, apex.y, target.x, target.y);
-    const { radius, color, speed, damage } = this.pattern.orb;
+    const { radius, speed, damage } = this.pattern.orb;
 
     const orb = this.scene.add
-      .circle(apex.x, apex.y, radius, color, 0.95)
-      .setStrokeStyle(3, 0xffe4de, 0.9)
+      .image(apex.x, apex.y, STAGE_TWO_BOSS_ENERGY_ORB.texture)
+      .setDisplaySize(radius * 2, radius * 2)
       .setDepth(ORB_DEPTH);
     this.scene.physics.add.existing(orb);
     const body = orb.body as Phaser.Physics.Arcade.Body;
     body.setAllowGravity(false);
+    body.setCircle(radius);
     body.setVelocity(Math.cos(angle) * speed, Math.sin(angle) * speed);
 
     let cleaned = false;
