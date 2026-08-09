@@ -19,6 +19,25 @@ vi.hoisted(() => {
 });
 
 describe('GameScene run reset', () => {
+  it('4스테이지 보스가 사라진 뒤 1초 후 화면 파괴 전환을 시작한다', () => {
+    let afterDelay: (() => void) | undefined;
+    const advanceToNextStage = vi.fn();
+    const delayedCall = vi.fn((_delay: number, callback: () => void) => {
+      afterDelay = callback;
+    });
+    const gameScene = Object.assign(Object.create(GameScene.prototype), {
+      advanceToNextStage,
+      time: { delayedCall },
+    }) as GameScene;
+
+    (gameScene as unknown as { beginShatterExit(): void }).beginShatterExit();
+
+    expect(delayedCall).toHaveBeenCalledWith(1000, expect.any(Function));
+    expect(advanceToNextStage).not.toHaveBeenCalled();
+    afterDelay?.();
+    expect(advanceToNextStage).toHaveBeenCalledOnce();
+  });
+
   it('clears enemies and descent cutscene state before a restarted run', () => {
     const gameScene = new GameScene();
     const staleEnemy = {} as Enemy;

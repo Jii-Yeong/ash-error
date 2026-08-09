@@ -32,6 +32,7 @@ type GameEventMap = {
   'room-state-changed': [state: RoomState];
   'scene-changed': [scene: GameSceneKey];
   'stage-changed': [stageId: string];
+  'stage-shatter-cue': [cue: 'start' | 'complete'];
   'stage-location-changed': [stageLabel: string, roomNumber: number];
   'admin-stage-requested': [stageIndex: number];
   'admin-stage-boss-requested': [stageIndex: number];

@@ -95,6 +95,7 @@ function faceSprite(
 
 export class StageEndEventDirector {
   private shatterRunId = 0;
+  private shatterActive = false;
   /** 마지막으로 세운 포위 대형. 아틀라스가 늦게 도착하면 여기서 복구한다. */
   private siegeViews: SiegeEnemyView[] = [];
 
@@ -102,6 +103,7 @@ export class StageEndEventDirector {
     this.scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.shatterRunId += 1;
       this.removeShatterSnapshot();
+      this.finishShatter();
     });
   }
 
@@ -228,6 +230,8 @@ export class StageEndEventDirector {
    */
   private playShatter(onBlackout: () => void) {
     const runId = ++this.shatterRunId;
+    this.shatterActive = true;
+    gameEvents.emit('stage-shatter-cue', 'start');
     // 현재 프레임을 캡쳐한 뒤(다음 렌더에 콜백) 그 이미지를 깨뜨린다.
     this.scene.game.renderer.snapshot((snapshot) => {
       if (runId !== this.shatterRunId || !this.scene.sys.isActive()) {
@@ -237,6 +241,7 @@ export class StageEndEventDirector {
         this.runShatter(snapshot, onBlackout);
       } else {
         onBlackout();
+        this.finishShatter();
       }
     });
   }
@@ -361,6 +366,7 @@ export class StageEndEventDirector {
             remainingShards -= 1;
             if (remainingShards === 0) {
               this.removeShatterSnapshot();
+              this.finishShatter();
             }
           },
         });
@@ -394,6 +400,16 @@ export class StageEndEventDirector {
         });
       });
     });
+  }
+
+  /** 화면 파괴가 끝났음을 한 번만 알린다. */
+  private finishShatter() {
+    if (!this.shatterActive) {
+      return;
+    }
+
+    this.shatterActive = false;
+    gameEvents.emit('stage-shatter-cue', 'complete');
   }
 
   /**

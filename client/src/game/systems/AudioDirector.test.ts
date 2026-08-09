@@ -565,6 +565,30 @@ describe('AudioDirector', () => {
     expect(added[0].config.loop).toBe(true);
   });
 
+  it('화면 파괴가 끝난 뒤 5스테이지 음악을 시작한다', () => {
+    const { game, added } = createFakeGame({
+      loaded: ['bgm-inferno', 'bgm-return'],
+    });
+    director = new AudioDirector(game);
+
+    gameEvents.emit('stage-changed', 'stage-04');
+    gameEvents.emit('stage-shatter-cue', 'start');
+    gameEvents.emit('stage-changed', 'stage-05');
+
+    expect(added).toHaveLength(1);
+    expect(added[0]).toMatchObject({
+      key: 'bgm-inferno',
+      playCount: 1,
+      stopped: false,
+    });
+
+    gameEvents.emit('stage-shatter-cue', 'complete');
+
+    expect(added).toHaveLength(2);
+    expect(added[0]).toMatchObject({ stopped: true });
+    expect(added[1]).toMatchObject({ key: 'bgm-return', playCount: 1 });
+  });
+
   it('switches the ascension ending from music to its transition cues', () => {
     const { game, added, played } = createFakeGame({
       loaded: [

@@ -84,6 +84,8 @@ export class AudioDirector {
   /** What should be playing, whether or not its file has arrived yet. */
   private wantedMusic?: MusicKey;
   private currentStageId?: string;
+  /** 화면 파괴가 끝날 때까지 다음 스테이지 음악 시작을 보류함. */
+  private deferStageMusic = false;
   /** Tracks already fetched, so a revisited stage does not download twice. */
   private readonly requested = new Set<AudioAssetKey>();
 
@@ -93,6 +95,7 @@ export class AudioDirector {
 
     gameEvents.on('scene-changed', this.handleSceneChanged);
     gameEvents.on('stage-changed', this.handleStageChanged);
+    gameEvents.on('stage-shatter-cue', this.handleStageShatterCue);
     gameEvents.on('phase-changed', this.handlePhaseChanged);
     gameEvents.on('room-state-changed', this.handleRoomStateChanged);
     gameEvents.on('audio-mix-changed', this.handleAudioMixChanged);
@@ -117,6 +120,7 @@ export class AudioDirector {
     this.game.events.off(Phaser.Core.Events.BLUR, this.handleGameBlur);
     gameEvents.off('scene-changed', this.handleSceneChanged);
     gameEvents.off('stage-changed', this.handleStageChanged);
+    gameEvents.off('stage-shatter-cue', this.handleStageShatterCue);
     gameEvents.off('phase-changed', this.handlePhaseChanged);
     gameEvents.off('room-state-changed', this.handleRoomStateChanged);
     gameEvents.off('audio-mix-changed', this.handleAudioMixChanged);
@@ -230,6 +234,7 @@ export class AudioDirector {
     }
 
     this.stopAllSustained();
+    this.deferStageMusic = false;
     this.currentStageId = undefined;
     this.requestAudio('bgm-title');
     // The title is where the player reads and presses ENTER, which is the only
@@ -253,7 +258,25 @@ export class AudioDirector {
     this.requestAudio(STAGES[index + 1]?.music);
     this.requestStageSfx(stageId);
     this.requestStageSfx(STAGES[index + 1]?.id);
-    this.playMusic(STAGES[index].music);
+    if (!this.deferStageMusic) {
+      this.playMusic(STAGES[index].music);
+    }
+  };
+
+  private readonly handleStageShatterCue = (cue: 'start' | 'complete') => {
+    if (cue === 'start') {
+      this.deferStageMusic = true;
+      return;
+    }
+    if (!this.deferStageMusic) {
+      return;
+    }
+
+    this.deferStageMusic = false;
+    const stage = STAGES.find(({ id }) => id === this.currentStageId);
+    if (stage) {
+      this.playMusic(stage.music);
+    }
   };
 
   /**
