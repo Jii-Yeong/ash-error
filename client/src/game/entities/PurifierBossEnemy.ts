@@ -4,7 +4,10 @@ import type {
   PurifierBossCombatConfig,
   PurifierBossSpriteConfig,
 } from '@/game/config/bossConfigTypes';
-import { STAGE_THREE_BOSS_SHOCKWAVE } from '@/game/config/bossAnimationConfig';
+import {
+  STAGE_THREE_BOSS_SHOCKWAVE,
+  STAGE_THREE_BOSS_VACUUM,
+} from '@/game/config/bossAnimationConfig';
 import { getSlamLeapVelocity } from '@/game/combat/slamLeap';
 import { BossEnemy } from '@/game/entities/BossEnemy';
 import type { EnemyProjectileAttack } from '@/game/entities/Enemy';
@@ -26,6 +29,7 @@ type PlayerPullHandler = (bossX: number, pullSpeed: number) => void;
 
 const TELEGRAPH_DEPTH = 7;
 const SHOCKWAVE_DEPTH = 6;
+const VACUUM_DEPTH = 6;
 const MARKER_HEIGHT = 74;
 const LANDING_GRACE_DURATION = 400;
 /** 죽음 포즈를 보여주는 시간과, 그 뒤 페이드아웃에 걸리는 시간. */
@@ -43,6 +47,7 @@ const DEATH_FADE_MS = 600;
  */
 export class PurifierBossEnemy extends BossEnemy<PurifierBossPatternConfig> {
   private readonly telegraph: Phaser.GameObjects.Graphics;
+  private readonly vacuumEffect: Phaser.GameObjects.Sprite;
   private readonly waveCleanups = new CleanupRegistry();
   private attackState: PurifierState = 'recover';
   private stateStartedAt = 0;
@@ -71,6 +76,11 @@ export class PurifierBossEnemy extends BossEnemy<PurifierBossPatternConfig> {
 
     this.stateEndsAt = scene.time.now + config.pattern.firstAttackDelay;
     this.telegraph = scene.add.graphics().setDepth(TELEGRAPH_DEPTH);
+    this.vacuumEffect = scene.add
+      .sprite(0, 0, STAGE_THREE_BOSS_VACUUM.texture)
+      .setDisplaySize(220, STAGE_THREE_BOSS_VACUUM.height)
+      .setDepth(VACUUM_DEPTH)
+      .setVisible(false);
     this.applyBossSprite();
   }
 
@@ -218,6 +228,7 @@ export class PurifierBossEnemy extends BossEnemy<PurifierBossPatternConfig> {
 
   override destroy(fromScene?: boolean) {
     this.telegraph.destroy();
+    this.vacuumEffect.destroy();
     this.waveCleanups.clear();
     super.destroy(fromScene);
   }
@@ -373,12 +384,14 @@ export class PurifierBossEnemy extends BossEnemy<PurifierBossPatternConfig> {
       return;
     }
 
+    this.vacuumEffect.play(STAGE_THREE_BOSS_VACUUM.animation);
     this.vacuumAudioActive = true;
     gameEvents.emit('boss-purifier-cue', 'vacuum-start');
   }
 
   /** 흡입음은 루프이므로, 패턴을 빠져나가는 모든 경로에서 반드시 닫아야 한다. */
   private endVacuumAudio() {
+    this.vacuumEffect.stop().setVisible(false);
     if (!this.vacuumAudioActive) {
       return;
     }
@@ -390,6 +403,7 @@ export class PurifierBossEnemy extends BossEnemy<PurifierBossPatternConfig> {
   private updateVacuumWarn(time: number) {
     this.setVelocityX(0);
     this.beginVacuumAudio();
+    this.updateVacuumEffect();
 
     if (time >= this.stateEndsAt) {
       this.attackState = 'vacuum-active';
@@ -401,6 +415,7 @@ export class PurifierBossEnemy extends BossEnemy<PurifierBossPatternConfig> {
   private updateVacuumActive(time: number) {
     this.setVelocityX(0);
     this.beginVacuumAudio();
+    this.updateVacuumEffect();
     this.pullPlayer(
       this.x,
       this.isEnraged
@@ -411,6 +426,33 @@ export class PurifierBossEnemy extends BossEnemy<PurifierBossPatternConfig> {
     if (time >= this.stateEndsAt) {
       this.beginRecover(time);
     }
+  }
+
+  /** 플레이어에서 흡입구 방향으로 흐르는 스프라이트를 갱신함. */
+  private updateVacuumEffect() {
+    const target = this.playerTarget;
+    if (!target) {
+      this.vacuumEffect.setVisible(false);
+      return;
+    }
+
+    const directionToBoss = Math.sign(this.x - target.x) || 1;
+    const intakeX = this.x - directionToBoss * 105;
+    const playerEdgeX =
+      target.x +
+      directionToBoss *
+        ((target.body as Phaser.Physics.Arcade.Body).halfWidth + 3);
+    const distance = Math.abs(intakeX - playerEdgeX);
+    this.vacuumEffect
+      .setPosition((playerEdgeX + intakeX) / 2, this.y + 28)
+      .setDisplaySize(
+        Phaser.Math.Clamp(distance, 160, 720),
+        STAGE_THREE_BOSS_VACUUM.height,
+      )
+      .setDepth(target.depth - 0.01)
+      .setFlipX(directionToBoss < 0)
+      .setAlpha(0.78)
+      .setVisible(distance > 24);
   }
 
   private beginRecover(time: number) {

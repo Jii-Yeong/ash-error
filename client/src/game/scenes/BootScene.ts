@@ -17,6 +17,7 @@ import {
   STAGE_TWO_BOSS_HEAD,
   STAGE_TWO_BOSS_SEARCHLIGHT,
   STAGE_THREE_BOSS_SHOCKWAVE,
+  STAGE_THREE_BOSS_VACUUM,
 } from '@/game/config/bossAnimationConfig';
 import { BOSS_COMBAT_CONFIGS } from '@/game/config/bossConfig';
 import {
@@ -119,6 +120,14 @@ export class BootScene extends Phaser.Scene {
     this.load.image(
       STAGE_THREE_BOSS_SHOCKWAVE.texture,
       STAGE_THREE_BOSS_SHOCKWAVE.png,
+    );
+    this.load.spritesheet(
+      STAGE_THREE_BOSS_VACUUM.texture,
+      STAGE_THREE_BOSS_VACUUM.png,
+      {
+        frameWidth: STAGE_THREE_BOSS_VACUUM.frameWidth,
+        frameHeight: STAGE_THREE_BOSS_VACUUM.frameHeight,
+      },
     );
     this.load.image(
       STAGE_FOUR_MAGMA_SHARD.texture,
@@ -479,6 +488,15 @@ export class BootScene extends Phaser.Scene {
   }
 
   private createAnimations() {
+    this.anims.create({
+      key: STAGE_THREE_BOSS_VACUUM.animation,
+      frames: this.anims.generateFrameNumbers(
+        STAGE_THREE_BOSS_VACUUM.texture,
+        { start: 0, end: STAGE_THREE_BOSS_VACUUM.frameCount - 1 },
+      ),
+      frameRate: STAGE_THREE_BOSS_VACUUM.frameRate,
+      repeat: -1,
+    });
     this.anims.create({
       key: ROOM_PORTAL_ANIMATION.key,
       frames: this.anims.generateFrameNumbers(ROOM_PORTAL_TEXTURE.key, {

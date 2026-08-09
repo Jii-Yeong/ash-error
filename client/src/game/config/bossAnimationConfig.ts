@@ -188,6 +188,16 @@ export const STAGE_THREE_BOSS_SHOCKWAVE = {
   texture: 'stage-3-boss-shockwave',
   png: '/assets/bosses/stage-3-shockwave.png',
 } as const;
+export const STAGE_THREE_BOSS_VACUUM = {
+  texture: 'stage-3-boss-vacuum-suction',
+  png: '/assets/bosses/stage-3-vacuum-suction.png',
+  animation: 'stage-3-boss-vacuum-suction-loop',
+  frameWidth: 139,
+  frameHeight: 130,
+  frameCount: 8,
+  frameRate: 8,
+  height: 96,
+} as const;
 
 export const STAGE_THREE_BOSS_ANIMATIONS = {
   idle: 'stage-3-boss-idle',
