@@ -1,6 +1,9 @@
 import Phaser from 'phaser';
 import { resolveAudioAssets } from '@/game/config/audioAssets';
-import { MUSIC_CONFIG } from '@/game/config/audioConfig';
+import {
+  DEFERRED_SFX_KEYS,
+  MUSIC_CONFIG,
+} from '@/game/config/audioConfig';
 import {
   BOSS_ANIMATION_ATLASES,
   STAGE_FIVE_BOSS_ATLAS_KEY,
@@ -94,6 +97,12 @@ export class BootScene extends Phaser.Scene {
       // 타이틀 진입 즉시 재생을 시도할 수 있도록 미리 불러온다. 나머지 음악은
       // AudioDirector에서 지연 로드해 초기 다운로드를 첫 화면과 작은 효과음으로 제한한다.
       if (asset.key in MUSIC_CONFIG && asset.key !== 'bgm-title') {
+        continue;
+      }
+
+      // 스테이지 전용 효과음도 같은 이유로 미룬다. 여기 남는 것은 어느
+      // 스테이지에서도 나는 공용 큐뿐이다 — 무기, 피격, 방 잠금 같은 것들.
+      if (DEFERRED_SFX_KEYS.has(asset.key)) {
         continue;
       }
 

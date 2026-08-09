@@ -1,4 +1,8 @@
 import Phaser from 'phaser';
+import {
+  gameEvents,
+  type ProjectileBlockKind,
+} from '@/game/events/gameEvents';
 
 /** 격추된 공중 적이 떨어지는 속도(px/s). */
 const AERIAL_DEATH_FALL_SPEED = 720;
@@ -234,7 +238,18 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
     return { applied: true, defeated: this.takeDamage(amount) };
   }
 
-  protected showProjectileBlockedImpact(x: number, y: number) {
+  /**
+   * 방어된 투사체의 스파크와 소리를 함께 낸다.
+   *
+   * 둘을 나눠 두면 다음에 투사체를 막는 적이 스파크만 얻고 소리 없이 나가기
+   * 쉽다 — 실제로 그렇게 한 번 빠졌다. `kind`를 받아 여기서 같이 내보내면
+   * 잊을 자리가 없어진다.
+   */
+  protected showProjectileBlockedImpact(
+    x: number,
+    y: number,
+    kind: ProjectileBlockKind,
+  ) {
     const spark = this.scene.add
       .circle(x, y, 5, 0xb9d5d2, 0.9)
       .setStrokeStyle(2, 0xffffff)
@@ -246,6 +261,7 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
       duration: 100,
       onComplete: () => spark.destroy(),
     });
+    gameEvents.emit('enemy-projectile-blocked', kind);
   }
 
   get currentHealth() {

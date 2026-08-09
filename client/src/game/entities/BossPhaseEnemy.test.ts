@@ -138,7 +138,7 @@ describe('phase boss introductions', () => {
       showProjectileBlockedImpact: infernalBlockedImpact,
     });
     expect(infernal.takeProjectileDamage(100, 0, 0).applied).toBe(false);
-    expect(infernalBlockedImpact).toHaveBeenCalledWith(0, 0);
+    expect(infernalBlockedImpact).toHaveBeenCalledWith(0, 0, 'boss');
     Object.assign(infernal, { attackState: 'recover' });
     expect(infernal.takeProjectileDamage(100, 0, 0).applied).toBe(true);
     expect(infernal.currentHealth).toBe(400);
@@ -152,7 +152,7 @@ describe('phase boss introductions', () => {
       showProjectileBlockedImpact: architectBlockedImpact,
     });
     expect(architect.takeProjectileDamage(100, 0, 0).applied).toBe(false);
-    expect(architectBlockedImpact).toHaveBeenCalledWith(0, 0);
+    expect(architectBlockedImpact).toHaveBeenCalledWith(0, 0, 'boss');
     Object.assign(architect, { chorusActive: false, attackState: 'recover' });
     expect(architect.takeProjectileDamage(100, 0, 0).applied).toBe(true);
     expect(architect.currentHealth).toBe(500);

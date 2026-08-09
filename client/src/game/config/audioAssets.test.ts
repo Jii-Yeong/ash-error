@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { matchAudioAssets } from '@/game/config/audioAssets';
-import { MUSIC_CONFIG, SFX_CONFIG } from '@/game/config/audioConfig';
+import {
+  DEFERRED_SFX_KEYS,
+  MUSIC_CONFIG,
+  SFX_CONFIG,
+} from '@/game/config/audioConfig';
 
 const AUDIO_ROOT = '../../assets/audio';
 
@@ -77,6 +81,24 @@ describe('matchAudioAssets', () => {
     );
 
     expect(collisions).toEqual([]);
+  });
+
+  /**
+   * 부팅 배치는 `DEFERRED_SFX_KEYS`에 없는 것을 전부 즉시 받는다. 새 스테이지
+   * 큐를 추가하면서 이 집합에 넣는 것을 잊으면 조용히 부팅 페이로드로 들어가
+   * 타이틀 화면을 늦춘다 — 아무것도 깨지지 않으니 알아챌 방법도 없다.
+   *
+   * 기준은 이름이다. `sfx-stage<N>-`로 시작하면 그 스테이지에 도달해야 필요한
+   * 큐이고, 아니면 어디서나 나는 공용 큐다.
+   */
+  it('defers every stage-scoped cue and nothing else', () => {
+    const stageScoped = Object.keys(SFX_CONFIG).filter((key) =>
+      /^sfx-stage\d/.test(key),
+    );
+    const deferred = [...DEFERRED_SFX_KEYS].sort();
+
+    expect(stageScoped.length).toBeGreaterThan(0);
+    expect(deferred).toEqual(stageScoped.sort());
   });
 
   it('flags files that answer no cue so the name can be fixed', () => {

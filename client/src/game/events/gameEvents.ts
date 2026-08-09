@@ -10,6 +10,9 @@ import type {
   StageThreeBossCue,
 } from '@/game/config/audioConfig';
 
+/** 무엇이 투사체를 막았는지. 소리와 이펙트가 이걸로 갈린다. */
+export type ProjectileBlockKind = 'shield' | 'boss';
+
 /**
  * State events describe what the world *is* and drive the React HUD. Cue events
  * describe what just *happened* and carry the origin point, so audio, particles
@@ -46,7 +49,7 @@ type GameEventMap = {
   'player-dashed': [x: number, y: number];
   'player-stepped': [];
   'enemy-damaged': [x: number, y: number];
-  'enemy-projectile-blocked': [kind: 'shield' | 'boss'];
+  'enemy-projectile-blocked': [kind: ProjectileBlockKind];
   'enemy-defeated': [x: number, y: number];
   'boss-laser-fired': [
     cue: 'single' | 'double-first' | 'double-second',

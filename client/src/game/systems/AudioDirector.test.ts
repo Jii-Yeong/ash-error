@@ -4,6 +4,7 @@ import type Phaser from 'phaser';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   AUDIO_MIX_CONFIG,
+  DEFERRED_SFX_BY_STAGE,
   FOOTSTEP_SFX_BY_STAGE,
   PROJECTILE_BLOCK_SFX_BY_KIND,
   STAGE_FIVE_BOSS_SFX_BY_CUE,
@@ -159,6 +160,13 @@ describe('AudioDirector', () => {
     director = undefined;
     vi.unstubAllGlobals();
   });
+
+  /**
+   * 큐 이름은 하이픈, 파일명은 팩마다 하이픈이거나 언더스코어다. 에셋 매처가
+   * 쓰는 것과 같은 정규화를 거쳐야 URL과 큐를 맞댈 수 있다.
+   */
+  const normalize = (value: string) =>
+    value.toLowerCase().replace(/[^a-z0-9]/g, '');
 
   /** Records which tracks the director actually goes to the network for. */
   function captureFetches() {
@@ -545,6 +553,12 @@ describe('AudioDirector', () => {
     expect(urls).not.toContainEqual(expect.stringContaining('title'));
   });
 
+  /**
+   * Fetching the whole soundtrack up front would make a player who quits in
+   * stage 1 pay for the stage 5 audio, and that transfer would compete with the
+   * stage 1 background they are actually waiting on. The same one-stage lead
+   * covers music and the per-stage cue sets.
+   */
   it('fetches only the stage in play and the one after it', async () => {
     const urls = captureFetches();
     const { game } = createFakeGame({ canDecode: true });
@@ -553,21 +567,42 @@ describe('AudioDirector', () => {
     gameEvents.emit('stage-changed', 'stage-01');
     await Promise.resolve();
 
-    // Fetching the whole soundtrack up front would make a player who quits in
-    // stage 1 pay for the stage 5 music, and that transfer would compete with
-    // the stage 1 background they are actually waiting on.
-    //
-    // Only cues with a file produce a request, so this counts at most two and
-    // grows into a real assertion as the remaining tracks land.
-    const reachable = [STAGES[0].music, STAGES[1]?.music]
+    const reachable = [
+      STAGES[0].music,
+      STAGES[1]?.music,
+      ...(DEFERRED_SFX_BY_STAGE[STAGES[0].id] ?? []),
+      ...(DEFERRED_SFX_BY_STAGE[STAGES[1]?.id] ?? []),
+    ]
       .filter((key) => key !== undefined)
-      .map((key) => key.replace('bgm-', ''));
+      .map((key) => normalize(key.replace(/^(bgm|sfx)-/, '')));
 
-    expect(urls.length).toBeLessThanOrEqual(2);
+    expect(urls.length).toBeGreaterThan(0);
     expect(
-      urls.every((url) => reachable.some((name) => url.includes(name))),
+      urls.every((url) =>
+        reachable.some((name) => normalize(url).includes(name)),
+      ),
     ).toBe(true);
     expect(urls.some((url) => url.includes('city'))).toBe(true);
+  });
+
+  /** 도달하지 않을 스테이지의 큐는 한 건도 요청되지 않아야 한다. */
+  it('never fetches a cue from two stages ahead', async () => {
+    const urls = captureFetches();
+    const { game } = createFakeGame({ canDecode: true });
+    director = new AudioDirector(game);
+
+    gameEvents.emit('stage-changed', 'stage-01');
+    await Promise.resolve();
+
+    const unreachable = STAGES.slice(2).flatMap(
+      ({ id }) => DEFERRED_SFX_BY_STAGE[id] ?? [],
+    );
+
+    expect(unreachable.length).toBeGreaterThan(0);
+    for (const key of unreachable) {
+      const name = normalize(key.replace(/^sfx-/, ''));
+      expect(urls.some((url) => normalize(url).includes(name))).toBe(false);
+    }
   });
 
   it('survives the last stage having no stage after it', () => {

@@ -93,6 +93,15 @@ export type SfxConfig = {
   rate?: number;
   /** Playback rate is randomised by +/- this much so repeats do not phase. */
   rateJitter?: number;
+  /**
+   * Volume is randomised *downward* by up to this much, so a cue that repeats
+   * on a fixed interval does not read as a loop.
+   *
+   * Declared here rather than at the call site for the same reason `rateJitter`
+   * is: the number in `volume` has to stay the loudest this cue can be, or the
+   * mix cannot be read off this file.
+   */
+  volumeJitter?: number;
   /** Drops repeats fired inside this window, e.g. shotgun pellets landing together. */
   minInterval?: number;
 };
@@ -138,6 +147,20 @@ const PROJECTILE_BLOCK_SFX_CONFIG: SfxConfig = {
 
 const STAGE_ONE_BOSS_LASER_SFX_CONFIG: SfxConfig = {
   volume: 0.7,
+};
+
+/**
+ * 발소리는 게임에서 가장 자주 나는 큐다. 240ms 간격으로 계속 반복되므로
+ * 재생률과 음량을 함께 흔들어야 루프로 들리지 않는다.
+ */
+const FOOTSTEP_SFX_CONFIG: SfxConfig = {
+  volume: 1,
+  rateJitter: 0.03,
+  volumeJitter: 0.1,
+};
+
+const STAGE_TWO_BOSS_ORB_SHOT_SFX_CONFIG: SfxConfig = {
+  volume: 0.75,
 };
 
 /**
@@ -194,10 +217,10 @@ export const SFX_CONFIG: Record<SfxKey, SfxConfig> = {
   'sfx-stage2-boss-scan-loop': { volume: 0.5 },
   'sfx-stage2-boss-scan-end': { volume: 0.7 },
   'sfx-stage2-boss-target-lock': { volume: 0.8 },
-  'sfx-stage2-boss-orb-shot-01': { volume: 0.75 },
-  'sfx-stage2-boss-orb-shot-02': { volume: 0.75 },
-  'sfx-stage2-boss-orb-shot-03': { volume: 0.75 },
-  'sfx-stage2-boss-orb-shot-04': { volume: 0.75 },
+  'sfx-stage2-boss-orb-shot-01': STAGE_TWO_BOSS_ORB_SHOT_SFX_CONFIG,
+  'sfx-stage2-boss-orb-shot-02': STAGE_TWO_BOSS_ORB_SHOT_SFX_CONFIG,
+  'sfx-stage2-boss-orb-shot-03': STAGE_TWO_BOSS_ORB_SHOT_SFX_CONFIG,
+  'sfx-stage2-boss-orb-shot-04': STAGE_TWO_BOSS_ORB_SHOT_SFX_CONFIG,
   'sfx-stage3-boss-slam-warn': BOSS_TELEGRAPH_SFX_CONFIG,
   'sfx-stage3-boss-slam-leap': BOSS_TELEGRAPH_SFX_CONFIG,
   'sfx-stage3-boss-slam-impact': BOSS_IMPACT_SFX_CONFIG,
@@ -235,22 +258,22 @@ export const SFX_CONFIG: Record<SfxKey, SfxConfig> = {
   // louder, and it plays exactly once per run.
   'sfx-stage5-boss-salvation': { volume: 0.95 },
   'sfx-stage5-boss-core-exposed': { volume: 0.7 },
-  'sfx-stage1-footstep-01': { volume: 1, rateJitter: 0.03 },
-  'sfx-stage1-footstep-02': { volume: 1, rateJitter: 0.03 },
-  'sfx-stage1-footstep-03': { volume: 1, rateJitter: 0.03 },
-  'sfx-stage1-footstep-04': { volume: 1, rateJitter: 0.03 },
-  'sfx-stage2-footstep-01': { volume: 1, rateJitter: 0.03 },
-  'sfx-stage2-footstep-02': { volume: 1, rateJitter: 0.03 },
-  'sfx-stage2-footstep-03': { volume: 1, rateJitter: 0.03 },
-  'sfx-stage2-footstep-04': { volume: 1, rateJitter: 0.03 },
-  'sfx-stage3-footstep-01': { volume: 1, rateJitter: 0.03 },
-  'sfx-stage3-footstep-02': { volume: 1, rateJitter: 0.03 },
-  'sfx-stage3-footstep-03': { volume: 1, rateJitter: 0.03 },
-  'sfx-stage3-footstep-04': { volume: 1, rateJitter: 0.03 },
-  'sfx-stage4-footstep-01': { volume: 1, rateJitter: 0.03 },
-  'sfx-stage4-footstep-02': { volume: 1, rateJitter: 0.03 },
-  'sfx-stage4-footstep-03': { volume: 1, rateJitter: 0.03 },
-  'sfx-stage4-footstep-04': { volume: 1, rateJitter: 0.03 },
+  'sfx-stage1-footstep-01': FOOTSTEP_SFX_CONFIG,
+  'sfx-stage1-footstep-02': FOOTSTEP_SFX_CONFIG,
+  'sfx-stage1-footstep-03': FOOTSTEP_SFX_CONFIG,
+  'sfx-stage1-footstep-04': FOOTSTEP_SFX_CONFIG,
+  'sfx-stage2-footstep-01': FOOTSTEP_SFX_CONFIG,
+  'sfx-stage2-footstep-02': FOOTSTEP_SFX_CONFIG,
+  'sfx-stage2-footstep-03': FOOTSTEP_SFX_CONFIG,
+  'sfx-stage2-footstep-04': FOOTSTEP_SFX_CONFIG,
+  'sfx-stage3-footstep-01': FOOTSTEP_SFX_CONFIG,
+  'sfx-stage3-footstep-02': FOOTSTEP_SFX_CONFIG,
+  'sfx-stage3-footstep-03': FOOTSTEP_SFX_CONFIG,
+  'sfx-stage3-footstep-04': FOOTSTEP_SFX_CONFIG,
+  'sfx-stage4-footstep-01': FOOTSTEP_SFX_CONFIG,
+  'sfx-stage4-footstep-02': FOOTSTEP_SFX_CONFIG,
+  'sfx-stage4-footstep-03': FOOTSTEP_SFX_CONFIG,
+  'sfx-stage4-footstep-04': FOOTSTEP_SFX_CONFIG,
 };
 
 export const PROJECTILE_BLOCK_SFX_BY_KIND = {
@@ -396,6 +419,46 @@ export const FOOTSTEP_SFX_BY_STAGE: Readonly<
     'sfx-stage4-footstep-04',
   ],
 };
+
+/**
+ * 해당 스테이지에 도달해야 비로소 필요한 큐.
+ *
+ * 부팅 배치는 이걸 건너뛰고, AudioDirector가 음악과 **같은 정책**으로 가져온다
+ * — 지금 스테이지와 그 다음 하나. 도달하지도 않을 스테이지의 보스 큐까지
+ * 타이틀 화면 앞에서 기다릴 이유가 없다.
+ *
+ * 한 스테이지 앞서 받는 것이 핵심이다. 큐는 순간음이라 아직 도착하지 않았으면
+ * 큐에 쌓이지 않고 그냥 버려지므로(늦게 나는 총소리는 버그로 들린다), 실제로
+ * 필요해지는 시점보다 2~3분 앞서 요청이 나가야 한다.
+ */
+export const DEFERRED_SFX_BY_STAGE: Readonly<
+  Record<string, readonly SfxKey[]>
+> = {
+  'stage-01': [
+    ...Object.values(STAGE_ONE_BOSS_LASER_SFX_BY_CUE),
+    ...FOOTSTEP_SFX_BY_STAGE['stage-01'],
+  ],
+  'stage-02': [
+    ...Object.values(STAGE_TWO_BOSS_SCAN_SFX_BY_CUE),
+    ...STAGE_TWO_BOSS_ORB_SHOT_SFX,
+    ...FOOTSTEP_SFX_BY_STAGE['stage-02'],
+  ],
+  'stage-03': [
+    ...Object.values(STAGE_THREE_BOSS_SFX_BY_CUE),
+    ...FOOTSTEP_SFX_BY_STAGE['stage-03'],
+  ],
+  'stage-04': [
+    ...Object.values(STAGE_FOUR_BOSS_SFX_BY_CUE),
+    ...FOOTSTEP_SFX_BY_STAGE['stage-04'],
+  ],
+  // 5스테이지는 비행 구간이라 발소리가 없다.
+  'stage-05': Object.values(STAGE_FIVE_BOSS_SFX_BY_CUE),
+};
+
+/** BootScene이 즉시 로드 대상에서 걸러내는 집합. */
+export const DEFERRED_SFX_KEYS: ReadonlySet<string> = new Set(
+  Object.values(DEFERRED_SFX_BY_STAGE).flat(),
+);
 
 /**
  * Weapon ids come from WeaponConfig.id. The mapping lives here rather than on

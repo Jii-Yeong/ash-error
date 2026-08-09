@@ -21,6 +21,7 @@ import {
   STAGE_THREE_CONFIG,
   STARTING_STAGE_INDEX,
   STAGES,
+  type StageConfig,
 } from '@/game/config/stageConfig';
 import { formatStageLabel } from '@/game/config/stageLabel';
 import { getStageExitPlan } from '@/game/config/stageProgression';
@@ -114,6 +115,7 @@ export class GameScene extends Phaser.Scene {
   private weaponDropDirector!: WeaponDropDirector;
   private weaponSystem!: WeaponSystem;
   private stageTransitionDirector!: StageTransitionDirector;
+  private eventDirector!: StageEndEventDirector;
   private stageAssetPreloader!: StageAssetPreloader;
   private enemyCombatDirector!: EnemyCombatDirector;
   private backdropDirector!: BackdropDirector;
@@ -170,10 +172,13 @@ export class GameScene extends Phaser.Scene {
     this.configureCamera();
     this.createCombatSystems();
     this.combatUi = new CombatUi(this);
+    // 씬도 참조를 든다. 늦게 도착한 3스테이지 아틀라스를 이미 세워 둔 포위
+    // 대형에 입히려면 전환 연출 밖에서도 이 디렉터에 닿아야 한다.
+    this.eventDirector = new StageEndEventDirector(this);
     this.stageTransitionDirector = new StageTransitionDirector({
       scene: this,
       player: this.player,
-      eventDirector: new StageEndEventDirector(this),
+      eventDirector: this.eventDirector,
       prepare: () => this.prepareStageTransition(),
       enterCurrentRoom: () => this.enterCurrentRoom(),
       enterLandingRoom: (mode) => this.enterTransitionLandingRoom(mode),
@@ -298,6 +303,22 @@ export class GameScene extends Phaser.Scene {
     );
   }
 
+  /**
+   * `rebuildFloorForRoom`의 지형 짝.
+   *
+   * 방과 스테이지를 받는 이유는 엔딩이 5스테이지에 있으면서 3스테이지 지형을
+   * 그리기 때문이다. 네 곳에 흩어져 있던 같은 호출을 여기로 모았다 —
+   * `TerrainBuilder.build`에 인자가 하나 늘면 이제 고칠 곳도 하나다.
+   */
+  private rebuildTerrainForRoom(roomConfig: RoomConfig, stage: StageConfig) {
+    this.terrainBuilder.build(
+      roomConfig.terrain,
+      stage.terrainSkin,
+      roomConfig.ceilingPipes,
+      stage.pipeSkin,
+    );
+  }
+
   private createPlayer() {
     this.player = this.physics.add.sprite(
       this.getStartingPlayerX(),
@@ -389,12 +410,7 @@ export class GameScene extends Phaser.Scene {
     gameEvents.emit('room-state-changed', this.roomState);
     this.enemyCombatDirector.emitEnemyHealth();
 
-    this.terrainBuilder.build(
-      roomConfig.terrain,
-      this.stage.terrainSkin,
-      roomConfig.ceilingPipes,
-      this.stage.pipeSkin,
-    );
+    this.rebuildTerrainForRoom(roomConfig, this.stage);
 
     // 연출용 강하 방은 교전 없이 자유 이동만 한다.
     if (roomConfig.kind === 'descent') {
@@ -572,12 +588,7 @@ export class GameScene extends Phaser.Scene {
     this.configureRoomWorld();
     if (mode === 'descent') {
       this.rebuildFloorForRoom();
-      this.terrainBuilder.build(
-        this.activeRoomConfig.terrain,
-        this.stage.terrainSkin,
-        this.activeRoomConfig.ceilingPipes,
-        this.stage.pipeSkin,
-      );
+      this.rebuildTerrainForRoom(this.activeRoomConfig, this.stage);
       this.showUndergroundLandingBackdrop();
       this.resetCameraToRoomEntrance();
       return;
@@ -587,10 +598,15 @@ export class GameScene extends Phaser.Scene {
     this.enemyCombatDirector.destroyEnemies();
     // 어드민으로 5스테이지 보스에 직행하면 3스테이지 지형은 아직 캐시에 없다.
     // 도착 뒤 다시 그려 콜드 로드에서도 바닥 스킨이 placeholder로 굳지 않게 한다.
+    //
+    // 포위 대형도 같이 복구한다. 스프라이트는 이 프리로드가 끝나기를 기다리지
+    // 않고 흰 화면 뒤에서 곧바로 생성되므로, 아틀라스가 늦으면 엔딩 내내
+    // __MISSING 박스가 대형을 이룬 채 걸어 나간다.
     this.stageAssetPreloader.preload(STAGE_THREE_CONFIG, () => {
       if (this.activeRoomConfig === UNDERGROUND_LANDING_ROOM) {
         this.drawAscensionRoom();
       }
+      this.eventDirector.reskinSiege();
     });
     this.drawAscensionRoom();
     this.resetCameraToRoomEntrance();
@@ -605,12 +621,7 @@ export class GameScene extends Phaser.Scene {
       STAGE_THREE_CONFIG.showFloor,
       STAGE_THREE_CONFIG.floorSkin,
     );
-    this.terrainBuilder.build(
-      UNDERGROUND_LANDING_ROOM.terrain,
-      STAGE_THREE_CONFIG.terrainSkin,
-      UNDERGROUND_LANDING_ROOM.ceilingPipes,
-      STAGE_THREE_CONFIG.pipeSkin,
-    );
+    this.rebuildTerrainForRoom(UNDERGROUND_LANDING_ROOM, STAGE_THREE_CONFIG);
     this.showUndergroundLandingBackdrop();
   }
 
@@ -680,12 +691,7 @@ export class GameScene extends Phaser.Scene {
     }
 
     this.rebuildFloorForRoom();
-    this.terrainBuilder.build(
-      this.activeRoomConfig.terrain,
-      this.stage.terrainSkin,
-      this.activeRoomConfig.ceilingPipes,
-      this.stage.pipeSkin,
-    );
+    this.rebuildTerrainForRoom(this.activeRoomConfig, this.stage);
     for (const enemy of this.enemies) {
       enemy.refreshAtlasSprite();
     }

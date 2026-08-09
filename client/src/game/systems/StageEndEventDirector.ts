@@ -8,8 +8,37 @@ import {
   CEILING_MAINTAINER_CONFIG,
 } from '@/game/config/stageThreeEnemyConfig';
 
+/**
+ * 지상 포위 대형. **한 줄이 좌우 한 쌍**이고, 어느 쪽에 무엇이 서는지를 직접
+ * 적는다. 예전에는 인덱스 패리티 식으로 계산했는데, 그러면 줄을 하나 더하거나
+ * 순서를 바꿀 때 대형 전체가 조용히 재배치되고 의도한 그림을 코드에서 읽어낼
+ * 방법이 없었다.
+ *
+ * `y`가 적 종류마다 다른 것은 아트의 발 높이가 달라서다.
+ */
+const SIEGE_BLOCKER = {
+  config: BLOCKER_CONFIG,
+  y: GAME_HEIGHT - 130,
+  flippedFacesRight: true,
+} as const;
+const SIEGE_CAPTOR = {
+  config: CAPTOR_CONFIG,
+  y: GAME_HEIGHT - 120,
+  flippedFacesRight: true,
+} as const;
+/** 파이프형 아트만 기본 방향이 반대라 `flippedFacesRight`가 false다. */
+const SIEGE_PIPE_MAINTAINER = {
+  config: CEILING_MAINTAINER_CONFIG,
+  flippedFacesRight: false,
+} as const;
+
 /** 강하 착지 후 실제 적이 좌우에서 걸어 들어올 위치. */
-const DESCENT_SIEGE_FLANK_OFFSETS = [150, 290, 430, 560];
+const DESCENT_SIEGE_FLANKS = [
+  { offset: 150, left: SIEGE_BLOCKER, right: SIEGE_CAPTOR },
+  { offset: 290, left: SIEGE_CAPTOR, right: SIEGE_BLOCKER },
+  { offset: 430, left: SIEGE_BLOCKER, right: SIEGE_CAPTOR },
+  { offset: 560, left: SIEGE_CAPTOR, right: SIEGE_BLOCKER },
+];
 /** 착지 방 상단 파이프에서 포위하는 파이프형 위치. */
 const DESCENT_SIEGE_PIPE_OFFSETS = [220, 480];
 /** 안드로이드가 하나씩 나타나는 간격. */
@@ -39,11 +68,34 @@ const SHATTER_AVALANCHE = 2900;
 
 type SiegeEnemyView = {
   sprite: Phaser.GameObjects.Sprite;
+  texture: string;
   moveAnimation: string;
+  idleAnimation: string;
+  /** 지금 보여야 하는 애니메이션. 아직 등록 전이라 못 틀었어도 기록해 둔다. */
+  currentAnimation: string;
+  /** flipX가 켜졌을 때 이 아트가 오른쪽을 보는지. 적 계열마다 다르다. */
+  flippedFacesRight: boolean;
 };
+
+/**
+ * 방향을 좌표로 정하고 flipX로 옮기는 자리를 한 곳에 모은다.
+ *
+ * 두 계열의 기본 방향이 반대라, 호출부마다 `flankX < centerX`와
+ * `flankX > centerX`를 골라 쓰다가 이탈 연출에서 갱신을 통째로 빠뜨렸다.
+ * 보여야 할 방향만 넘기면 나머지는 여기서 처리한다.
+ */
+function faceSprite(
+  sprite: Phaser.GameObjects.Sprite,
+  facesRight: boolean,
+  flippedFacesRight: boolean,
+) {
+  sprite.setFlipX(facesRight === flippedFacesRight);
+}
 
 export class StageEndEventDirector {
   private shatterRunId = 0;
+  /** 마지막으로 세운 포위 대형. 아틀라스가 늦게 도착하면 여기서 복구한다. */
+  private siegeViews: SiegeEnemyView[] = [];
 
   constructor(private readonly scene: Phaser.Scene) {
     this.scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
@@ -114,12 +166,16 @@ export class StageEndEventDirector {
           ASCENSION_WHITE_HOLD_MS + ASCENSION_FORMATION_HOLD_MS,
           () => {
             let remainingDepartures = enemies.length;
-            enemies.forEach(({ moveAnimation, sprite }) => {
-              sprite.play(moveAnimation);
-              const departureX =
-                sprite.x < worldCenterX
-                  ? worldCenterX - screenWidth / 2 - sprite.displayWidth
-                  : worldCenterX + screenWidth / 2 + sprite.displayWidth;
+            enemies.forEach((view) => {
+              const { flippedFacesRight, moveAnimation, sprite } = view;
+              this.playSiegeAnimation(view, moveAnimation);
+              const leavesRight = sprite.x >= worldCenterX;
+              const departureX = leavesRight
+                ? worldCenterX + screenWidth / 2 + sprite.displayWidth
+                : worldCenterX - screenWidth / 2 - sprite.displayWidth;
+              // 대형에서는 가운데를 보고 서 있었다. 이제 바깥으로 나가므로
+              // 돌아서야 한다 — 이 갱신이 빠져 있어 전원이 뒷걸음질했다.
+              faceSprite(sprite, leavesRight, flippedFacesRight);
               this.scene.tweens.add({
                 targets: sprite,
                 x: departureX,
@@ -332,63 +388,104 @@ export class StageEndEventDirector {
     });
   }
 
+  /**
+   * 애니메이션이 아직 등록 전이어도 의도만 기록해 두고 넘어간다.
+   *
+   * 등록 전에 `play`를 부르면 Phaser가 경고만 내고 아무것도 하지 않으므로,
+   * 어느 프레임을 보여야 했는지가 그대로 사라진다. 기록해 두면 아틀라스가
+   * 도착한 뒤 `reskinSiege`가 그 자리를 복구할 수 있다.
+   */
+  private playSiegeAnimation(view: SiegeEnemyView, animation: string) {
+    view.currentAnimation = animation;
+    if (this.scene.anims.exists(animation)) {
+      view.sprite.play(animation, true);
+    }
+  }
+
+  /**
+   * 늦게 도착한 3스테이지 아틀라스를 이미 세워 둔 포위 대형에 입힌다.
+   *
+   * 콜드 로드(어드민으로 5스테이지 보스 직행, 혹은 느린 회선)에서는 프리로드가
+   * 끝나기 전에 스프라이트가 생성돼 `__MISSING` 초록 박스로 굳는다. 방 지형을
+   * 다시 그리는 콜백은 이 스프라이트들을 건드리지 않으므로 여기서 따로 복구한다.
+   */
+  reskinSiege() {
+    for (const view of this.siegeViews) {
+      if (!view.sprite.active || !this.scene.textures.exists(view.texture)) {
+        continue;
+      }
+
+      view.sprite.setTexture(view.texture);
+      this.playSiegeAnimation(view, view.currentAnimation);
+    }
+  }
+
   /** 방패형·포박형·파이프형 지하 포위 대형을 등장시키거나 즉시 배치함. */
   private spawnUndergroundSiege(
     centerX: number,
     revealImmediately = false,
   ): SiegeEnemyView[] {
     const enemies: SiegeEnemyView[] = [];
+    this.siegeViews = enemies;
     const reveal = (
       enemy: Phaser.GameObjects.Sprite,
       targetX: number,
       delay: number,
       moveAnimation: string,
       idleAnimation: string,
+      flippedFacesRight: boolean,
     ) => {
-      enemies.push({ sprite: enemy, moveAnimation });
+      const view: SiegeEnemyView = {
+        sprite: enemy,
+        texture: enemy.texture.key,
+        moveAnimation,
+        idleAnimation,
+        currentAnimation: idleAnimation,
+        flippedFacesRight,
+      };
+      enemies.push(view);
+
       if (revealImmediately) {
-        enemy.setX(targetX).setAlpha(1).play(idleAnimation);
+        enemy.setX(targetX).setAlpha(1);
+        this.playSiegeAnimation(view, idleAnimation);
         return;
       }
       this.scene.time.delayedCall(delay, () => {
-        enemy.setAlpha(1).play(moveAnimation);
+        enemy.setAlpha(1);
+        this.playSiegeAnimation(view, moveAnimation);
         this.scene.tweens.add({
           targets: enemy,
           x: targetX,
           duration: 420,
           ease: 'Quad.easeOut',
-          onComplete: () => enemy.play(idleAnimation),
+          onComplete: () => this.playSiegeAnimation(view, idleAnimation),
         });
         this.scene.cameras.main.shake(80, 0.0025);
       });
     };
 
-    const flankXs = DESCENT_SIEGE_FLANK_OFFSETS.flatMap((offset) => [
-      centerX - offset,
-      centerX + offset,
-    ]);
-    flankXs.forEach((flankX, index) => {
-      const direction = flankX < centerX ? -1 : 1;
-      const pairIndex = Math.floor(index / 2);
-      const config =
-        (pairIndex + (index % 2)) % 2 === 0 ? BLOCKER_CONFIG : CAPTOR_CONFIG;
-      const enemy = this.scene.add
-        .sprite(
-          flankX + direction * 180,
-          config === BLOCKER_CONFIG ? GAME_HEIGHT - 130 : GAME_HEIGHT - 120,
-          config.texture,
-        )
-        .setScale(config.scale)
-        .setFlipX(flankX < centerX)
-        .setDepth(60)
-        .setAlpha(0);
-      reveal(
-        enemy,
-        flankX,
-        SIEGE_REVEAL_INTERVAL * index,
-        config.animations.walk,
-        config.animations.idle,
-      );
+    // 한 줄에서 왼쪽 먼저, 그 다음 오른쪽. 등장 간격이 이 순서에 물려 있다.
+    DESCENT_SIEGE_FLANKS.forEach(({ offset, left, right }, row) => {
+      [
+        { unit: left, flankX: centerX - offset, direction: -1 },
+        { unit: right, flankX: centerX + offset, direction: 1 },
+      ].forEach(({ unit, flankX, direction }, side) => {
+        const enemy = this.scene.add
+          .sprite(flankX + direction * 180, unit.y, unit.config.texture)
+          .setScale(unit.config.scale)
+          .setDepth(60)
+          .setAlpha(0);
+        // 대형은 가운데의 플레이어를 향해 선다.
+        faceSprite(enemy, direction < 0, unit.flippedFacesRight);
+        reveal(
+          enemy,
+          flankX,
+          SIEGE_REVEAL_INTERVAL * (row * 2 + side),
+          unit.config.animations.walk,
+          unit.config.animations.idle,
+          unit.flippedFacesRight,
+        );
+      });
     });
 
     const pipeY = (UNDERGROUND_LANDING_ROOM.ceilingPipes?.[0]?.y ?? 72) + 50;
@@ -402,18 +499,19 @@ export class StageEndEventDirector {
         .sprite(
           flankX + direction * 180,
           pipeY,
-          CEILING_MAINTAINER_CONFIG.texture,
+          SIEGE_PIPE_MAINTAINER.config.texture,
         )
-        .setScale(CEILING_MAINTAINER_CONFIG.scale)
-        .setFlipX(flankX > centerX)
+        .setScale(SIEGE_PIPE_MAINTAINER.config.scale)
         .setDepth(60)
         .setAlpha(0);
+      faceSprite(enemy, direction < 0, SIEGE_PIPE_MAINTAINER.flippedFacesRight);
       reveal(
         enemy,
         flankX,
         SIEGE_REVEAL_INTERVAL * (index * 2 + 1),
-        CEILING_MAINTAINER_CONFIG.animations.pipeMove,
-        CEILING_MAINTAINER_CONFIG.animations.pipeIdle,
+        SIEGE_PIPE_MAINTAINER.config.animations.pipeMove,
+        SIEGE_PIPE_MAINTAINER.config.animations.pipeIdle,
+        SIEGE_PIPE_MAINTAINER.flippedFacesRight,
       );
     });
 
@@ -434,7 +532,7 @@ export class StageEndEventDirector {
     // 적이 다 나타난 뒤: 카메라가 아래로 내려가며 하강감을 주고, 그때 흰색
     // 선·점이 위로 흘러 밑으로 꺼지는 느낌을 표기한다. 이어서 암전 → 다음 스테이지.
     const descendDelay =
-      SIEGE_REVEAL_INTERVAL * (DESCENT_SIEGE_FLANK_OFFSETS.length * 2) + 500;
+      SIEGE_REVEAL_INTERVAL * (DESCENT_SIEGE_FLANKS.length * 2) + 500;
     this.scene.time.delayedCall(descendDelay, () => {
       camera.shake(360, 0.012);
       camera.stopFollow();

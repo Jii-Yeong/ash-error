@@ -3,6 +3,7 @@ import { resolveAudioAssets } from '@/game/config/audioAssets';
 import {
   AUDIO_MIX_CONFIG,
   clampAudioMixValue,
+  DEFERRED_SFX_BY_STAGE,
   FOOTSTEP_SFX_BY_STAGE,
   MUSIC_CONFIG,
   PROJECTILE_BLOCK_SFX_BY_KIND,
@@ -82,7 +83,7 @@ export class AudioDirector {
   private wantedMusic?: MusicKey;
   private currentStageId?: string;
   /** Tracks already fetched, so a revisited stage does not download twice. */
-  private readonly requested = new Set<MusicKey>();
+  private readonly requested = new Set<AudioAssetKey>();
 
   constructor(private readonly game: Phaser.Game) {
     this.game.sound.on(Phaser.Sound.Events.DECODED, this.handleDecoded);
@@ -135,18 +136,27 @@ export class AudioDirector {
   }
 
   /** Built once; the glob behind it is resolved at build time. */
-  private musicUrls?: Map<string, string>;
+  private assetUrls?: Map<string, string>;
 
-  private urlFor(key: MusicKey) {
-    if (!this.musicUrls) {
-      this.musicUrls = new Map(
-        resolveAudioAssets()
-          .assets.filter((asset) => asset.key in MUSIC_CONFIG)
-          .map((asset) => [asset.key, asset.url]),
+  private urlFor(key: AudioAssetKey) {
+    if (!this.assetUrls) {
+      this.assetUrls = new Map(
+        resolveAudioAssets().assets.map((asset) => [asset.key, asset.url]),
       );
     }
 
-    return this.musicUrls.get(key);
+    return this.assetUrls.get(key);
+  }
+
+  /** 도달할 스테이지의 전용 큐를 미리 가져온다. 정책은 음악과 같다. */
+  private requestStageSfx(stageId: string | undefined) {
+    if (!stageId) {
+      return;
+    }
+
+    for (const key of DEFERRED_SFX_BY_STAGE[stageId] ?? []) {
+      this.requestAudio(key);
+    }
   }
 
   /**
@@ -165,7 +175,7 @@ export class AudioDirector {
    * no Scene outlives the boot to title to game handover; a loader started in
    * one is torn down with it.
    */
-  private requestMusic(key: MusicKey | undefined) {
+  private requestAudio(key: AudioAssetKey | undefined) {
     const manager = this.game.sound;
 
     // BootScene이 타이틀 곡을 미리 불러오므로 타이틀 표시 즉시 재생할 수 있다.
@@ -207,10 +217,11 @@ export class AudioDirector {
     }
 
     this.stopAllSustained();
-    this.requestMusic('bgm-title');
+    this.requestAudio('bgm-title');
     // The title is where the player reads and presses ENTER, which is the only
     // free moment stage one's track ever gets.
-    this.requestMusic(STAGES[0]?.music);
+    this.requestAudio(STAGES[0]?.music);
+    this.requestStageSfx(STAGES[0]?.id);
     this.playMusic('bgm-title');
   };
 
@@ -224,8 +235,10 @@ export class AudioDirector {
 
     this.currentStageId = stageId;
 
-    this.requestMusic(STAGES[index].music);
-    this.requestMusic(STAGES[index + 1]?.music);
+    this.requestAudio(STAGES[index].music);
+    this.requestAudio(STAGES[index + 1]?.music);
+    this.requestStageSfx(stageId);
+    this.requestStageSfx(STAGES[index + 1]?.id);
     this.playMusic(STAGES[index].music);
   };
 
@@ -313,7 +326,7 @@ export class AudioDirector {
       FOOTSTEP_SFX_BY_STAGE[
         this.currentStageId as keyof typeof FOOTSTEP_SFX_BY_STAGE
       ];
-    this.playSfx(this.pickRandom(footsteps), 0.9 + Math.random() * 0.1);
+    this.playSfx(this.pickRandom(footsteps));
   };
 
   private readonly handleEnemyDamaged = () => {
@@ -323,7 +336,7 @@ export class AudioDirector {
   private readonly handleProjectileBlocked = (
     kind: keyof typeof PROJECTILE_BLOCK_SFX_BY_KIND,
   ) => {
-    this.playSfx(this.pickRandom(PROJECTILE_BLOCK_SFX_BY_KIND[kind]), 1, kind);
+    this.playSfx(this.pickRandom(PROJECTILE_BLOCK_SFX_BY_KIND[kind]), kind);
   };
 
   private readonly handleEnemyDefeated = () => {
@@ -451,7 +464,7 @@ export class AudioDirector {
     }
   }
 
-  private playSfx(key: SfxKey, volumeScale = 1, intervalKey: string = key) {
+  private playSfx(key: SfxKey, intervalKey: string = key) {
     const config = SFX_CONFIG[key];
     const now = Date.now();
     const playedAt = this.playedAt.get(intervalKey);
@@ -472,7 +485,11 @@ export class AudioDirector {
 
     this.playedAt.set(intervalKey, now);
     this.game.sound.play(key, {
-      volume: config.volume * volumeScale * this.mix.sfx * this.mix.master,
+      volume:
+        config.volume *
+        this.jitteredVolume(config.volumeJitter) *
+        this.mix.sfx *
+        this.mix.master,
       rate: (config.rate ?? 1) * this.jitteredRate(config.rateJitter),
     });
   }
@@ -538,6 +555,11 @@ export class AudioDirector {
 
   private jitteredRate(rateJitter = 0) {
     return rateJitter === 0 ? 1 : 1 + (Math.random() * 2 - 1) * rateJitter;
+  }
+
+  /** 아래로만 흔든다. `volume`이 이 큐가 낼 수 있는 최대여야 믹스를 읽을 수 있다. */
+  private jitteredVolume(volumeJitter = 0) {
+    return volumeJitter === 0 ? 1 : 1 - Math.random() * volumeJitter;
   }
 
   /** 여러 변형 중 하나를 무작위로 골라 같은 효과음이 반복되지 않게 한다. */
