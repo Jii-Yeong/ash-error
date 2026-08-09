@@ -54,7 +54,13 @@ export class BlockerEnemy extends Enemy {
 
     const distance = Math.abs(target.x - this.x);
     const targetInRange = distance <= this.aggroRadius;
-    this.setFlipX(target.x > this.x);
+    const body = this.body as Phaser.Physics.Arcade.Body;
+    const targetBody = target.body as Phaser.Physics.Arcade.Body;
+    const waitingBelowTarget =
+      distance <= BLOCKER_CONFIG.slamRange && targetBody.bottom <= body.top;
+    if (!waitingBelowTarget) {
+      this.setFlipX(target.x > this.x);
+    }
 
     if (this.blockerState === 'windup') {
       this.setVelocityX(0);
@@ -86,6 +92,12 @@ export class BlockerEnemy extends Enemy {
     if (this.blockerState !== 'charge') {
       this.blockerState = 'charge';
       this.chargeStartedAt = time;
+    }
+
+    if (waitingBelowTarget) {
+      this.setVelocityX(0);
+      this.rig.play(POSE.idle);
+      return true;
     }
 
     if (
