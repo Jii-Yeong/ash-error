@@ -5,6 +5,7 @@ import type {
   LaserBossCombatConfig,
 } from '@/game/config/bossConfigTypes';
 import {
+  getLaserAim,
   getLaserMuzzlePosition,
   isPointInsideLaser,
 } from '@/game/combat/laserGeometry';
@@ -190,7 +191,10 @@ export class LaserBossEnemy extends BossEnemy<LaserCannonPatternConfig> {
     if (this.attackCycle.shouldTrackAim(time)) {
       this.lockAimOn(target);
     }
-    this.setFlipX(Math.cos(this.aimAngle) < 0);
+    // Facing is not re-derived from the aim angle here. lockAimOn already set
+    // it, and the muzzle it placed is what the angle was measured from — so
+    // deriving one from the other flips the muzzle out from under a beam that
+    // is already aimed. See getLaserAim.
     this.effects.drawTelegraph(
       this.getMuzzlePosition(),
       this.aimAngle,
@@ -268,14 +272,14 @@ export class LaserBossEnemy extends BossEnemy<LaserCannonPatternConfig> {
   }
 
   private lockAimOn(target: Phaser.Physics.Arcade.Sprite) {
-    this.setFlipX(target.x < this.x);
-    const muzzle = this.getMuzzlePosition();
-    this.aimAngle = Phaser.Math.Angle.Between(
-      muzzle.x,
-      muzzle.y,
-      target.x,
-      target.y,
+    const aim = getLaserAim(
+      this,
+      target,
+      this.pattern.muzzleOffset,
+      this.pattern.muzzleOffsetY,
     );
+    this.setFlipX(aim.facingLeft);
+    this.aimAngle = aim.angle;
   }
 
   private getMuzzlePosition() {
