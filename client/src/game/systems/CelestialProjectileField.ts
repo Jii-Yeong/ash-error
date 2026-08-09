@@ -37,6 +37,9 @@ export class CelestialProjectileField {
   private readonly pooled: Phaser.Physics.Arcade.Image[] = [];
   private readonly sprites = new Set<Phaser.Physics.Arcade.Image>();
   private lastUpdateAt = 0;
+  private target?: Phaser.Physics.Arcade.Sprite;
+  private detached = false;
+  private destroyed = false;
 
   constructor(
     private readonly scene: Phaser.Scene,
@@ -70,6 +73,27 @@ export class CelestialProjectileField {
   }
 
   update(time: number, target: Phaser.Physics.Arcade.Sprite) {
+    this.target = target;
+    this.updateProjectiles(time, target);
+  }
+
+  /** 적 사망 뒤 남은 탄환을 씬 갱신에 넘겨 수명 종료까지 이동시킴. */
+  detach() {
+    if (this.detached || this.destroyed || this.active.length === 0) {
+      return;
+    }
+    this.detached = true;
+    this.scene.events.on(
+      Phaser.Scenes.Events.UPDATE,
+      this.updateDetached,
+      this,
+    );
+  }
+
+  private updateProjectiles(
+    time: number,
+    target?: Phaser.Physics.Arcade.Sprite,
+  ) {
     const deltaSeconds = Math.min(
       Math.max(0, time - this.lastUpdateAt) / 1_000,
       0.05,
@@ -93,7 +117,7 @@ export class CelestialProjectileField {
         continue;
       }
 
-      if (time <= projectile.homingUntil && target.active) {
+      if (time <= projectile.homingUntil && target?.active) {
         projectile.angle = Phaser.Math.Angle.RotateTo(
           projectile.angle,
           Phaser.Math.Angle.Between(sprite.x, sprite.y, target.x, target.y),
@@ -109,7 +133,7 @@ export class CelestialProjectileField {
       );
 
       if (
-        target.active &&
+        target?.active &&
         Phaser.Math.Distance.Between(sprite.x, sprite.y, target.x, target.y) <=
           this.config.radius + 16
       ) {
@@ -123,15 +147,40 @@ export class CelestialProjectileField {
     for (let index = this.active.length - 1; index >= 0; index -= 1) {
       this.release(index);
     }
+    this.stopDetachedUpdates();
   }
 
   destroy() {
+    if (this.destroyed) {
+      return;
+    }
+    this.destroyed = true;
+    this.stopDetachedUpdates();
     for (const sprite of this.sprites) {
       sprite.destroy();
     }
     this.active.length = 0;
     this.pooled.length = 0;
     this.sprites.clear();
+  }
+
+  private updateDetached(time: number) {
+    this.updateProjectiles(time, this.target);
+    if (this.active.length === 0) {
+      this.stopDetachedUpdates();
+    }
+  }
+
+  private stopDetachedUpdates() {
+    if (!this.detached) {
+      return;
+    }
+    this.scene.events.off(
+      Phaser.Scenes.Events.UPDATE,
+      this.updateDetached,
+      this,
+    );
+    this.detached = false;
   }
 
   private acquire(x: number, y: number) {

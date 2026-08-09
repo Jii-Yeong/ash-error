@@ -36,6 +36,8 @@ export class JudgmentEyeEnemy extends HallucinatedAndroidEnemy {
   private readonly bullets: EyeBullet[] = [];
   /** 방사 탄막을 매번 새로 만들지 않고 재사용하는 탄환 풀(비활성 스프라이트). */
   private readonly bulletPool: Phaser.Physics.Arcade.Image[] = [];
+  private bulletTarget?: Phaser.Physics.Arcade.Sprite;
+  private bulletsDetached = false;
   private dying = false;
 
   constructor(
@@ -109,11 +111,14 @@ export class JudgmentEyeEnemy extends HallucinatedAndroidEnemy {
     target: Phaser.Physics.Arcade.Sprite,
     _fireProjectile: EnemyProjectileAttack,
   ) {
+    this.bulletTarget = target;
+    if (!this.bulletsDetached) {
+      this.updateBullets(time, target);
+    }
     if (!this.active || this.dying) {
       return false;
     }
 
-    this.updateBullets(time, target);
     const targetInRange =
       Phaser.Math.Distance.Between(this.x, this.y, target.x, target.y) <=
       this.aggroRadius;
@@ -183,11 +188,14 @@ export class JudgmentEyeEnemy extends HallucinatedAndroidEnemy {
 
   protected override onDefeated() {
     super.onDefeated();
-    this.clearAttackObjects();
+    this.clearAttackTelegraph();
+    this.detachBullets();
   }
 
   override destroy(fromScene?: boolean) {
-    this.clearAttackObjects();
+    this.clearAttackTelegraph();
+    this.stopDetachedBulletUpdates();
+    this.clearBullets();
     this.destroyBulletPool();
     super.destroy(fromScene);
   }
@@ -238,7 +246,7 @@ export class JudgmentEyeEnemy extends HallucinatedAndroidEnemy {
 
   private updateBullets(
     time: number,
-    target: Phaser.Physics.Arcade.Sprite,
+    target?: Phaser.Physics.Arcade.Sprite,
   ) {
     for (let index = this.bullets.length - 1; index >= 0; index -= 1) {
       const bullet = this.bullets[index];
@@ -253,7 +261,7 @@ export class JudgmentEyeEnemy extends HallucinatedAndroidEnemy {
         continue;
       }
       if (
-        target.active &&
+        target?.active &&
         Phaser.Math.Distance.Between(
           bullet.sprite.x,
           bullet.sprite.y,
@@ -319,12 +327,47 @@ export class JudgmentEyeEnemy extends HallucinatedAndroidEnemy {
     this.bulletPool.push(sprite);
   }
 
-  private clearAttackObjects() {
+  /** 사망 뒤 활성 탄환만 씬 갱신으로 넘기고 경고 연출은 즉시 정리함. */
+  private detachBullets() {
+    if (this.bulletsDetached || this.bullets.length === 0) {
+      return;
+    }
+    this.bulletsDetached = true;
+    this.scene.events.on(
+      Phaser.Scenes.Events.UPDATE,
+      this.updateDetachedBullets,
+      this,
+    );
+  }
+
+  private updateDetachedBullets(time: number) {
+    this.updateBullets(time, this.bulletTarget);
+    if (this.bullets.length === 0) {
+      this.stopDetachedBulletUpdates();
+    }
+  }
+
+  private stopDetachedBulletUpdates() {
+    if (!this.bulletsDetached) {
+      return;
+    }
+    this.scene.events.off(
+      Phaser.Scenes.Events.UPDATE,
+      this.updateDetachedBullets,
+      this,
+    );
+    this.bulletsDetached = false;
+  }
+
+  private clearAttackTelegraph() {
     if (this.reticle.active) {
       this.reticle.destroy();
     }
     this.orb?.destroy();
     this.orb = undefined;
+  }
+
+  private clearBullets() {
     for (const bullet of this.bullets) {
       this.releaseBullet(bullet.sprite);
     }

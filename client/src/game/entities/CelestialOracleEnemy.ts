@@ -83,11 +83,14 @@ export class CelestialOracleEnemy extends CoordinatedAerialEnemy {
 
   protected override onDefeated() {
     super.onDefeated();
-    this.clearAttackObjects();
+    this.activePattern = undefined;
+    this.clearBookMarkers();
+    this.projectileField.detach();
   }
 
   override destroy(fromScene?: boolean) {
-    this.clearAttackObjects();
+    this.activePattern = undefined;
+    this.clearBookMarkers();
     this.projectileField.destroy();
     super.destroy(fromScene);
   }
@@ -240,12 +243,6 @@ export class CelestialOracleEnemy extends CoordinatedAerialEnemy {
       marker.destroy();
     }
     this.bookMarkers.length = 0;
-  }
-
-  private clearAttackObjects() {
-    this.activePattern = undefined;
-    this.projectileField.clear();
-    this.clearBookMarkers();
   }
 
   private patternPose(pattern: OraclePattern) {
