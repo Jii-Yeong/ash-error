@@ -67,6 +67,11 @@ import { WeaponDropDirector } from '@/game/systems/WeaponDropDirector';
 import { WeaponSystem } from '@/game/systems/WeaponSystem';
 import { useGameSettingsStore } from '@/stores/gameSettingsStore';
 
+/**
+ * 4스테이지 보스 보상을 주울 수 있는 시간. 보스가 쓰러진 지점에서 드랍까지
+ * 걸어가 줍기에 넉넉하되, 안 주울 때 화면이 멈춘 것처럼 보이지 않는 선.
+ */
+const BOSS_REWARD_GRACE_MS = 6000;
 const PLAYER_DAMAGE_FLASH_DURATION = 80;
 const PLAYER_DEATH_PROMPT_DELAY = 1000;
 /** 공중 사망 시 1층 바닥으로 떨어지는 속도(px/s). */
@@ -116,6 +121,8 @@ export class GameScene extends Phaser.Scene {
   private weaponSystem!: WeaponSystem;
   private stageTransitionDirector!: StageTransitionDirector;
   private eventDirector!: StageEndEventDirector;
+  /** 보스 보상을 주웠는지 지켜보는 타이머. 유예 중에만 살아 있다. */
+  private pendingShatterWatcher?: Phaser.Time.TimerEvent;
   private stageAssetPreloader!: StageAssetPreloader;
   private enemyCombatDirector!: EnemyCombatDirector;
   private backdropDirector!: BackdropDirector;
@@ -501,6 +508,44 @@ export class GameScene extends Phaser.Scene {
     this.advanceToNextStage();
   }
 
+  /**
+   * 보스 보상을 주울 틈을 준 뒤 화면 파괴 연출로 넘어간다.
+   *
+   * 연출은 보스가 사라지는 순간에 붙어야 타격감이 사는데, 보상도 바로 그
+   * 순간에 떨어진다. 그래서 **떨어졌을 때만** 미룬다 — 미보유 무기가 없어
+   * 아무것도 안 떨어졌으면 예전처럼 즉시 시작하고, 떨어졌으면 주운 즉시
+   * 이어간다. 유예를 다 쓰는 것은 플레이어가 안 줍기로 한 경우뿐이다.
+   */
+  private beginShatterExit() {
+    if (!this.weaponDropDirector.hasPickups) {
+      this.advanceToNextStage();
+      return;
+    }
+
+    const deadline = this.time.delayedCall(BOSS_REWARD_GRACE_MS, () => {
+      this.pendingShatterWatcher?.remove();
+      this.pendingShatterWatcher = undefined;
+      this.advanceToNextStage();
+    });
+
+    // 주운 순간 이어가야 한다. 보상을 챙기고도 남은 유예를 서서 기다리는 것은
+    // 연출이 아니라 그냥 정지 화면이다.
+    this.pendingShatterWatcher = this.time.addEvent({
+      delay: 100,
+      loop: true,
+      callback: () => {
+        if (this.weaponDropDirector.hasPickups) {
+          return;
+        }
+
+        deadline.remove();
+        this.pendingShatterWatcher?.remove();
+        this.pendingShatterWatcher = undefined;
+        this.advanceToNextStage();
+      },
+    });
+  }
+
   private advanceToNextStage() {
     this.stageTransitionDirector.advance(
       getStageExitPlan(STAGES, this.currentStageIndex),
@@ -819,6 +864,9 @@ export class GameScene extends Phaser.Scene {
     // Phaser는 재시작 시 Scene 인스턴스를 재사용하지만 이전 물리 그룹은 파괴한다.
     // createCombatSystems가 필드를 교체하기 전에 buildRoom이 실행되므로, 선택적
     // 정리 과정이 오래된 풀이나 디렉터를 참조하지 않게 비워 둔다.
+    // 유예 타이머는 죽은 디렉터를 계속 들여다보므로 재시작 전에 반드시 끊는다.
+    this.pendingShatterWatcher?.remove();
+    this.pendingShatterWatcher = undefined;
     this.weaponDropDirector = undefined!;
     this.weaponSystem = undefined!;
     this.roomDirector = undefined!;
@@ -908,7 +956,7 @@ export class GameScene extends Phaser.Scene {
         !this.stageTransitionDirector.hasRoomOverride &&
         this.currentRoomIndex === this.stage.rooms.length - 1
       ) {
-        this.advanceToNextStage();
+        this.beginShatterExit();
       }
 
       // 5스테이지: 보스 처치 3초 뒤 포탈 없이 종료 연출을 시작한다.
