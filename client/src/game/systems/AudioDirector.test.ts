@@ -283,7 +283,7 @@ describe('AudioDirector', () => {
     expect(played).toHaveLength(1);
   });
 
-  it('randomises shield and boss block cues above the damage hit rate', () => {
+  it('picks a different variant for shield and boss blocks', () => {
     const loaded = [
       'sfx-enemy-hit',
       ...Object.values(PROJECTILE_BLOCK_SFX_BY_KIND).flat(),
@@ -301,8 +301,33 @@ describe('AudioDirector', () => {
       'sfx-shield-block-03',
       'sfx-boss-invulnerable-03',
     ]);
-    expect(played[1].config.rate).toBeGreaterThan(played[0].config.rate!);
-    expect(played[2].config.rate).toBeGreaterThan(played[0].config.rate!);
+  });
+
+  /**
+   * 방어음은 게임에서 음정이 가장 뚜렷한 큐이고 방패 적에게 쏘는 탄마다 난다.
+   * 피치를 올려 두면 링이 더 또렷해져 연타가 음계처럼 들리므로, 기준 재생률은
+   * 피격음과 같은 자리에 있어야 하고 흔들림은 넓어야 한다.
+   */
+  it('keeps block cues off a fixed pitch above the hit cue', () => {
+    const loaded = [
+      'sfx-enemy-hit',
+      ...Object.values(PROJECTILE_BLOCK_SFX_BY_KIND).flat(),
+    ] as AudioAssetKey[];
+    const { game, played } = createFakeGame({ loaded });
+    director = new AudioDirector(game);
+
+    // 지터 중앙값. 남는 것은 각 큐의 기준 재생률뿐이다.
+    vi.spyOn(Math, 'random').mockReturnValue(0.5);
+    gameEvents.emit('enemy-damaged', 0, 0);
+    gameEvents.emit('enemy-projectile-blocked', 'shield');
+
+    expect(played[1].config.rate).toBe(played[0].config.rate);
+
+    // 지터 상단. 좁은 폭(0.02)이면 반복이 거의 같은 높이로 쌓인다.
+    vi.spyOn(Math, 'random').mockReturnValue(0.99);
+    gameEvents.emit('enemy-projectile-blocked', 'boss');
+
+    expect(played[2].config.rate).toBeGreaterThan(1.05);
   });
 
   it('plays the matching stage one boss laser cue for each shot', () => {

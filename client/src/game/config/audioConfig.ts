@@ -138,10 +138,21 @@ export const MUSIC_CONFIG: Record<MusicKey, MusicConfig> = {
   'bgm-return': { volume: 0.6 },
 };
 
+/**
+ * 방어된 탄의 금속 링. **게임에서 음정이 가장 뚜렷한 큐다** — 피크 대 중앙값이
+ * 97.8dB로, 총소리 4종(40~45dB)보다 두 배 넘게 음정이 서 있다.
+ *
+ * 그런 소리를 방패 적에게 쏘는 **탄마다** 반복하면 금속음이 아니라 음계로
+ * 들린다. 그래서 두 가지를 되돌린다:
+ *
+ * - `rate`를 1.1에서 1.0으로. 피치를 올릴수록 링이 또렷해져 음처럼 굳는다.
+ * - `rateJitter`를 0.02에서 0.09로. 0.02는 반복이 거의 같은 높이로 쌓여
+ *   연타가 한 음의 연속으로 들리던 폭이다. 무기 큐가 같은 이유로 쓰는
+ *   폭(0.08~0.12)에 맞췄다.
+ */
 const PROJECTILE_BLOCK_SFX_CONFIG: SfxConfig = {
   volume: 0.45,
-  rate: 1.1,
-  rateJitter: 0.02,
+  rateJitter: 0.09,
   minInterval: 45,
 };
 
