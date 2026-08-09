@@ -24,6 +24,8 @@ type Point = { x: number; y: number };
 
 const ORB_LIFETIME = 2600;
 const ORB_DEPTH = 10;
+const CRITICAL_ORB_HEALTH_RATIO = 0.15;
+const CRITICAL_ORB_SPEED_MULTIPLIER = 1.5;
 /** 사격 후 이동 포즈로 돌아가기 전 attack 포즈를 유지하는 시간. */
 const ATTACK_POSE_HOLD_MS = 320;
 /** 죽음 포즈를 보여주는 시간과, 그 뒤 페이드아웃에 걸리는 시간. */
@@ -395,7 +397,8 @@ export class HoundBossEnemy extends BossEnemy<HoundBossPatternConfig> {
     this.playSpriteAnimation(this.sprite?.animations.attack ?? '');
 
     const angle = Phaser.Math.Angle.Between(apex.x, apex.y, target.x, target.y);
-    const { radius, speed, damage } = this.pattern.orb;
+    const { radius, damage } = this.pattern.orb;
+    const speed = this.orbSpeed;
 
     const orb = this.scene.add
       .image(apex.x, apex.y, STAGE_TWO_BOSS_ENERGY_ORB.texture)
@@ -557,6 +560,12 @@ export class HoundBossEnemy extends BossEnemy<HoundBossPatternConfig> {
     return this.isEnraged
       ? this.pattern.orb.enragedLockDuration
       : this.pattern.orb.lockDuration;
+  }
+
+  private get orbSpeed() {
+    return this.currentHealth / this.maxHealth <= CRITICAL_ORB_HEALTH_RATIO
+      ? this.pattern.orb.speed * CRITICAL_ORB_SPEED_MULTIPLIER
+      : this.pattern.orb.speed;
   }
 
   private stateProgress(time: number) {

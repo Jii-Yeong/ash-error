@@ -49,7 +49,7 @@ function createHoundBoss(overrides: Record<string, unknown> = {}) {
           apexOffsetY: -20,
         },
         // 콘은 항상 대상을 향하므로 사거리 안이면 곧바로 locking으로 넘어간다.
-        orb: { lockDuration: 900, enragedLockDuration: 700 },
+        orb: { lockDuration: 900, enragedLockDuration: 700, speed: 400 },
       },
     },
     ...overrides,
@@ -119,6 +119,21 @@ describe('HoundBossEnemy scan audio', () => {
 });
 
 describe('HoundBossEnemy', () => {
+  it('체력 15% 이하에서 에너지포 속도를 1.5배로 올린다', () => {
+    const hound = createHoundBoss({
+      health: 151,
+      maxHealth: 1000,
+    }) as unknown as {
+      health: number;
+      orbSpeed: number;
+    };
+
+    expect(hound.orbSpeed).toBe(400);
+
+    hound.health = 150;
+    expect(hound.orbSpeed).toBe(600);
+  });
+
   it('같은 방향 요청이 500ms 유지된 뒤 방향을 전환한다', () => {
     const hound = Object.assign(Object.create(HoundBossEnemy.prototype), {
       flipX: false,
