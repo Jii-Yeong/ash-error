@@ -1,6 +1,10 @@
 import Phaser from 'phaser';
 import { GAME_HEIGHT } from '@/game/config/gameDimensions';
-import { JUDGMENT_EYE_CONFIG } from '@/game/config/stageFourEnemyConfig';
+import {
+  JUDGMENT_EYE_CONFIG,
+  JUDGMENT_EYE_ORB,
+  JUDGMENT_EYE_RETICLE,
+} from '@/game/config/stageFourEnemyConfig';
 import {
   ENEMY_DEPTH,
   type EnemyProjectileAttack,
@@ -25,10 +29,10 @@ export class JudgmentEyeEnemy extends HallucinatedAndroidEnemy {
   private nextAttackAt = 0;
   private lockedTarget = new Phaser.Math.Vector2();
   private repositionTarget = new Phaser.Math.Vector2();
-  private orb?: Phaser.GameObjects.Arc;
+  private orb?: Phaser.GameObjects.Image;
   private firedOrb = false;
   private radialVolleyIndex = 0;
-  private readonly reticle: Phaser.GameObjects.Graphics;
+  private readonly reticle: Phaser.GameObjects.Image;
   private readonly bullets: EyeBullet[] = [];
   /** 방사 탄막을 매번 새로 만들지 않고 재사용하는 탄환 풀(비활성 스프라이트). */
   private readonly bulletPool: Phaser.Physics.Arcade.Image[] = [];
@@ -59,7 +63,11 @@ export class JudgmentEyeEnemy extends HallucinatedAndroidEnemy {
         JUDGMENT_EYE_CONFIG.bodyOffsetY,
       );
     this.setDepth(ENEMY_DEPTH);
-    this.reticle = scene.add.graphics().setDepth(8);
+    this.reticle = scene.add
+      .image(0, 0, JUDGMENT_EYE_RETICLE.texture)
+      .setDepth(8)
+      .setBlendMode(Phaser.BlendModes.ADD)
+      .setVisible(false);
   }
 
   override get playsOwnDeathAnimation() {
@@ -185,27 +193,27 @@ export class JudgmentEyeEnemy extends HallucinatedAndroidEnemy {
   }
 
   private drawReticle(time: number) {
-    const pulse = Math.floor(time / 90) % 2 ? 18 : 24;
-    this.reticle.clear();
-    this.reticle.lineStyle(2, 0xff3544, 0.95);
-    this.reticle.strokeCircle(this.lockedTarget.x, this.lockedTarget.y, pulse);
-    this.reticle.lineBetween(
-      this.lockedTarget.x - pulse - 8,
-      this.lockedTarget.y,
-      this.lockedTarget.x + pulse + 8,
-      this.lockedTarget.y,
-    );
+    const size = Math.floor(time / 90) % 2 ? 60 : 72;
+    this.reticle
+      .setPosition(this.lockedTarget.x, this.lockedTarget.y)
+      .setDisplaySize(size, size)
+      .setVisible(true);
   }
 
   private beginOrb(time: number) {
     this.eyeState = 'orb';
     this.stateEndsAt = time + JUDGMENT_EYE_CONFIG.orbLifetime;
     this.firedOrb = false;
-    this.reticle.clear();
+    this.reticle.setVisible(false);
     this.orb = this.scene.add
-      .circle(this.lockedTarget.x, this.lockedTarget.y, 18, 0x6c0611, 0.86)
-      .setStrokeStyle(3, 0xff4050, 0.95)
-      .setDepth(9);
+      .image(
+        this.lockedTarget.x,
+        this.lockedTarget.y,
+        JUDGMENT_EYE_ORB.texture,
+      )
+      .setDisplaySize(48, 48)
+      .setDepth(9)
+      .setBlendMode(Phaser.BlendModes.ADD);
   }
 
   private fireRadialVolley(time: number) {
@@ -312,7 +320,6 @@ export class JudgmentEyeEnemy extends HallucinatedAndroidEnemy {
   }
 
   private clearAttackObjects() {
-    this.reticle.clear();
     if (this.reticle.active) {
       this.reticle.destroy();
     }

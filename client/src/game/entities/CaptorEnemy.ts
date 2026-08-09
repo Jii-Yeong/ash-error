@@ -1,12 +1,12 @@
 import Phaser from 'phaser';
 import { getCapturePullSpeed } from '@/game/combat/stageThreeEnemyCombat';
+import { STAGE_THREE_CAPTOR_TETHER } from '@/game/config/captorAnimationConfig';
 import { CAPTOR_CONFIG } from '@/game/config/stageThreeEnemyConfig';
 import {
   Enemy,
   ENEMY_DEPTH,
   type EnemyProjectileAttack,
 } from '@/game/entities/Enemy';
-import { FLOOR_SURFACE_Y } from '@/game/systems/FloorBuilder';
 import { GroundedEnemySprite } from '@/game/systems/GroundedEnemySprite';
 
 const POSE = CAPTOR_CONFIG.animations;
@@ -27,6 +27,8 @@ export class CaptorEnemy extends Enemy {
   private tetherDamage = 0;
   private dying = false;
   private readonly cable: Phaser.GameObjects.Graphics;
+  private readonly tetherLine: Phaser.GameObjects.Image;
+  private readonly tetherClaw: Phaser.GameObjects.Image;
   private readonly rig: GroundedEnemySprite;
 
   constructor(
@@ -46,6 +48,15 @@ export class CaptorEnemy extends Enemy {
     this.rig = new GroundedEnemySprite(this, CAPTOR_CONFIG);
     this.rig.apply();
     this.cable = scene.add.graphics().setDepth(8);
+    this.tetherLine = scene.add
+      .image(this.x, this.y, STAGE_THREE_CAPTOR_TETHER.line.texture)
+      .setOrigin(0, 0.5)
+      .setDepth(ENEMY_DEPTH + 1)
+      .setVisible(false);
+    this.tetherClaw = scene.add
+      .image(this.x, this.y, STAGE_THREE_CAPTOR_TETHER.claw.texture)
+      .setDepth(ENEMY_DEPTH + 2)
+      .setVisible(false);
   }
 
   override get playsOwnDeathAnimation() {
@@ -63,6 +74,7 @@ export class CaptorEnemy extends Enemy {
   ) {
     if (!this.active || this.dying) {
       this.cable.clear();
+      this.hideTether();
       return false;
     }
 
@@ -108,7 +120,7 @@ export class CaptorEnemy extends Enemy {
       // 케이블을 감는 동안 포획기는 제자리에 고정.
       this.setVelocityX(0);
       this.rig.play(POSE.pull);
-      this.drawCable(target.x, target.y, 0.9);
+      this.drawCable(target.x, target.y);
       const captureSpeed = getCapturePullSpeed(
         target.x - this.x,
         this.stateEndsAt - time,
@@ -131,7 +143,7 @@ export class CaptorEnemy extends Enemy {
     if (this.captorState === 'warning') {
       this.setVelocityX(0);
       this.rig.play(POSE.pull);
-      this.drawCable(this.lockedTarget.x, this.lockedTarget.y, 0.45);
+      this.drawCable(this.lockedTarget.x, this.lockedTarget.y);
       if (time >= this.stateEndsAt) {
         const evaded = Phaser.Math.Distance.Between(
           target.x,
@@ -191,9 +203,7 @@ export class CaptorEnemy extends Enemy {
 
   protected override onDefeated() {
     super.onDefeated();
-    if (this.cable.active) {
-      this.cable.destroy();
-    }
+    this.destroyTetherObjects();
   }
 
   override defeat() {
@@ -207,32 +217,65 @@ export class CaptorEnemy extends Enemy {
   }
 
   override destroy(fromScene?: boolean) {
-    if (this.cable.active) {
-      this.cable.destroy();
-    }
+    this.destroyTetherObjects();
     super.destroy(fromScene);
   }
 
-  private drawCable(targetX: number, targetY: number, alpha: number) {
-    this.cable.clear();
-    this.cable.lineStyle(3, 0x79ff9a, alpha);
-    this.cable.lineBetween(this.x, this.y - 12, targetX, targetY);
-    this.cable.lineStyle(1, 0xb6ffd0, alpha * 0.7);
-    this.cable.lineBetween(
-      this.x,
-      FLOOR_SURFACE_Y - 4,
+  private showTether(targetX: number, targetY: number) {
+    const sourceX = this.x + (this.flipX ? 14 : -14) + 3;
+    const sourceY = this.y + 3;
+    const angle = Phaser.Math.Angle.Between(sourceX, sourceY, targetX, targetY);
+    const distance = Phaser.Math.Distance.Between(
+      sourceX,
+      sourceY,
       targetX,
-      FLOOR_SURFACE_Y - 4,
+      targetY,
     );
+    this.tetherLine
+      .setPosition(sourceX, sourceY)
+      .setRotation(angle)
+      .setDisplaySize(distance, STAGE_THREE_CAPTOR_TETHER.line.height)
+      .setAlpha(1)
+      .setVisible(true);
+    this.tetherClaw
+      .setPosition(targetX, targetY)
+      .setRotation(angle - Math.PI)
+      .setAlpha(1)
+      .setVisible(true);
+  }
+
+  private hideTether() {
+    if (this.tetherLine.active) {
+      this.tetherLine.setVisible(false);
+    }
+    if (this.tetherClaw.active) {
+      this.tetherClaw.setVisible(false);
+    }
+  }
+
+  private destroyTetherObjects() {
+    if (this.cable.active) {
+      this.cable.destroy();
+    }
+    if (this.tetherLine.active) {
+      this.tetherLine.destroy();
+    }
+    if (this.tetherClaw.active) {
+      this.tetherClaw.destroy();
+    }
+  }
+
+  private drawCable(targetX: number, targetY: number) {
+    this.cable.clear();
+    this.showTether(targetX, targetY);
   }
 
   /** 포박 중 케이블을 따라 흐르는 지그재그 전기 아크. */
   private drawShock(targetX: number, targetY: number) {
-    const sourceX = this.x;
-    const sourceY = this.y - 12;
+    const sourceX = this.x + (this.flipX ? 14 : -14) + 3;
+    const sourceY = this.y + 3;
+    this.showTether(targetX, targetY);
     this.cable.clear();
-    this.cable.lineStyle(3, 0x79ff9a, 0.9);
-    this.cable.lineBetween(sourceX, sourceY, targetX, targetY);
 
     const segments = 6;
     this.cable.lineStyle(2, 0xaee9ff, 0.95);
@@ -252,6 +295,7 @@ export class CaptorEnemy extends Enemy {
 
   private releaseCable(time: number) {
     this.cable.clear();
+    this.hideTether();
     this.tetherDamage = 0;
     this.captorState = 'recover';
     this.stateEndsAt = time + 480;

@@ -4,6 +4,7 @@ import type {
   PurifierBossCombatConfig,
   PurifierBossSpriteConfig,
 } from '@/game/config/bossConfigTypes';
+import { STAGE_THREE_BOSS_SHOCKWAVE } from '@/game/config/bossAnimationConfig';
 import { getSlamLeapVelocity } from '@/game/combat/slamLeap';
 import { BossEnemy } from '@/game/entities/BossEnemy';
 import type { EnemyProjectileAttack } from '@/game/entities/Enemy';
@@ -161,10 +162,10 @@ export class PurifierBossEnemy extends BossEnemy<PurifierBossPatternConfig> {
         this.updateSlamStrike(time);
         break;
       case 'vacuum-warn':
-        this.updateVacuumWarn(time, target);
+        this.updateVacuumWarn(time);
         break;
       case 'vacuum-active':
-        this.updateVacuumActive(time, target);
+        this.updateVacuumActive(time);
         break;
     }
 
@@ -371,12 +372,8 @@ export class PurifierBossEnemy extends BossEnemy<PurifierBossPatternConfig> {
     gameEvents.emit('boss-purifier-cue', 'vacuum-end');
   }
 
-  private updateVacuumWarn(
-    time: number,
-    target: Phaser.Physics.Arcade.Sprite,
-  ) {
+  private updateVacuumWarn(time: number) {
     this.setVelocityX(0);
-    this.drawVacuumFlow(time, target, this.stateProgress(time) * 0.45);
 
     if (time >= this.stateEndsAt) {
       this.attackState = 'vacuum-active';
@@ -385,12 +382,8 @@ export class PurifierBossEnemy extends BossEnemy<PurifierBossPatternConfig> {
     }
   }
 
-  private updateVacuumActive(
-    time: number,
-    target: Phaser.Physics.Arcade.Sprite,
-  ) {
+  private updateVacuumActive(time: number) {
     this.setVelocityX(0);
-    this.drawVacuumFlow(time, target, 1);
     this.pullPlayer(
       this.x,
       this.isEnraged
@@ -417,20 +410,28 @@ export class PurifierBossEnemy extends BossEnemy<PurifierBossPatternConfig> {
 
   private spawnShockwave(direction: number) {
     const slam = this.pattern.slam;
+    const waveWidth = slam.shockwaveWidth * 4.4;
+    const waveHeight = slam.shockwaveHeight * 2.5;
     const wave = this.scene.add
-      .rectangle(
+      .image(
         this.x + direction * 70,
-        FLOOR_SURFACE_Y - slam.shockwaveHeight / 2,
-        slam.shockwaveWidth,
-        slam.shockwaveHeight,
-        this.pattern.telegraphColor,
-        0.55,
+        FLOOR_SURFACE_Y - waveHeight / 2 + 20,
+        STAGE_THREE_BOSS_SHOCKWAVE.texture,
       )
-      .setStrokeStyle(2, 0xffffff, 0.5)
+      .setFlipX(direction < 0)
+      .setDisplaySize(waveWidth, waveHeight)
       .setDepth(SHOCKWAVE_DEPTH);
     this.scene.physics.add.existing(wave);
     const body = wave.body as Phaser.Physics.Arcade.Body;
     body.setAllowGravity(false);
+    body.setSize(
+      slam.shockwaveWidth / wave.scaleX,
+      slam.shockwaveHeight / wave.scaleY,
+    );
+    body.setOffset(
+      (wave.width - body.sourceWidth) / 2,
+      wave.height - body.sourceHeight - 20 / wave.scaleY,
+    );
     body.setVelocityX(direction * slam.shockwaveSpeed);
 
     let hit = false;
@@ -470,47 +471,8 @@ export class PurifierBossEnemy extends BossEnemy<PurifierBossPatternConfig> {
     const top = FLOOR_SURFACE_Y - MARKER_HEIGHT;
     this.telegraph
       .clear()
-      .fillStyle(this.pattern.telegraphColor, 0.12 + intensity * 0.4)
-      .fillRect(x - width / 2, top, width, MARKER_HEIGHT)
-      .lineStyle(2, this.pattern.telegraphColor, 0.4 + intensity * 0.5)
-      .strokeRect(x - width / 2, top, width, MARKER_HEIGHT);
-  }
-
-  private drawVacuumFlow(
-    time: number,
-    target: Phaser.Physics.Arcade.Sprite,
-    intensity: number,
-  ) {
-    const direction = Math.sign(this.x - target.x) || 1;
-    const intakeX = this.x - direction * this.displayWidth * 0.35;
-    const intakeY = this.y;
-    const particleCount = 8;
-
-    this.telegraph
-      .clear()
-      .lineStyle(3, this.pattern.telegraphColor, 0.18 + intensity * 0.28)
-      .lineBetween(target.x, target.y, intakeX, intakeY)
-      .lineStyle(2, this.pattern.telegraphColor, 0.3 + intensity * 0.45)
-      .strokeCircle(
-        this.x,
-        this.y,
-        58 + Math.sin(time * 0.018) * 7,
-      );
-
-    for (let index = 0; index < particleCount; index += 1) {
-      const progress =
-        (time * 0.0012 + index / particleCount) % 1;
-      const x = Phaser.Math.Linear(target.x, intakeX, progress);
-      const y =
-        Phaser.Math.Linear(target.y, intakeY, progress) +
-        Math.sin(progress * Math.PI * 4 + index) * 18 * (1 - progress);
-      this.telegraph
-        .fillStyle(
-          this.pattern.telegraphColor,
-          (0.25 + progress * 0.65) * intensity,
-        )
-        .fillCircle(x, y, 3 + progress * 4);
-    }
+      .fillStyle(0xff3b30, 0.22 + intensity * 0.35)
+      .fillRect(x - width / 2, top, width, MARKER_HEIGHT);
   }
 
   private moveToPreferredDistance(

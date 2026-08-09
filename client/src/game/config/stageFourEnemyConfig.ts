@@ -161,3 +161,13 @@ export const JUDGMENT_EYE_CONFIG = {
   attackCooldown: 2_100,
   repositionDuration: 800,
 } as const;
+
+export const JUDGMENT_EYE_RETICLE = {
+  texture: 'stage-4-judgment-eye-reticle',
+  png: '/assets/enemies/stage-4-judgment-eye-reticle.png',
+} as const;
+
+export const JUDGMENT_EYE_ORB = {
+  texture: 'stage-4-judgment-eye-orb',
+  png: '/assets/enemies/stage-4-judgment-eye-orb.png',
+} as const;

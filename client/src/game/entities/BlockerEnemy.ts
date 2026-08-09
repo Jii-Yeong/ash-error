@@ -157,16 +157,6 @@ export class BlockerEnemy extends Enemy {
   }
 
   private slam(target: Phaser.Physics.Arcade.Sprite) {
-    const wave = this.scene.add
-      .rectangle(this.x, FLOOR_SURFACE_Y - 7, 50, 12, 0x8cff9d, 0.7)
-      .setDepth(9);
-    this.scene.tweens.add({
-      targets: wave,
-      displayWidth: BLOCKER_CONFIG.shockwaveRange * 2,
-      alpha: 0,
-      duration: 260,
-      onComplete: () => wave.destroy(),
-    });
     const body = target.body as Phaser.Physics.Arcade.Body;
     const nearFloor = body.blocked.down || body.bottom >= FLOOR_SURFACE_Y - 18;
     if (

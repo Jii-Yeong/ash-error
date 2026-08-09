@@ -56,3 +56,19 @@ export const CEILING_MAINTAINER_ANIMATION_ATLASES =
   CEILING_MAINTAINER_ATLAS_SET.atlases;
 export const STAGE_THREE_CEILING_MAINTAINER_SPRITE:
   CeilingMaintainerSpriteConfig = CEILING_MAINTAINER_ATLAS_SET.sprites[3];
+
+export const STAGE_THREE_CEILING_MAINTAINER_BOMB = {
+  texture: 'stage-3-maintainer-bomb',
+  png: '/assets/enemies/stage-3-maintainer-bomb.png',
+  width: 48,
+  height: 27,
+} as const;
+
+export const STAGE_THREE_CEILING_MAINTAINER_BOMB_IMPACT = {
+  texture: 'stage-3-maintainer-bomb-impact',
+  png: '/assets/enemies/stage-3-maintainer-bomb-impact.png',
+  width: 120,
+  height: 66,
+  // 원본 131px 중 불투명 픽셀 하단인 120px을 지면 원점으로 사용함.
+  originY: 120 / 131,
+} as const;

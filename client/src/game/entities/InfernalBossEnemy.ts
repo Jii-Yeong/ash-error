@@ -10,6 +10,12 @@ import type {
   InfernalBossSpriteConfig,
 } from '@/game/config/bossConfigTypes';
 import type { BossArenaBounds } from '@/game/config/bossArena';
+import {
+  STAGE_FOUR_MAGMA_RUPTURE_FIRE_PILLAR,
+  STAGE_FOUR_MAGMA_RUPTURE_WARNING,
+  STAGE_FOUR_MAGMA_SHARD,
+  STAGE_FOUR_MAGMA_SHARD_IMPACT,
+} from '@/game/config/bossAnimationConfig';
 import { BossEnemy } from '@/game/entities/BossEnemy';
 import type { EnemyProjectileAttack } from '@/game/entities/Enemy';
 import { gameEvents } from '@/game/events/gameEvents';
@@ -53,11 +59,9 @@ const PHASE_TWO_SEQUENCE: readonly InfernalAttack[] = [
 export class InfernalBossEnemy extends BossEnemy<InfernalBossPatternConfig> {
   override readonly usesHitFlash = true;
 
-  private readonly telegraph: Phaser.GameObjects.Graphics;
   private readonly phaseOverlay: Phaser.GameObjects.Graphics;
   private readonly effectCleanups = new CleanupRegistry();
   private attackState: InfernalState = 'recover';
-  private stateStartedAt = 0;
   private stateEndsAt: number;
   private phaseTwo = false;
   private phaseOneAttackIndex = 0;
@@ -84,7 +88,6 @@ export class InfernalBossEnemy extends BossEnemy<InfernalBossPatternConfig> {
     super(scene, x, y, texture, config);
 
     this.stateEndsAt = scene.time.now + config.pattern.firstAttackDelay;
-    this.telegraph = scene.add.graphics().setDepth(EFFECT_DEPTH);
     this.phaseOverlay = scene.add
       .graphics()
       .setDepth(20)
@@ -160,7 +163,6 @@ export class InfernalBossEnemy extends BossEnemy<InfernalBossPatternConfig> {
   ) {
     this.playerTarget = target;
     if (!this.active || this.dying) {
-      this.telegraph.clear();
       return false;
     }
 
@@ -169,7 +171,6 @@ export class InfernalBossEnemy extends BossEnemy<InfernalBossPatternConfig> {
       this.aggroRadius;
     if (!targetInRange) {
       this.setVelocityX(0);
-      this.telegraph.clear();
       this.playSpriteAnimation(this.sprite?.animations.idle ?? '');
       return false;
     }
@@ -264,7 +265,6 @@ export class InfernalBossEnemy extends BossEnemy<InfernalBossPatternConfig> {
   protected override onDefeated() {
     super.onDefeated();
     this.clearTint();
-    this.telegraph.clear();
     this.phaseOverlay.clear();
     this.effectCleanups.clear();
   }
@@ -301,7 +301,6 @@ export class InfernalBossEnemy extends BossEnemy<InfernalBossPatternConfig> {
   }
 
   override destroy(fromScene?: boolean) {
-    this.telegraph.destroy();
     this.phaseOverlay.destroy();
     this.effectCleanups.clear();
     super.destroy(fromScene);
@@ -311,7 +310,6 @@ export class InfernalBossEnemy extends BossEnemy<InfernalBossPatternConfig> {
     this.setVelocityX(0);
     this.faceToward(target.x > this.x);
     this.playSpriteAnimation(this.sprite?.animations.idle ?? '');
-    this.telegraph.clear();
 
     if (time < this.stateEndsAt) {
       return;
@@ -357,7 +355,6 @@ export class InfernalBossEnemy extends BossEnemy<InfernalBossPatternConfig> {
     // 전환에서 파편 패턴을 먼저 보여주므로 다음 순서는 지면 분출로 넘김.
     this.phaseTwoAttackIndex = 1;
     this.attackState = 'phase-transition';
-    this.stateStartedAt = time;
     this.stateEndsAt = time + this.pattern.phaseTransitionDuration;
     this.setVelocityX(0);
     this.playSpriteAnimation(this.sprite?.animations.gush ?? '');
@@ -382,7 +379,6 @@ export class InfernalBossEnemy extends BossEnemy<InfernalBossPatternConfig> {
   private beginRupture(time: number) {
     const rupture = this.pattern.rupture;
     this.attackState = 'rupture';
-    this.stateStartedAt = time;
     this.stateEndsAt =
       time +
       rupture.warnDuration +
@@ -392,7 +388,6 @@ export class InfernalBossEnemy extends BossEnemy<InfernalBossPatternConfig> {
     this.nextRuptureAt = time;
     this.setVelocityX(0);
     this.playSpriteAnimation(this.sprite?.animations.gush ?? '');
-    this.telegraph.clear();
     gameEvents.emit('boss-infernal-cue', 'rupture-warn');
   }
 
@@ -423,9 +418,10 @@ export class InfernalBossEnemy extends BossEnemy<InfernalBossPatternConfig> {
       this.arena.left + rupture.width / 2,
       this.arena.right - rupture.width / 2,
     );
-    let warning: Phaser.GameObjects.Graphics | undefined =
+    let warning: Phaser.GameObjects.Image | undefined =
       this.createRuptureMarker(x);
     let eruption: Phaser.GameObjects.Rectangle | undefined;
+    let eruptionEffect: Phaser.GameObjects.Image | undefined;
     let overlap: Phaser.Physics.Arcade.Collider | undefined;
     let activeTimer: Phaser.Time.TimerEvent | undefined;
     let warningTimer: Phaser.Time.TimerEvent;
@@ -440,16 +436,41 @@ export class InfernalBossEnemy extends BossEnemy<InfernalBossPatternConfig> {
       warningTimer.remove(false);
       activeTimer?.remove(false);
       destroyCollider(overlap);
+      if (eruptionEffect) {
+        this.scene.tweens.killTweensOf(eruptionEffect);
+      }
       warning?.destroy();
       eruption?.destroy();
+      eruptionEffect?.destroy();
       warning = undefined;
       eruption = undefined;
+      eruptionEffect = undefined;
       this.effectCleanups.delete(cleanup);
     };
 
     warningTimer = this.scene.time.delayedCall(rupture.warnDuration, () => {
       warning?.destroy();
       warning = undefined;
+      const pillarScale =
+        rupture.height / STAGE_FOUR_MAGMA_RUPTURE_FIRE_PILLAR.height;
+      eruptionEffect = this.scene.add
+        .image(
+          x,
+          FLOOR_SURFACE_Y + 2,
+          STAGE_FOUR_MAGMA_RUPTURE_FIRE_PILLAR.texture,
+        )
+        .setOrigin(
+          0.5,
+          STAGE_FOUR_MAGMA_RUPTURE_FIRE_PILLAR.groundAnchorY,
+        )
+        .setScale(pillarScale, pillarScale * 0.72)
+        .setDepth(EFFECT_DEPTH + 1);
+      this.scene.tweens.add({
+        targets: eruptionEffect,
+        scaleY: pillarScale,
+        duration: 90,
+        ease: 'Quad.easeOut',
+      });
       eruption = this.scene.add
         .rectangle(
           x,
@@ -459,8 +480,8 @@ export class InfernalBossEnemy extends BossEnemy<InfernalBossPatternConfig> {
           this.pattern.magmaColor,
           0.82,
         )
-        .setStrokeStyle(3, 0xffd18a, 0.8)
-        .setDepth(EFFECT_DEPTH);
+        .setDepth(EFFECT_DEPTH)
+        .setVisible(false);
       this.scene.physics.add.existing(eruption);
       const body = eruption.body as Phaser.Physics.Arcade.Body;
       body.setAllowGravity(false);
@@ -488,18 +509,17 @@ export class InfernalBossEnemy extends BossEnemy<InfernalBossPatternConfig> {
 
   private createRuptureMarker(x: number) {
     const rupture = this.pattern.rupture;
-    const marker = this.scene.add.graphics().setDepth(EFFECT_DEPTH);
-    const left = x - rupture.width / 2;
-    const top = FLOOR_SURFACE_Y - 16;
-
-    marker
-      .fillStyle(this.pattern.telegraphColor, 0.3)
-      .fillRect(left, top, rupture.width, 16)
-      .lineStyle(3, this.pattern.magmaColor, 0.9)
-      .lineBetween(x - 38, FLOOR_SURFACE_Y, x - 12, top)
-      .lineBetween(x - 12, top, x + 8, FLOOR_SURFACE_Y - 4)
-      .lineBetween(x + 8, FLOOR_SURFACE_Y - 4, x + 36, top);
-    return marker;
+    const warningScale =
+      (rupture.width * 1.5) / STAGE_FOUR_MAGMA_RUPTURE_WARNING.width;
+    return this.scene.add
+      .image(
+        x,
+        FLOOR_SURFACE_Y + 2,
+        STAGE_FOUR_MAGMA_RUPTURE_WARNING.texture,
+      )
+      .setOrigin(0.5, STAGE_FOUR_MAGMA_RUPTURE_WARNING.groundAnchorY)
+      .setScale(warningScale)
+      .setDepth(EFFECT_DEPTH);
   }
 
   private beginChargeWarn(
@@ -507,7 +527,6 @@ export class InfernalBossEnemy extends BossEnemy<InfernalBossPatternConfig> {
     target: Phaser.Physics.Arcade.Sprite,
   ) {
     this.attackState = 'charge-warn';
-    this.stateStartedAt = time;
     this.stateEndsAt = time + this.pattern.charge.warnDuration;
     this.chargeDirection = Math.sign(target.x - this.x) || 1;
     this.setVelocityX(0);
@@ -524,7 +543,6 @@ export class InfernalBossEnemy extends BossEnemy<InfernalBossPatternConfig> {
     this.chargeDirection =
       Math.sign(target.x - this.x) || this.chargeDirection;
     this.faceToward(this.chargeDirection > 0);
-    this.drawChargeWarning(time);
 
     if (time >= this.stateEndsAt) {
       this.beginCharge(time);
@@ -533,10 +551,8 @@ export class InfernalBossEnemy extends BossEnemy<InfernalBossPatternConfig> {
 
   private beginCharge(time: number) {
     this.attackState = 'charging';
-    this.stateStartedAt = time;
     this.stateEndsAt = time + this.pattern.charge.duration;
     this.chargeHit = false;
-    this.telegraph.clear();
     this.phaseOverlay.clear();
     this.playSpriteAnimation(this.sprite?.animations.rush ?? '');
     this.setChargeHitbox(true);
@@ -567,7 +583,6 @@ export class InfernalBossEnemy extends BossEnemy<InfernalBossPatternConfig> {
 
   private beginChargeStagger(time: number) {
     this.attackState = 'charge-stagger';
-    this.stateStartedAt = time;
     this.stateEndsAt = time + this.pattern.charge.staggerDuration;
     this.setVelocityX(0);
     this.setChargeHitbox(false);
@@ -578,7 +593,6 @@ export class InfernalBossEnemy extends BossEnemy<InfernalBossPatternConfig> {
 
   private updateChargeStagger(time: number) {
     this.setVelocityX(0);
-    this.drawExposedCore(time);
 
     if (time >= this.stateEndsAt) {
       this.beginRecover(time);
@@ -591,12 +605,10 @@ export class InfernalBossEnemy extends BossEnemy<InfernalBossPatternConfig> {
   ) {
     const shards = this.pattern.shards;
     this.attackState = 'shards';
-    this.stateStartedAt = time;
     this.stateEndsAt =
       time + shards.warnDuration + shards.followUpDelay;
     this.setVelocityX(0);
     this.setChargeHitbox(false);
-    this.telegraph.clear();
     this.faceToward(target.x > this.x);
     this.playSpriteAnimation(this.sprite?.animations.getDown ?? '');
 
@@ -633,18 +645,18 @@ export class InfernalBossEnemy extends BossEnemy<InfernalBossPatternConfig> {
         0.42,
       )
       .setDepth(EFFECT_DEPTH);
-    let shard: Phaser.GameObjects.Triangle | undefined = this.scene.add
-      .triangle(x, 70, -14, -20, 14, -20, 0, 22, this.pattern.magmaColor, 0.95)
-      .setStrokeStyle(2, 0xffd18a, 0.8)
+    let shard: Phaser.GameObjects.Sprite | undefined = this.scene.add
+      .sprite(x, 70, STAGE_FOUR_MAGMA_SHARD.texture)
       .setDepth(EFFECT_DEPTH);
     this.scene.tweens.add({
       targets: shard,
-      y: FLOOR_SURFACE_Y - 26,
+      y: FLOOR_SURFACE_Y - STAGE_FOUR_MAGMA_SHARD.height / 2,
       duration: shards.warnDuration,
       ease: 'Quad.easeIn',
     });
 
     let zone: Phaser.GameObjects.Rectangle | undefined;
+    let impact: Phaser.GameObjects.Image | undefined;
     let overlap: Phaser.Physics.Arcade.Collider | undefined;
     let zoneTimer: Phaser.Time.TimerEvent | undefined;
     let warningTimer: Phaser.Time.TimerEvent;
@@ -662,11 +674,16 @@ export class InfernalBossEnemy extends BossEnemy<InfernalBossPatternConfig> {
       if (shard) {
         this.scene.tweens.killTweensOf(shard);
       }
+      if (impact) {
+        this.scene.tweens.killTweensOf(impact);
+      }
       warning?.destroy();
       shard?.destroy();
+      impact?.destroy();
       zone?.destroy();
       warning = undefined;
       shard = undefined;
+      impact = undefined;
       zone = undefined;
       this.effectCleanups.delete(cleanup);
     };
@@ -676,6 +693,31 @@ export class InfernalBossEnemy extends BossEnemy<InfernalBossPatternConfig> {
       shard?.destroy();
       warning = undefined;
       shard = undefined;
+
+      const impactScale = shards.zoneWidth / STAGE_FOUR_MAGMA_SHARD_IMPACT.width;
+      impact = this.scene.add
+        .image(x, FLOOR_SURFACE_Y + 4, STAGE_FOUR_MAGMA_SHARD_IMPACT.texture)
+        .setOrigin(0.5, STAGE_FOUR_MAGMA_SHARD_IMPACT.groundAnchorY)
+        .setScale(impactScale)
+        .setDepth(EFFECT_DEPTH + 1);
+      this.scene.tweens.add({
+        targets: impact,
+        scaleX: impactScale * 1.08,
+        scaleY: impactScale * 0.86,
+        duration: 220,
+        ease: 'Quad.easeOut',
+      });
+      this.scene.tweens.add({
+        targets: impact,
+        alpha: 0,
+        delay: 150,
+        duration: 700,
+        ease: 'Sine.easeIn',
+        onComplete: () => {
+          impact?.destroy();
+          impact = undefined;
+        },
+      });
 
       if (
         this.playerTarget &&
@@ -693,8 +735,8 @@ export class InfernalBossEnemy extends BossEnemy<InfernalBossPatternConfig> {
           this.pattern.magmaColor,
           0.72,
         )
-        .setStrokeStyle(2, 0xffd18a, 0.7)
-        .setDepth(EFFECT_DEPTH);
+        .setDepth(EFFECT_DEPTH)
+        .setVisible(false);
       this.scene.physics.add.existing(zone);
       const body = zone.body as Phaser.Physics.Arcade.Body;
       body.setAllowGravity(false);
@@ -722,14 +764,12 @@ export class InfernalBossEnemy extends BossEnemy<InfernalBossPatternConfig> {
 
   private beginRecover(time: number) {
     this.attackState = 'recover';
-    this.stateStartedAt = time;
     this.stateEndsAt =
       time +
       (this.phaseTwo
         ? this.pattern.enragedRecoveryDuration
         : this.pattern.recoveryDuration);
     this.setVelocityX(0);
-    this.telegraph.clear();
     this.playSpriteAnimation(this.sprite?.animations.idle ?? '');
   }
 
@@ -759,44 +799,6 @@ export class InfernalBossEnemy extends BossEnemy<InfernalBossPatternConfig> {
         centerX + 270,
         centerY + 150,
       );
-  }
-
-  private drawChargeWarning(time: number) {
-    const boundary =
-      this.chargeDirection < 0 ? this.arena.left : this.arena.right;
-    const pulse = 0.35 + this.stateProgress(time) * 0.55;
-    const markerSize = 12 + Math.sin(time * 0.03) * 4;
-    this.telegraph
-      .clear()
-      .lineStyle(5, this.pattern.telegraphColor, pulse)
-      .lineBetween(this.x, FLOOR_SURFACE_Y - 28, boundary, FLOOR_SURFACE_Y - 28)
-      .fillStyle(this.pattern.magmaColor, pulse)
-      .fillRect(
-        this.x - this.chargeDirection * 68 - markerSize / 2,
-        FLOOR_SURFACE_Y - 14 - markerSize / 2,
-        markerSize,
-        markerSize,
-      );
-  }
-
-  private drawExposedCore(time: number) {
-    const pulse = 0.7 + Math.sin(time * 0.035) * 0.25;
-    const radius = 40 + pulse * 8;
-    this.telegraph
-      .clear()
-      .lineStyle(4, 0xffd18a, pulse)
-      .lineBetween(this.x, this.y - 10 - radius, this.x + radius, this.y - 10)
-      .lineBetween(this.x + radius, this.y - 10, this.x, this.y - 10 + radius)
-      .lineBetween(this.x, this.y - 10 + radius, this.x - radius, this.y - 10)
-      .lineBetween(this.x - radius, this.y - 10, this.x, this.y - 10 - radius);
-  }
-
-  private stateProgress(time: number) {
-    return Phaser.Math.Clamp(
-      (time - this.stateStartedAt) / (this.stateEndsAt - this.stateStartedAt),
-      0,
-      1,
-    );
   }
 
   private get chargeSpeed() {

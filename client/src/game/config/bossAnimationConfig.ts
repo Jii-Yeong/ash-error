@@ -184,6 +184,10 @@ export const STAGE_TWO_BOSS_LOOPING_TAGS = new Set<StageTwoBossTag>([
 export const STAGE_THREE_BOSS_ATLAS_KEY = 'stage-3-boss';
 export const STAGE_THREE_BOSS_ATLAS_PNG = '/assets/bosses/stage-3-boss.png';
 export const STAGE_THREE_BOSS_ATLAS_JSON = '/assets/bosses/stage-3-boss.json';
+export const STAGE_THREE_BOSS_SHOCKWAVE = {
+  texture: 'stage-3-boss-shockwave',
+  png: '/assets/bosses/stage-3-shockwave.png',
+} as const;
 
 export const STAGE_THREE_BOSS_ANIMATIONS = {
   idle: 'stage-3-boss-idle',
@@ -231,6 +235,29 @@ export const STAGE_THREE_BOSS_LOOPING_TAGS = new Set<StageThreeBossTag>([
 export const STAGE_FOUR_BOSS_ATLAS_KEY = 'stage-4-boss';
 export const STAGE_FOUR_BOSS_ATLAS_PNG = '/assets/bosses/stage-4-boss.png';
 export const STAGE_FOUR_BOSS_ATLAS_JSON = '/assets/bosses/stage-4-boss.json';
+export const STAGE_FOUR_MAGMA_SHARD = {
+  texture: 'stage-4-magma-shard',
+  png: '/assets/bosses/stage-4-magma-shard.png',
+  height: 182,
+} as const;
+export const STAGE_FOUR_MAGMA_SHARD_IMPACT = {
+  texture: 'stage-4-magma-shard-impact',
+  png: '/assets/bosses/stage-4-magma-shard-impact.png',
+  width: 220,
+  groundAnchorY: 155 / 220,
+} as const;
+export const STAGE_FOUR_MAGMA_RUPTURE_WARNING = {
+  texture: 'stage-4-magma-rupture-warning',
+  png: '/assets/bosses/stage-4-magma-rupture-warning.png',
+  width: 240,
+  groundAnchorY: 109 / 131,
+} as const;
+export const STAGE_FOUR_MAGMA_RUPTURE_FIRE_PILLAR = {
+  texture: 'stage-4-magma-rupture-fire-pillar',
+  png: '/assets/bosses/stage-4-magma-rupture-fire-pillar.png',
+  height: 226,
+  groundAnchorY: 225 / 226,
+} as const;
 
 export const STAGE_FOUR_BOSS_ANIMATIONS = {
   idle: 'stage-4-boss-idle',
