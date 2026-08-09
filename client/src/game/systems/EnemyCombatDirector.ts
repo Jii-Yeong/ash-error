@@ -206,7 +206,7 @@ export class EnemyCombatDirector {
       this.clearProjectilesFrom(enemy);
     }
     enemy.defeat();
-    if (enemy.deathAnimationDuration > 0) {
+    if (enemy instanceof BossEnemy && enemy.deathAnimationDuration > 0) {
       this.options.scene.time.delayedCall(enemy.deathAnimationDuration, () =>
         this.options.notifyEnemyDefeated(enemy),
       );

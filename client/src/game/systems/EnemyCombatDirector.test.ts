@@ -63,8 +63,9 @@ describe('EnemyCombatDirector', () => {
     expect(enemy.defeat).toHaveBeenCalledOnce();
   });
 
-  it('clears projectiles when an aerial enemy owns its death animation', () => {
+  it('clears an animated minor enemy from the room immediately', () => {
     const clearFrom = vi.fn();
+    const delayedCall = vi.fn();
     const notifyEnemyDefeated = vi.fn();
     const enemy = Object.assign(Object.create(FlyingEnemy.prototype), {
       x: 320,
@@ -73,10 +74,11 @@ describe('EnemyCombatDirector', () => {
       defeat: vi.fn(),
     }) as Enemy;
     Object.defineProperty(enemy, 'playsOwnDeathAnimation', { value: true });
+    Object.defineProperty(enemy, 'deathAnimationDuration', { value: 2200 });
     const director = Object.assign(
       Object.create(EnemyCombatDirector.prototype),
       {
-        options: { notifyEnemyDefeated },
+        options: { scene: { time: { delayedCall } }, notifyEnemyDefeated },
         projectilePools: {
           flying: { clearFrom },
           ranged: { clearFrom: vi.fn() },
@@ -89,6 +91,7 @@ describe('EnemyCombatDirector', () => {
     ).defeatEnemy(enemy);
 
     expect(clearFrom).toHaveBeenCalledWith(enemy);
+    expect(delayedCall).not.toHaveBeenCalled();
     expect(notifyEnemyDefeated).toHaveBeenCalledWith(enemy);
   });
 
