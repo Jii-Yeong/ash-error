@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { GAME_HEIGHT } from '@/game/config/gameDimensions';
+import { gameEvents } from '@/game/events/gameEvents';
 import { UNDERGROUND_LANDING_ROOM } from '@/game/config/rooms/stageThreeRooms';
 import type { StageEndEvent } from '@/game/config/stageConfig';
 import {
@@ -46,7 +47,7 @@ const SIEGE_REVEAL_INTERVAL = 200;
 /** 5스테이지 종료에서 재현한 포위 대형을 유지하는 시간. */
 const ASCENSION_FORMATION_HOLD_MS = 2200;
 /** 5스테이지 보스 처치 화면이 완전히 하얘지는 시간. */
-const ASCENSION_WHITEOUT_MS = 2200;
+const ASCENSION_WHITEOUT_MS = 5800;
 /** 완전히 하얀 화면으로 엔딩 방 교체를 가리는 시간. */
 const ASCENSION_WHITE_HOLD_MS = 700;
 /** 포위 잡몹이 플레이어 반대편으로 떠나는 시간. */
@@ -166,6 +167,13 @@ export class StageEndEventDirector {
           ASCENSION_WHITE_HOLD_MS + ASCENSION_FORMATION_HOLD_MS,
           () => {
             let remainingDepartures = enemies.length;
+            gameEvents.emit('ending-ascension-cue', 'siege-footstep');
+            this.scene.time.addEvent({
+              delay: 240,
+              repeat: 3,
+              callback: () =>
+                gameEvents.emit('ending-ascension-cue', 'siege-footstep'),
+            });
             enemies.forEach((view) => {
               const { flippedFacesRight, moveAnimation, sprite } = view;
               this.playSiegeAnimation(view, moveAnimation);

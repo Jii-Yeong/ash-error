@@ -58,6 +58,10 @@ const DEATH_FADE_MS = 600;
 export class ArchitectBossEnemy extends BossEnemy<ArchitectBossPatternConfig> {
   override readonly usesHitFlash = true;
 
+  override get deathAnimationDuration() {
+    return DEATH_POSE_HOLD_MS + DEATH_FADE_MS;
+  }
+
   private readonly projectiles: BossProjectileField;
   private readonly view: ArchitectBossView;
   private readonly effectCleanups = new CleanupRegistry();
@@ -308,6 +312,7 @@ export class ArchitectBossEnemy extends BossEnemy<ArchitectBossPatternConfig> {
 
   protected override onDefeated() {
     super.onDefeated();
+    gameEvents.emit('ending-ascension-cue', 'silence');
     this.projectiles.clear();
     this.effectCleanups.clear();
     this.projectiles.setMarkerVisible(false);

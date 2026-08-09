@@ -645,8 +645,8 @@ export class GameScene extends Phaser.Scene {
 
     this.weaponSystem.hide();
     this.enemyCombatDirector.destroyEnemies();
-    // 흰 화면 뒤에서 3스테이지 방으로 교체되는 순간 음악도 함께 되돌림.
-    gameEvents.emit('stage-changed', STAGE_THREE_CONFIG.id);
+    // 흰 화면 뒤에서 엔딩 방으로 교체되는 순간 현재 음악을 완전히 끔.
+    gameEvents.emit('ending-ascension-cue', 'silence');
     // 어드민으로 5스테이지 보스에 직행하면 3스테이지 지형은 아직 캐시에 없다.
     // 도착 뒤 다시 그려 콜드 로드에서도 바닥 스킨이 placeholder로 굳지 않게 한다.
     //
@@ -803,12 +803,17 @@ export class GameScene extends Phaser.Scene {
       isOverPit: (x) => this.floorBuilder.isOverPit(x),
       notifyEnemyDefeated: (enemy) =>
         this.roomDirector.notifyEnemyDefeated(enemy),
-      dropBossReward: (enemy) =>
+      dropBossReward: (enemy) => {
+        // 마지막 보스 뒤에는 전투가 없으므로 엔딩 장면에 총기를 남기지 않음.
+        if (this.stage.endEvent === 'ascension') {
+          return;
+        }
         this.weaponDropDirector.dropBossReward(
           enemy.x,
           enemy.y,
           this.weaponSystem.ownedWeaponIds,
-        ),
+        );
+      },
       clearEnemyRanges: () => this.combatUi?.clearEnemyRanges(),
       drawEnemyRange: (enemy, targetInRange) => {
         if (useGameSettingsStore.getState().showEnemyRanges) {
@@ -1000,7 +1005,7 @@ export class GameScene extends Phaser.Scene {
         this.beginShatterExit();
       }
 
-      // 5스테이지: 보스 처치 3초 뒤 포탈 없이 종료 연출을 시작한다.
+      // 5스테이지: 보스 사망 연출이 끝나면 포탈 없이 종료 연출을 시작한다.
       if (
         this.stage.endEvent === 'ascension' &&
         !this.stageTransitionDirector.hasRoomOverride &&

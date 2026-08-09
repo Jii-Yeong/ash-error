@@ -109,6 +109,7 @@ export class AudioDirector {
     gameEvents.on('boss-purifier-cue', this.handlePurifierCue);
     gameEvents.on('boss-infernal-cue', this.handleInfernalCue);
     gameEvents.on('boss-architect-cue', this.handleArchitectCue);
+    gameEvents.on('ending-ascension-cue', this.handleEndingAscensionCue);
     gameEvents.on('pause-changed', this.handlePauseChanged);
   }
 
@@ -132,6 +133,7 @@ export class AudioDirector {
     gameEvents.off('boss-purifier-cue', this.handlePurifierCue);
     gameEvents.off('boss-infernal-cue', this.handleInfernalCue);
     gameEvents.off('boss-architect-cue', this.handleArchitectCue);
+    gameEvents.off('ending-ascension-cue', this.handleEndingAscensionCue);
     gameEvents.off('pause-changed', this.handlePauseChanged);
     this.game.sound.off(Phaser.Sound.Events.DECODED, this.handleDecoded);
     this.stopAllSustained();
@@ -403,6 +405,31 @@ export class AudioDirector {
     this.playSfx(STAGE_FIVE_BOSS_SFX_BY_CUE[cue]);
   };
 
+  /** 엔딩 포위 장면은 음악 없이 3스테이지 발소리만 재사용함. */
+  private readonly handleEndingAscensionCue = (
+    cue: 'transition-start' | 'silence' | 'siege-footstep',
+  ) => {
+    if (cue === 'transition-start') {
+      this.stopAllSustained();
+      this.stopMusic();
+      this.playSfx('sfx-stage5-ending-transition');
+      return;
+    }
+
+    if (cue === 'silence') {
+      this.stopAllSustained();
+      this.stopMusic();
+      this.requestStageSfx('stage-03');
+      return;
+    }
+
+    this.playSfx(
+      this.pickRandom(FOOTSTEP_SFX_BY_STAGE['stage-03']),
+      'ending-siege-footstep',
+      0.65,
+    );
+  };
+
   /** 시작음을 끝까지 재생한 뒤 반복음을 잇는다. */
   private startSustained(id: SustainedSfxId) {
     this.stopSustained(id);
@@ -480,15 +507,19 @@ export class AudioDirector {
    * 레이어가 또 레이어를 갖지는 못한다 — 한 겹으로 묶어 두면 설정이 자기를
    * 가리켜도 무한 재귀가 되지 않는다.
    */
-  private playSfx(key: SfxKey, intervalKey: string = key) {
-    if (!this.emitSfx(key, intervalKey)) {
+  private playSfx(
+    key: SfxKey,
+    intervalKey: string = key,
+    volumeMultiplier = 1,
+  ) {
+    if (!this.emitSfx(key, intervalKey, volumeMultiplier)) {
       return;
     }
 
     const layer = SFX_CONFIG[key].layer;
 
     if (layer && this.hearsLayer(layer)) {
-      this.emitSfx(layer.key);
+      this.emitSfx(layer.key, layer.key, volumeMultiplier);
     }
   }
 
@@ -498,7 +529,11 @@ export class AudioDirector {
   }
 
   /** 큐가 사운드 매니저까지 도달했는지 돌려준다. */
-  private emitSfx(key: SfxKey, intervalKey: string = key) {
+  private emitSfx(
+    key: SfxKey,
+    intervalKey: string = key,
+    volumeMultiplier = 1,
+  ) {
     const config = SFX_CONFIG[key];
     const now = Date.now();
     const playedAt = this.playedAt.get(intervalKey);
@@ -523,7 +558,8 @@ export class AudioDirector {
         config.volume *
         this.jitteredVolume(config.volumeJitter) *
         this.mix.sfx *
-        this.mix.master,
+        this.mix.master *
+        volumeMultiplier,
       rate: (config.rate ?? 1) * this.jitteredRate(config.rateJitter),
     });
 

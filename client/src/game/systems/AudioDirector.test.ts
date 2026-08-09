@@ -565,6 +565,37 @@ describe('AudioDirector', () => {
     expect(added[0].config.loop).toBe(true);
   });
 
+  it('switches the ascension ending from music to its transition cues', () => {
+    const { game, added, played } = createFakeGame({
+      loaded: [
+        'bgm-return',
+        'sfx-stage5-ending-transition',
+        ...FOOTSTEP_SFX_BY_STAGE['stage-03'],
+      ],
+    });
+    director = new AudioDirector(game);
+    vi.spyOn(Math, 'random').mockReturnValue(0.99);
+
+    gameEvents.emit('stage-changed', 'stage-05');
+    gameEvents.emit('ending-ascension-cue', 'silence');
+    expect(added[0]).toMatchObject({ key: 'bgm-return', stopped: true });
+    expect(played).toEqual([]);
+
+    gameEvents.emit('ending-ascension-cue', 'transition-start');
+    gameEvents.emit('ending-ascension-cue', 'siege-footstep');
+
+    expect(played.map(({ key }) => key)).toEqual([
+      'sfx-stage5-ending-transition',
+      'sfx-stage3-footstep-04',
+    ]);
+    expect(played[0].config.volume).toBe(
+      0.3 * AUDIO_MIX_CONFIG.sfx * AUDIO_MIX_CONFIG.master,
+    );
+    expect(played[1].config.volume).toBeCloseTo(
+      0.901 * 0.65 * AUDIO_MIX_CONFIG.sfx * AUDIO_MIX_CONFIG.master,
+    );
+  });
+
   it('starts a stage track that was still downloading when the stage began', () => {
     const { game, added, finishDecoding } = createFakeGame();
     director = new AudioDirector(game);

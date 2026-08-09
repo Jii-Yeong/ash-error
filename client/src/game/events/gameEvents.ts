@@ -64,6 +64,9 @@ type GameEventMap = {
   'boss-purifier-cue': [cue: StageThreeBossCue];
   'boss-infernal-cue': [cue: StageFourBossCue];
   'boss-architect-cue': [cue: StageFiveBossCue];
+  'ending-ascension-cue': [
+    cue: 'transition-start' | 'silence' | 'siege-footstep',
+  ];
   'weapon-changed': [id: string, label: string];
   'weapon-inventory-changed': [
     slots: readonly (string | null)[],

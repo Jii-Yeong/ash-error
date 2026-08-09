@@ -13,6 +13,24 @@ vi.hoisted(() => {
 });
 
 describe('StageTransitionDirector', () => {
+  it('starts the ascension transition after final boss cleanup', () => {
+    const prepare = vi.fn();
+    const playAscension = vi.fn();
+    const director = Object.assign(
+      Object.create(StageTransitionDirector.prototype),
+      {
+        ascensionStarted: false,
+        options: { prepare, eventDirector: { playAscension } },
+      },
+    ) as StageTransitionDirector;
+
+    director.beginAscension();
+    director.beginAscension();
+
+    expect(prepare).toHaveBeenCalledOnce();
+    expect(playAscension).toHaveBeenCalledOnce();
+  });
+
   it('clears the room override and cutscene guards on reset', () => {
     const destroyPrompt = vi.fn();
     const director = Object.assign(

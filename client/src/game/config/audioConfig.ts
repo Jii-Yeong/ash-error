@@ -67,6 +67,7 @@ export type SfxKey =
   | 'sfx-stage5-boss-phase-shift'
   | 'sfx-stage5-boss-salvation'
   | 'sfx-stage5-boss-core-exposed'
+  | 'sfx-stage5-ending-transition'
   | 'sfx-stage1-footstep-01'
   | 'sfx-stage1-footstep-02'
   | 'sfx-stage1-footstep-03'
@@ -294,6 +295,7 @@ export const SFX_CONFIG: Record<SfxKey, SfxConfig> = {
   // louder, and it plays exactly once per run.
   'sfx-stage5-boss-salvation': { volume: 0.95 },
   'sfx-stage5-boss-core-exposed': { volume: 0.7 },
+  'sfx-stage5-ending-transition': { volume: 0.3 },
   'sfx-stage1-footstep-01': FOOTSTEP_SFX_CONFIG,
   'sfx-stage1-footstep-02': FOOTSTEP_SFX_CONFIG,
   'sfx-stage1-footstep-03': FOOTSTEP_SFX_CONFIG,
@@ -493,7 +495,10 @@ export const DEFERRED_SFX_BY_STAGE: Readonly<
     ...FOOTSTEP_SFX_BY_STAGE['stage-04'],
   ],
   // 5스테이지는 비행 구간이라 발소리가 없다.
-  'stage-05': Object.values(STAGE_FIVE_BOSS_SFX_BY_CUE),
+  'stage-05': [
+    ...Object.values(STAGE_FIVE_BOSS_SFX_BY_CUE),
+    'sfx-stage5-ending-transition',
+  ],
 };
 
 /** BootScene이 즉시 로드 대상에서 걸러내는 집합. */
