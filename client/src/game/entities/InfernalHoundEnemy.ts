@@ -6,16 +6,9 @@ import {
 } from '@/game/entities/Enemy';
 import { HallucinatedAndroidEnemy } from '@/game/entities/HallucinatedAndroidEnemy';
 import type { EnemyAttackCoordinator } from '@/game/systems/EnemyAttackCoordinator';
-import { FLOOR_SURFACE_Y } from '@/game/systems/FloorBuilder';
 
 type HoundState = 'ready' | 'warning' | 'charging' | 'stunned';
 const POSE = INFERNAL_HOUND_CONFIG.animations;
-
-type MagmaTrail = {
-  marker: Phaser.GameObjects.Rectangle;
-  expiresAt: number;
-  nextDamageAt: number;
-};
 
 export class InfernalHoundEnemy extends HallucinatedAndroidEnemy {
   readonly aggroRadius = INFERNAL_HOUND_CONFIG.aggroRadius;
@@ -26,9 +19,6 @@ export class InfernalHoundEnemy extends HallucinatedAndroidEnemy {
   private nextAttackAt = 0;
   private chargeDirection = 1;
   private chargeDamageReady = false;
-  private nextTrailAt = 0;
-  private readonly warningLine: Phaser.GameObjects.Graphics;
-  private readonly trails: MagmaTrail[] = [];
   private dying = false;
 
   constructor(
@@ -36,7 +26,7 @@ export class InfernalHoundEnemy extends HallucinatedAndroidEnemy {
     x: number,
     y: number,
     attackCoordinator: EnemyAttackCoordinator,
-    private readonly damagePlayer: (damage: number) => void,
+    _damagePlayer: (damage: number) => void,
   ) {
     super(
       scene,
@@ -58,7 +48,6 @@ export class InfernalHoundEnemy extends HallucinatedAndroidEnemy {
         INFERNAL_HOUND_CONFIG.bodyOffsetY,
       );
     this.setDepth(ENEMY_DEPTH);
-    this.warningLine = scene.add.graphics().setDepth(7);
   }
 
   override get playsOwnDeathAnimation() {
@@ -67,11 +56,11 @@ export class InfernalHoundEnemy extends HallucinatedAndroidEnemy {
 
   override refreshAtlasSprite() {
     this.setScale(INFERNAL_HOUND_CONFIG.scale);
-    this.playPose(
-      this.houndState === 'warning' || this.houndState === 'charging'
-        ? POSE.attack
-        : POSE.idle,
-    );
+    if (this.houndState === 'warning') {
+      this.showAttackWarningFrame();
+      return;
+    }
+    this.playPose(this.houndState === 'charging' ? POSE.attack : POSE.idle);
   }
 
   override defeat() {
@@ -101,7 +90,6 @@ export class InfernalHoundEnemy extends HallucinatedAndroidEnemy {
       return false;
     }
 
-    this.updateMagmaTrails(time, target);
     const targetInRange =
       Phaser.Math.Distance.Between(this.x, this.y, target.x, target.y) <=
       this.aggroRadius;
@@ -124,10 +112,6 @@ export class InfernalHoundEnemy extends HallucinatedAndroidEnemy {
         this.setVelocityX(
           this.chargeDirection * INFERNAL_HOUND_CONFIG.chargeSpeed,
         );
-        if (time >= this.nextTrailAt) {
-          this.leaveMagmaTrail(time);
-          this.nextTrailAt = time + INFERNAL_HOUND_CONFIG.trailInterval;
-        }
       }
       return true;
     }
@@ -169,48 +153,19 @@ export class InfernalHoundEnemy extends HallucinatedAndroidEnemy {
     return INFERNAL_HOUND_CONFIG.chargeDamage;
   }
 
-  protected override onDefeated() {
-    super.onDefeated();
-    this.clearAttackObjects();
-  }
-
-  override destroy(fromScene?: boolean) {
-    this.clearAttackObjects();
-    super.destroy(fromScene);
-  }
-
   private beginWarning(time: number, targetX: number) {
     this.houndState = 'warning';
     this.chargeDirection = Math.sign(targetX - this.x) || 1;
     this.setFlipX(this.chargeDirection > 0);
-    this.playPose(POSE.attack);
+    this.showAttackWarningFrame();
     this.stateEndsAt = time + INFERNAL_HOUND_CONFIG.warningDuration;
-    const worldBounds = this.scene.physics.world.bounds;
-    const endX =
-      this.chargeDirection < 0 ? worldBounds.left : worldBounds.right;
-    this.warningLine.clear();
-    this.warningLine.lineStyle(4, 0xff2e24, 0.78);
-    this.warningLine.lineBetween(
-      this.x,
-      FLOOR_SURFACE_Y - 7,
-      endX,
-      FLOOR_SURFACE_Y - 7,
-    );
-    this.warningLine.lineStyle(1, 0xffb08b, 0.95);
-    this.warningLine.lineBetween(
-      this.x,
-      FLOOR_SURFACE_Y - 10,
-      endX,
-      FLOOR_SURFACE_Y - 10,
-    );
   }
 
   private beginCharge(time: number) {
     this.houndState = 'charging';
     this.stateEndsAt = time + INFERNAL_HOUND_CONFIG.maxChargeDuration;
     this.chargeDamageReady = true;
-    this.nextTrailAt = time;
-    this.warningLine.clear();
+    this.playPose(POSE.attack);
   }
 
   private beginStun(time: number) {
@@ -226,52 +181,17 @@ export class InfernalHoundEnemy extends HallucinatedAndroidEnemy {
     });
   }
 
-  private leaveMagmaTrail(time: number) {
-    const marker = this.scene.add
-      .rectangle(this.x, FLOOR_SURFACE_Y - 5, 54, 10, 0xff3f1f, 0.42)
-      .setStrokeStyle(1, 0xffa04e, 0.8)
-      .setDepth(5);
-    this.trails.push({
-      marker,
-      expiresAt: time + INFERNAL_HOUND_CONFIG.trailLifetime,
-      nextDamageAt: time,
-    });
-  }
-
-  private updateMagmaTrails(
-    time: number,
-    target: Phaser.Physics.Arcade.Sprite,
-  ) {
-    const targetBody = target.body as Phaser.Physics.Arcade.Body;
-    for (let index = this.trails.length - 1; index >= 0; index -= 1) {
-      const trail = this.trails[index];
-      if (time >= trail.expiresAt) {
-        trail.marker.destroy();
-        this.trails.splice(index, 1);
-        continue;
-      }
-      trail.marker.setAlpha(
-        0.42 * ((trail.expiresAt - time) / INFERNAL_HOUND_CONFIG.trailLifetime),
-      );
-      const standingInTrail =
-        Math.abs(target.x - trail.marker.x) <= trail.marker.width / 2 &&
-        targetBody.bottom >= FLOOR_SURFACE_Y - 22;
-      if (standingInTrail && time >= trail.nextDamageAt) {
-        this.damagePlayer(INFERNAL_HOUND_CONFIG.trailDamage);
-        trail.nextDamageAt = time + INFERNAL_HOUND_CONFIG.trailDamageCooldown;
-      }
+  /** 돌진 예고 시간 동안 `attack`의 첫 프레임을 고정함. */
+  private showAttackWarningFrame() {
+    if (!this.scene.anims.exists(POSE.attack)) {
+      return;
     }
-  }
-
-  private clearAttackObjects() {
-    this.warningLine.clear();
-    if (this.warningLine.active) {
-      this.warningLine.destroy();
+    const firstFrame = this.scene.anims.get(POSE.attack)?.frames[0];
+    if (!firstFrame) {
+      return;
     }
-    for (const trail of this.trails) {
-      trail.marker.destroy();
-    }
-    this.trails.length = 0;
+    this.anims.stop();
+    this.setFrame(firstFrame.textureFrame);
   }
 
   private playPose(pose: string) {
