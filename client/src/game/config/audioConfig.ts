@@ -22,9 +22,20 @@ export type SfxKey =
   | 'sfx-player-dash'
   | 'sfx-player-death'
   | 'sfx-room-locked'
-  | 'sfx-room-cleared';
+  | 'sfx-room-cleared'
+  | 'sfx-monitor-beep';
 
 export type AudioAssetKey = MusicKey | SfxKey;
+
+/**
+ * 다른 큐 위에 겹쳐 울리는 큐. 레이어도 `SFX_CONFIG`에 자기 항목을 갖는다.
+ * 볼륨과 스로틀을 부모에 파묻지 않고 다른 큐와 같은 자리에서 고치기 위해서다.
+ */
+export type SfxLayerConfig = {
+  key: SfxKey;
+  /** 이 레이어가 울리는 스테이지 id. 없으면 모든 스테이지에서 울린다. */
+  stages?: readonly string[];
+};
 
 export type SfxConfig = {
   /** Trim relative to the sfx bus. Cues that repeat fastest sit lowest. */
@@ -33,7 +44,17 @@ export type SfxConfig = {
   rateJitter?: number;
   /** Drops repeats fired inside this window, e.g. shotgun pellets landing together. */
   minInterval?: number;
+  /** 이 큐와 함께 울리는 큐. `SfxLayerConfig` 참고. */
+  layer?: SfxLayerConfig;
 };
+
+/**
+ * 1~3스테이지는 아직 플레이어에게 도시 이야기를 들려주고 있는 구간이다.
+ * `stageConfig`에서 읽지 않고 문자열로 적어 둔 이유는, 그 모듈이 `MusicKey`
+ * 때문에 이미 이 파일을 참조하고 있어서 반대 방향으로 `STAGES`를 끌어오면
+ * 순환이 닫히기 때문이다.
+ */
+const MONITOR_MOTIF_STAGES = ['stage-01', 'stage-02', 'stage-03'] as const;
 
 export type MusicConfig = {
   volume: number;
@@ -60,8 +81,6 @@ export const MUSIC_CONFIG: Record<MusicKey, MusicConfig> = {
   'bgm-title': { volume: 0.7 },
   'bgm-city': { volume: 0.6 },
   'bgm-alley': { volume: 0.65 },
-  // Stages 3-5 have their own BGM slot; the files are not produced yet, so
-  // AudioDirector skips them silently until they land in assets/audio/music/.
   'bgm-underground': { volume: 0.6 },
   'bgm-inferno': { volume: 0.6 },
   'bgm-return': { volume: 0.6 },
@@ -76,13 +95,24 @@ export const SFX_CONFIG: Record<SfxKey, SfxConfig> = {
   'sfx-rail-rifle-fire': { volume: 0.7, rateJitter: 0.03 },
   'sfx-enemy-hit': { volume: 0.45, rateJitter: 0.12, minInterval: 45 },
   'sfx-enemy-down': { volume: 0.7, rateJitter: 0.05 },
-  'sfx-player-hit': { volume: 0.8 },
+  // 이 큐 아래 깔리는 모니터 비프가 기획서 복선의 사운드 쪽 절반이다.
+  // 주인공은 병상에 누워 있고, 피격 하나하나가 어딘가의 기계에 기록된다.
+  // 한 대 맞으면 한 번 뛴다.
+  'sfx-player-hit': {
+    volume: 0.8,
+    layer: { key: 'sfx-monitor-beep', stages: MONITOR_MOTIF_STAGES },
+  },
   'sfx-player-dash': { volume: 0.5, rateJitter: 0.06 },
   'sfx-player-death': { volume: 0.9 },
   // Both fire once per room, so they are trimmed below the combat cues: a
   // sound heard on every transition wears out faster than one heard mid-fight.
   'sfx-room-locked': { volume: 0.6 },
   'sfx-room-cleared': { volume: 0.45 },
+  // 복선은 들려야 성립하고, 타격음 아래에 있어야 복선으로 남는다. 이 파일은
+  // 지속음이라 트랜지언트와 견주면 RMS보다 훨씬 크게 들린다 — 여기서 유일하게
+  // 계측기가 아니라 귀로 정해야 하는 값이다. 지터는 주지 않는다. 음정이
+  // 흔들리는 모니터는 고장난 모니터다.
+  'sfx-monitor-beep': { volume: 0.12 },
 };
 
 /**

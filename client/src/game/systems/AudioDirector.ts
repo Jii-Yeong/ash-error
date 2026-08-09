@@ -10,6 +10,7 @@ import {
   type AudioMix,
   type MusicKey,
   type SfxKey,
+  type SfxLayerConfig,
 } from '@/game/config/audioConfig';
 import { STAGES } from '@/game/config/stageConfig';
 import { gameEvents } from '@/game/events/gameEvents';
@@ -53,6 +54,8 @@ export class AudioDirector {
   private wantedMusic?: MusicKey;
   /** Tracks already fetched, so a revisited stage does not download twice. */
   private readonly requested = new Set<MusicKey>();
+  /** 지금 진행 중인 스테이지. 일부 스테이지에서만 울리는 큐를 가르는 데 쓴다. */
+  private stageId?: string;
 
   constructor(private readonly game: Phaser.Game) {
     this.game.sound.on(Phaser.Sound.Events.DECODED, this.handleDecoded);
@@ -157,6 +160,9 @@ export class AudioDirector {
       return;
     }
 
+    // 타이틀로 돌아가면 진행 중이던 스테이지가 끝난 것이므로, 스테이지가
+    // 걸린 레이어가 다음 판까지 살아남으면 안 된다.
+    this.stageId = undefined;
     this.requestMusic('bgm-title');
     // The title is where the player reads and presses ENTER, which is the only
     // free moment stage one's track ever gets.
@@ -171,6 +177,7 @@ export class AudioDirector {
       return;
     }
 
+    this.stageId = stageId;
     this.requestMusic(STAGES[index].music);
     this.requestMusic(STAGES[index + 1]?.music);
     this.playMusic(STAGES[index].music);
@@ -231,7 +238,31 @@ export class AudioDirector {
     this.playSfx('sfx-enemy-down');
   };
 
+  /**
+   * 큐를 울리고, 실제로 울렸을 때만 그 큐가 달고 있는 레이어를 함께 울린다.
+   * 레이어도 같은 경로를 지나므로 자기 볼륨과 스로틀을 그대로 따르지만,
+   * 레이어가 또 레이어를 갖지는 못한다 — 한 겹으로 묶어 두면 설정이 자기를
+   * 가리켜도 무한 재귀가 되지 않는다.
+   */
   private playSfx(key: SfxKey) {
+    if (!this.emitSfx(key)) {
+      return;
+    }
+
+    const layer = SFX_CONFIG[key].layer;
+
+    if (layer && this.hearsLayer(layer)) {
+      this.emitSfx(layer.key);
+    }
+  }
+
+  /** 지금 스테이지가 이 레이어를 위해 적어 둔 스테이지인지. */
+  private hearsLayer(layer: SfxLayerConfig) {
+    return !layer.stages || layer.stages.includes(this.stageId ?? '');
+  }
+
+  /** 큐가 사운드 매니저까지 도달했는지 돌려준다. */
+  private emitSfx(key: SfxKey) {
     const config = SFX_CONFIG[key];
     const now = Date.now();
     const playedAt = this.playedAt.get(key);
@@ -241,13 +272,13 @@ export class AudioDirector {
       playedAt !== undefined &&
       now - playedAt < config.minInterval
     ) {
-      return;
+      return false;
     }
 
     // Cues are momentary, so anything triggered before the browser grants audio
     // is dropped rather than queued — a delayed gunshot reads as a bug.
     if (!this.isLoaded(key) || this.game.sound.locked) {
-      return;
+      return false;
     }
 
     this.playedAt.set(key, now);
@@ -255,6 +286,8 @@ export class AudioDirector {
       volume: config.volume * this.mix.sfx * this.mix.master,
       rate: this.jitteredRate(config.rateJitter),
     });
+
+    return true;
   }
 
   private playMusic(key: MusicKey) {

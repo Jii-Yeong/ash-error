@@ -324,6 +324,69 @@ describe('AudioDirector', () => {
     expect(new Set(urls).size).toBe(urls.length);
   });
 
+  it('lays the monitor beep under a hit taken in the stages that foreshadow it', () => {
+    const { game, played } = createFakeGame({
+      loaded: ['sfx-player-hit', 'sfx-monitor-beep'],
+    });
+    director = new AudioDirector(game);
+
+    gameEvents.emit('stage-changed', 'stage-01');
+    gameEvents.emit('player-damaged', 0, 0);
+
+    expect(played.map((entry) => entry.key)).toEqual([
+      'sfx-player-hit',
+      'sfx-monitor-beep',
+    ]);
+    // 복선은 타격음 아래에 있어야 복선으로 들린다.
+    expect(played[1].config.volume).toBeLessThan(played[0].config.volume!);
+  });
+
+  it('drops the monitor beep once the stages it belongs to are past', () => {
+    const { game, played } = createFakeGame({
+      loaded: ['sfx-player-hit', 'sfx-monitor-beep'],
+    });
+    director = new AudioDirector(game);
+
+    gameEvents.emit('stage-changed', 'stage-04');
+    gameEvents.emit('player-damaged', 0, 0);
+
+    expect(played.map((entry) => entry.key)).toEqual(['sfx-player-hit']);
+  });
+
+  it('keeps the monitor beep silent before any stage has begun', () => {
+    const { game, played } = createFakeGame({
+      loaded: ['sfx-player-hit', 'sfx-monitor-beep'],
+    });
+    director = new AudioDirector(game);
+
+    gameEvents.emit('player-damaged', 0, 0);
+
+    expect(played.map((entry) => entry.key)).toEqual(['sfx-player-hit']);
+  });
+
+  it('stops laying the beep after the title is returned to', () => {
+    const { game, played } = createFakeGame({
+      loaded: ['sfx-player-hit', 'sfx-monitor-beep', 'bgm-title'],
+    });
+    director = new AudioDirector(game);
+
+    gameEvents.emit('stage-changed', 'stage-01');
+    gameEvents.emit('scene-changed', 'title');
+    gameEvents.emit('player-damaged', 0, 0);
+
+    expect(played.map((entry) => entry.key)).toEqual(['sfx-player-hit']);
+  });
+
+  it('skips the layer while its file is missing but still plays the hit', () => {
+    const { game, played } = createFakeGame({ loaded: ['sfx-player-hit'] });
+    director = new AudioDirector(game);
+
+    gameEvents.emit('stage-changed', 'stage-01');
+    gameEvents.emit('player-damaged', 0, 0);
+
+    expect(played.map((entry) => entry.key)).toEqual(['sfx-player-hit']);
+  });
+
   it('stops responding to cues once destroyed', () => {
     const { game, played } = createFakeGame({ loaded: ['sfx-player-hit'] });
     director = new AudioDirector(game);
