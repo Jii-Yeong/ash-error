@@ -27,6 +27,8 @@ const ATTACK_POSE_HOLD_MS = 320;
 /** 죽음 포즈를 보여주는 시간과, 그 뒤 페이드아웃에 걸리는 시간. */
 const DEATH_POSE_HOLD_MS = 1600;
 const DEATH_FADE_MS = 600;
+/** 좌우 방향 전환 전에 같은 방향 요청을 유지할 시간. */
+const FACING_CHANGE_DELAY_MS = 500;
 /** 분리된 머리 이미지에서 목 관절의 원점. */
 const TRACKING_HEAD_ORIGIN_X = 80 / 86;
 const TRACKING_HEAD_ORIGIN_Y = 6 / 97;
@@ -36,6 +38,12 @@ const TRACKING_HEAD_OFFSET_Y = -2;
 /** 기본 좌향 머리의 목 관절에서 눈까지 향하는 각도. */
 const TRACKING_HEAD_FORWARD_ANGLE = Math.atan2(68, -62);
 const TRACKING_HEAD_MAX_ROTATION = Phaser.Math.DegToRad(55);
+/** 목 관절에서 입의 청록색 발광점까지의 원본 픽셀 거리. */
+const TRACKING_HEAD_MOUTH_OFFSET_X = 62;
+const TRACKING_HEAD_MOUTH_OFFSET_Y = 68;
+/** 보스 중심에서 등 포구 발광점까지의 좌향 원본 픽셀 거리. */
+const BACK_CANNON_MUZZLE_OFFSET_X = 20;
+const BACK_CANNON_MUZZLE_OFFSET_Y = -39;
 
 /**
  * Stage-2 boss (the searchlight hound). It sweeps a wide red detection fan
@@ -58,6 +66,8 @@ export class HoundBossEnemy extends BossEnemy<HoundBossPatternConfig> {
   private attackPoseUntil = 0;
   private dying = false;
   private scanAudioActive = false;
+  private pendingFacingRight?: boolean;
+  private facingChangeStartedAt = 0;
   private readonly trackingHead?: Phaser.GameObjects.Image;
 
   constructor(
@@ -119,10 +129,26 @@ export class HoundBossEnemy extends BossEnemy<HoundBossPatternConfig> {
     this.trackingHead?.setVisible(animation === this.sprite.animations.quest);
   }
 
-  /** 스프라이트가 대상을 바라보도록 flipX 설정(기본 좌향 아트 보정 포함). */
-  private faceToward(faceRight: boolean) {
+  /** 같은 방향 요청이 500ms 유지된 뒤 대상을 바라보도록 반전함. */
+  private faceToward(faceRight: boolean, time: number) {
+    if (faceRight === (this.facingSign() > 0)) {
+      this.pendingFacingRight = undefined;
+      return;
+    }
+
+    if (this.pendingFacingRight !== faceRight) {
+      this.pendingFacingRight = faceRight;
+      this.facingChangeStartedAt = time;
+      return;
+    }
+
+    if (time - this.facingChangeStartedAt < FACING_CHANGE_DELAY_MS) {
+      return;
+    }
+
     // 기본 우향 아트는 오른쪽을 볼 때 flip 없음. facesLeft면 반전.
     this.setFlipX(this.sprite?.facesLeft ? faceRight : !faceRight);
+    this.pendingFacingRight = undefined;
   }
 
   /** 감시 포즈의 분리된 머리를 플레이어 방향으로 회전함. */
@@ -152,6 +178,10 @@ export class HoundBossEnemy extends BossEnemy<HoundBossPatternConfig> {
 
     this.trackingHead
       .setPosition(headX, headY)
+      .setOrigin(
+        facingRight ? 1 - TRACKING_HEAD_ORIGIN_X : TRACKING_HEAD_ORIGIN_X,
+        TRACKING_HEAD_ORIGIN_Y,
+      )
       .setFlipX(facingRight)
       .setRotation(rotation)
       .setDepth(this.depth + 0.01)
@@ -196,6 +226,13 @@ export class HoundBossEnemy extends BossEnemy<HoundBossPatternConfig> {
       this.cone.hide();
       this.playSpriteAnimation(this.sprite?.animations.idle ?? '');
       return false;
+    }
+
+    if (
+      this.attackState !== 'recover' &&
+      (this.isTooCloseForScan(target) || !this.isFacingTarget(target))
+    ) {
+      this.beginRecover(time);
     }
 
     switch (this.attackState) {
@@ -268,7 +305,11 @@ export class HoundBossEnemy extends BossEnemy<HoundBossPatternConfig> {
     this.moveToPreferredDistance(time, target);
     this.updateLocomotionAnimation(time);
 
-    if (time >= this.stateEndsAt) {
+    if (
+      time >= this.stateEndsAt &&
+      !this.isTooCloseForScan(target) &&
+      this.isFacingTarget(target)
+    ) {
       this.attackState = 'scanning';
     }
   }
@@ -279,7 +320,7 @@ export class HoundBossEnemy extends BossEnemy<HoundBossPatternConfig> {
     this.beginScanAudio();
     this.moveToPreferredDistance(time, target);
     this.updateLocomotionAnimation(time);
-    this.aimConeAt(target);
+    this.aimConeAt(time, target);
     this.cone.draw(
       this.coneApex(),
       this.centerAngle,
@@ -301,8 +342,8 @@ export class HoundBossEnemy extends BossEnemy<HoundBossPatternConfig> {
     // Commit: stop moving and keep the fan trained on the player as it flares.
     this.setVelocityX(0);
     this.playSpriteAnimation(this.sprite?.animations.quest ?? '');
-    this.aimConeAt(target);
     this.updateTrackingHead(target);
+    this.aimConeAt(time, target);
     this.cone.draw(
       this.coneApex(),
       this.centerAngle,
@@ -348,11 +389,11 @@ export class HoundBossEnemy extends BossEnemy<HoundBossPatternConfig> {
   }
 
   private fireOrb(target: Phaser.Physics.Arcade.Sprite) {
+    const apex = this.backCannonMuzzle();
     gameEvents.emit('boss-orb-fired');
     this.attackPoseUntil = this.scene.time.now + ATTACK_POSE_HOLD_MS;
     this.playSpriteAnimation(this.sprite?.animations.attack ?? '');
 
-    const apex = this.coneApex();
     const angle = Phaser.Math.Angle.Between(apex.x, apex.y, target.x, target.y);
     const { radius, color, speed, damage } = this.pattern.orb;
 
@@ -394,7 +435,7 @@ export class HoundBossEnemy extends BossEnemy<HoundBossPatternConfig> {
 
     const horizontalDistance = Math.abs(target.x - this.x);
     const directionToTarget = Math.sign(target.x - this.x) || 1;
-    this.faceToward(directionToTarget > 0);
+    this.faceToward(directionToTarget > 0, time);
 
     const speed = this.isEnraged
       ? this.pattern.enragedMoveSpeed
@@ -419,14 +460,26 @@ export class HoundBossEnemy extends BossEnemy<HoundBossPatternConfig> {
     this.setVelocityX(0);
   }
 
-  private aimConeAt(target: Phaser.Physics.Arcade.Sprite) {
+  private aimConeAt(time: number, target: Phaser.Physics.Arcade.Sprite) {
     const apex = this.coneApex();
     const base = Phaser.Math.Angle.Between(apex.x, apex.y, target.x, target.y);
     const tilt = Phaser.Math.DegToRad(this.pattern.cone.tiltDegrees);
     // Lean the fan downward whichever way it faces, so it always rakes the floor.
     const facingRight = Math.cos(base) >= 0;
     this.centerAngle = base + (facingRight ? tilt : -tilt);
-    this.faceToward(facingRight);
+    this.faceToward(facingRight, time);
+  }
+
+  /** 선호 거리의 안쪽 경계에서는 감시 스킬을 사용하지 않음. */
+  private isTooCloseForScan(target: Phaser.Physics.Arcade.Sprite) {
+    return (
+      Math.abs(target.x - this.x) <
+      this.pattern.preferredDistance - this.pattern.distanceTolerance
+    );
+  }
+
+  private isFacingTarget(target: Phaser.Physics.Arcade.Sprite) {
+    return (target.x >= this.x) === (this.facingSign() > 0);
   }
 
   private playerInCone(target: Phaser.Physics.Arcade.Sprite) {
@@ -445,10 +498,48 @@ export class HoundBossEnemy extends BossEnemy<HoundBossPatternConfig> {
   }
 
   private coneApex(): Point {
+    const mouth = this.trackingHeadMouth();
+    if (mouth) {
+      return mouth;
+    }
+
     const forward = (this.pattern.cone.apexOffsetX ?? 0) * this.facingSign();
     return {
       x: this.x + forward,
       y: this.y + this.pattern.cone.apexOffsetY,
+    };
+  }
+
+  /** 회전·반전된 분리 머리의 입 발광점 월드 좌표. */
+  private trackingHeadMouth(): Point | undefined {
+    if (!this.trackingHead?.visible) {
+      return undefined;
+    }
+
+    const localX =
+      TRACKING_HEAD_MOUTH_OFFSET_X *
+      this.facingSign() *
+      Math.abs(this.trackingHead.scaleX);
+    const localY =
+      TRACKING_HEAD_MOUTH_OFFSET_Y * Math.abs(this.trackingHead.scaleY);
+    const cosine = Math.cos(this.trackingHead.rotation);
+    const sine = Math.sin(this.trackingHead.rotation);
+
+    return {
+      x: this.trackingHead.x + localX * cosine - localY * sine,
+      y: this.trackingHead.y + localX * sine + localY * cosine,
+    };
+  }
+
+  /** 좌우 반전된 등 포구 발광점의 월드 좌표. */
+  private backCannonMuzzle(): Point {
+    return {
+      x:
+        this.x -
+        BACK_CANNON_MUZZLE_OFFSET_X *
+          this.facingSign() *
+          Math.abs(this.scaleX),
+      y: this.y + BACK_CANNON_MUZZLE_OFFSET_Y * Math.abs(this.scaleY),
     };
   }
 
