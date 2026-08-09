@@ -92,6 +92,17 @@ export class BootScene extends Phaser.Scene {
 
     const { assets, missingKeys, unusedFiles } = resolveAudioAssets();
 
+    /**
+     * 지연 로드는 `decodeAudio`를 쓰는 Web Audio 매니저에서만 가능하다.
+     * HTML5 오디오로 폴백한 브라우저에서는 AudioDirector가 큐를 아예 가져오지
+     * 못하므로, 여기서 미뤄 두면 그 큐들은 **영원히 무음이 된다.**
+     * 그런 환경에서는 예전처럼 전량 즉시 로드한다 — 타이틀이 늦어지는 편이
+     * 발소리와 보스 큐 52개가 통째로 사라지는 것보다 낫다.
+     */
+    const canDeferSfx = typeof (
+      this.sound as Partial<{ decodeAudio: unknown }>
+    ).decodeAudio === 'function';
+
     for (const asset of assets) {
       // 타이틀 곡은 후반 스테이지용 선택 자원이 아니라 타이틀 화면의 일부이므로,
       // 타이틀 진입 즉시 재생을 시도할 수 있도록 미리 불러온다. 나머지 음악은
@@ -102,7 +113,7 @@ export class BootScene extends Phaser.Scene {
 
       // 스테이지 전용 효과음도 같은 이유로 미룬다. 여기 남는 것은 어느
       // 스테이지에서도 나는 공용 큐뿐이다 — 무기, 피격, 방 잠금 같은 것들.
-      if (DEFERRED_SFX_KEYS.has(asset.key)) {
+      if (canDeferSfx && DEFERRED_SFX_KEYS.has(asset.key)) {
         continue;
       }
 

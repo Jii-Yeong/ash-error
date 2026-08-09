@@ -357,6 +357,21 @@ export class PurifierBossEnemy extends BossEnemy<PurifierBossPatternConfig> {
     this.stateEndsAt = time + this.pattern.vacuum.warnDuration;
     this.setVelocityX(0);
     this.playSpriteAnimation(this.sprite?.animations.suction ?? '');
+    this.beginVacuumAudio();
+  }
+
+  /**
+   * 흡입음은 전이 시점이 아니라 상태를 따라간다.
+   *
+   * 조기 반환 경로가 소리를 닫으므로, 전이에서만 켜면 그 뒤 다시 들어왔을 때
+   * 흡입은 계속되는데 소리만 없는 구간이 남는다. HoundBossEnemy의 스캔음과
+   * 같은 처리다.
+   */
+  private beginVacuumAudio() {
+    if (this.vacuumAudioActive) {
+      return;
+    }
+
     this.vacuumAudioActive = true;
     gameEvents.emit('boss-purifier-cue', 'vacuum-start');
   }
@@ -376,6 +391,7 @@ export class PurifierBossEnemy extends BossEnemy<PurifierBossPatternConfig> {
     target: Phaser.Physics.Arcade.Sprite,
   ) {
     this.setVelocityX(0);
+    this.beginVacuumAudio();
     this.drawVacuumFlow(time, target, this.stateProgress(time) * 0.45);
 
     if (time >= this.stateEndsAt) {
@@ -390,6 +406,7 @@ export class PurifierBossEnemy extends BossEnemy<PurifierBossPatternConfig> {
     target: Phaser.Physics.Arcade.Sprite,
   ) {
     this.setVelocityX(0);
+    this.beginVacuumAudio();
     this.drawVacuumFlow(time, target, 1);
     this.pullPlayer(
       this.x,
