@@ -61,6 +61,7 @@ describe('stage configuration', () => {
       key: 'stage-02-bg',
       path: '/assets/backgrounds/stage-02.webp',
     });
+    expect(STAGE_TWO_CONFIG.portalTint).toBe(0xb6ffe4);
   });
 
   it('uses one player atlas with a death pose in stages one and two', () => {
