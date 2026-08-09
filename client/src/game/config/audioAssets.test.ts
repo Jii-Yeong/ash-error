@@ -61,6 +61,24 @@ describe('matchAudioAssets', () => {
     expect(unusedFiles).toEqual([]);
   });
 
+  /**
+   * Cues are matched by name prefix, so a cue whose name is a prefix of another
+   * cue's name can answer itself with the *other* cue's file the moment its own
+   * is missing or renamed — silently, with the wrong sound. Keeping the names
+   * mutually non-prefixing is what makes that impossible, and it is only ever
+   * violated when a new cue is added, which is exactly when this runs.
+   */
+  it('keeps no cue name a prefix of another', () => {
+    const stems = Object.keys(SFX_CONFIG).map((key) =>
+      key.replace(/^sfx-/, '').replace(/[^a-z0-9]/g, ''),
+    );
+    const collisions = stems.filter((stem) =>
+      stems.some((other) => other !== stem && other.startsWith(stem)),
+    );
+
+    expect(collisions).toEqual([]);
+  });
+
   it('flags files that answer no cue so the name can be fixed', () => {
     const { unusedFiles } = matchAudioAssets(
       fileMap('sfx/gunshot.wav', 'sfx/player-dash.ogg'),

@@ -12,6 +12,7 @@ import type {
 import type { BossArenaBounds } from '@/game/config/bossArena';
 import { BossEnemy } from '@/game/entities/BossEnemy';
 import type { EnemyProjectileAttack } from '@/game/entities/Enemy';
+import { gameEvents } from '@/game/events/gameEvents';
 import type { BossPhase } from '@/game/state/bossPhase';
 import { destroyCollider } from '@/game/systems/arcadePhysicsCleanup';
 import { CleanupRegistry } from '@/game/systems/CleanupRegistry';
@@ -362,6 +363,7 @@ export class InfernalBossEnemy extends BossEnemy<InfernalBossPatternConfig> {
     this.playSpriteAnimation(this.sprite?.animations.gush ?? '');
     this.scene.cameras.main.flash(220, 255, 92, 35);
     this.scene.cameras.main.shake(360, 0.012);
+    gameEvents.emit('boss-infernal-cue', 'phase-shift');
   }
 
   private updatePhaseTransition(
@@ -391,6 +393,7 @@ export class InfernalBossEnemy extends BossEnemy<InfernalBossPatternConfig> {
     this.setVelocityX(0);
     this.playSpriteAnimation(this.sprite?.animations.gush ?? '');
     this.telegraph.clear();
+    gameEvents.emit('boss-infernal-cue', 'rupture-warn');
   }
 
   private updateRupture(
@@ -473,6 +476,7 @@ export class InfernalBossEnemy extends BossEnemy<InfernalBossPatternConfig> {
         },
       );
       this.scene.cameras.main.shake(100, 0.006);
+      gameEvents.emit('boss-infernal-cue', 'rupture-erupt');
       activeTimer = this.scene.time.delayedCall(
         rupture.activeDuration,
         cleanup,
@@ -509,6 +513,7 @@ export class InfernalBossEnemy extends BossEnemy<InfernalBossPatternConfig> {
     this.setVelocityX(0);
     this.faceToward(this.chargeDirection > 0);
     this.playSpriteAnimation(this.sprite?.animations.walk ?? '');
+    gameEvents.emit('boss-infernal-cue', 'charge-warn');
   }
 
   private updateChargeWarn(
@@ -536,6 +541,7 @@ export class InfernalBossEnemy extends BossEnemy<InfernalBossPatternConfig> {
     this.playSpriteAnimation(this.sprite?.animations.rush ?? '');
     this.setChargeHitbox(true);
     this.setVelocityX(this.chargeDirection * this.chargeSpeed);
+    gameEvents.emit('boss-infernal-cue', 'charge-rush');
   }
 
   private updateCharge(time: number) {
@@ -567,6 +573,7 @@ export class InfernalBossEnemy extends BossEnemy<InfernalBossPatternConfig> {
     this.setChargeHitbox(false);
     this.playSpriteAnimation(this.sprite?.animations.getDown ?? '');
     this.scene.cameras.main.shake(220, 0.014);
+    gameEvents.emit('boss-infernal-cue', 'charge-impact');
   }
 
   private updateChargeStagger(time: number) {
@@ -599,6 +606,8 @@ export class InfernalBossEnemy extends BossEnemy<InfernalBossPatternConfig> {
       playerX: target.x,
       laneCount: shards.laneCount,
     });
+    // Once for the volley, not once per lane: four descents are one sound.
+    gameEvents.emit('boss-infernal-cue', 'shard-fall');
     for (const x of layout.hazardXPositions) {
       this.spawnShard(x);
     }
@@ -702,6 +711,9 @@ export class InfernalBossEnemy extends BossEnemy<InfernalBossPatternConfig> {
         },
       );
       this.scene.cameras.main.shake(90, 0.005);
+      // All four lanes land in the same frame; the cue's minInterval collapses
+      // them back into the single impact the player actually sees.
+      gameEvents.emit('boss-infernal-cue', 'shard-impact');
       zoneTimer = this.scene.time.delayedCall(shards.magmaDuration, cleanup);
     });
 

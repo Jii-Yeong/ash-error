@@ -142,6 +142,78 @@ export function finish(out, frames, fadeSeconds) {
   return out;
 }
 
+/** A steady sine. Phase starts at zero so layers stack without cancelling. */
+export function sine(frames, hz) {
+  const out = new Float64Array(frames);
+  const step = (2 * Math.PI * hz) / RATE;
+  for (let i = 0; i < frames; i += 1) out[i] = Math.sin(step * i);
+  return out;
+}
+
+/**
+ * A sine whose frequency glides exponentially. Phase is accumulated rather
+ * than recomputed per sample, because `sin(2*pi*f(t)*t)` sweeps at twice the
+ * intended rate and lands on the wrong end frequency.
+ */
+export function glide(frames, fromHz, toHz) {
+  const out = new Float64Array(frames);
+  let phase = 0;
+  for (let i = 0; i < frames; i += 1) {
+    const t = frames === 1 ? 0 : i / (frames - 1);
+    const hz = fromHz * Math.pow(toHz / fromHz, t);
+    out[i] = Math.sin(phase);
+    phase += (2 * Math.PI * hz) / RATE;
+  }
+  return out;
+}
+
+/**
+ * A struck-metal voice: partials at arbitrary ratios of a base frequency, each
+ * with its own decay.
+ *
+ * Ratios are given per partial rather than derived, because what separates a
+ * bell from a note is that its partials are *not* whole multiples. Feeding
+ * slightly stretched ratios is what makes the result read as struck metal
+ * instead of an organ.
+ */
+export function partials(frames, baseHz, spec) {
+  const out = new Float64Array(frames);
+  for (const { ratio, gain, tau } of spec) {
+    const voice = sine(frames, baseHz * ratio);
+    const envelope = decay(frames, tau);
+    for (let i = 0; i < frames; i += 1) out[i] += voice[i] * envelope[i] * gain;
+  }
+  return out;
+}
+
+/**
+ * Turns a rendered tail into a seamless loop by folding the material that runs
+ * past the loop end back over its opening.
+ *
+ * `source` must be at least `frames + fadeFrames` long: the extra tail is what
+ * the opening crossfades against. Linear rather than equal-power, because the
+ * two sides here are the same stationary process and therefore correlated —
+ * equal-power would add up to +3dB across the seam.
+ */
+export function loopCrossfade(source, frames, fadeFrames) {
+  const out = new Float64Array(frames);
+  for (let i = fadeFrames; i < frames; i += 1) out[i] = source[i];
+  for (let i = 0; i < fadeFrames; i += 1) {
+    const t = i / fadeFrames;
+    out[i] = source[i] * t + source[frames + i] * (1 - t);
+  }
+  return out;
+}
+
+/** Normalise to `dbfs` without touching the edges. Loops must not be faded. */
+export function normalize(out, dbfs = -1) {
+  let peak = 0;
+  for (const v of out) peak = Math.max(peak, Math.abs(v));
+  const target = Math.pow(10, dbfs / 20) / peak;
+  for (let i = 0; i < out.length; i += 1) out[i] *= target;
+  return out;
+}
+
 /** 16-bit mono PCM in a RIFF container. */
 export function wav(samples) {
   const bytes = samples.length * 2;

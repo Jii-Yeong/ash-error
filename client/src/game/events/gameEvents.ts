@@ -3,7 +3,12 @@ import type { BossPhase } from '@/game/state/bossPhase';
 import type { GamePhase } from '@/game/state/gamePhase';
 import type { GameSceneKey } from '@/game/state/gameSceneKey';
 import type { RoomState } from '@/game/state/roomState';
-import type { AudioMix } from '@/game/config/audioConfig';
+import type {
+  AudioMix,
+  StageFiveBossCue,
+  StageFourBossCue,
+  StageThreeBossCue,
+} from '@/game/config/audioConfig';
 
 /**
  * State events describe what the world *is* and drive the React HUD. Cue events
@@ -48,6 +53,14 @@ type GameEventMap = {
   ];
   'boss-scan-cue': [cue: 'start' | 'target-lock' | 'end'];
   'boss-orb-fired': [];
+  /**
+   * One event per stage-3-to-5 boss, carrying the pattern moment rather than a
+   * sound. The unions come from the cue maps in audioConfig, so a boss cannot
+   * emit a moment that has no cue behind it.
+   */
+  'boss-purifier-cue': [cue: StageThreeBossCue];
+  'boss-infernal-cue': [cue: StageFourBossCue];
+  'boss-architect-cue': [cue: StageFiveBossCue];
   'weapon-changed': [id: string, label: string];
   'weapon-inventory-changed': [
     slots: readonly (string | null)[],

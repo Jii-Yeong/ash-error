@@ -7,6 +7,7 @@ import type {
 import { getSlamLeapVelocity } from '@/game/combat/slamLeap';
 import { BossEnemy } from '@/game/entities/BossEnemy';
 import type { EnemyProjectileAttack } from '@/game/entities/Enemy';
+import { gameEvents } from '@/game/events/gameEvents';
 import { destroyCollider } from '@/game/systems/arcadePhysicsCleanup';
 import { CleanupRegistry } from '@/game/systems/CleanupRegistry';
 import { FLOOR_SURFACE_Y } from '@/game/systems/FloorBuilder';
@@ -53,6 +54,7 @@ export class PurifierBossEnemy extends BossEnemy<PurifierBossPatternConfig> {
   private playerTarget?: Phaser.Physics.Arcade.Sprite;
   private activeSpriteAnimation?: string;
   private dying = false;
+  private vacuumAudioActive = false;
 
   constructor(
     scene: Phaser.Scene,
@@ -126,8 +128,12 @@ export class PurifierBossEnemy extends BossEnemy<PurifierBossPatternConfig> {
   ) {
     this.playerTarget = target;
 
+    // Both exits below leave the pattern mid-flight, so the intake bed has to
+    // be closed here too: it is a loop, and the only other thing that ends it
+    // is a state transition this update will no longer reach.
     if (!this.active || this.dying) {
       this.telegraph.clear();
+      this.endVacuumAudio();
       return false;
     }
 
@@ -137,6 +143,7 @@ export class PurifierBossEnemy extends BossEnemy<PurifierBossPatternConfig> {
     if (!inRange) {
       this.setVelocityX(0);
       this.telegraph.clear();
+      this.endVacuumAudio();
       return false;
     }
 
@@ -166,6 +173,7 @@ export class PurifierBossEnemy extends BossEnemy<PurifierBossPatternConfig> {
 
   protected override onDefeated() {
     super.onDefeated();
+    this.endVacuumAudio();
     this.telegraph.clear();
     this.clearTint();
     this.waveCleanups.clear();
@@ -239,6 +247,7 @@ export class PurifierBossEnemy extends BossEnemy<PurifierBossPatternConfig> {
     this.stateEndsAt = time + this.pattern.slam.warnDuration;
     this.slamTargetX = target.x;
     this.playSpriteAnimation(this.sprite?.animations.slamWindup ?? '');
+    gameEvents.emit('boss-purifier-cue', 'slam-warn');
   }
 
   private updateSlamWarn(
@@ -276,6 +285,7 @@ export class PurifierBossEnemy extends BossEnemy<PurifierBossPatternConfig> {
     this.setFlipX(leap.velocityX < 0);
     this.setVelocity(leap.velocityX, leap.velocityY);
     this.playSpriteAnimation(this.sprite?.animations.slamAir ?? '');
+    gameEvents.emit('boss-purifier-cue', 'slam-leap');
   }
 
   private updateSlamLeap(time: number, target: Phaser.Physics.Arcade.Sprite) {
@@ -326,6 +336,10 @@ export class PurifierBossEnemy extends BossEnemy<PurifierBossPatternConfig> {
     this.telegraph.clear();
     this.playSpriteAnimation(this.sprite?.animations.slamStrike ?? '');
     this.scene.cameras.main.shake(180, 0.012);
+    // One cue for the pair: the two waves are symmetrical and simultaneous, so
+    // playing it twice only doubles the level.
+    gameEvents.emit('boss-purifier-cue', 'slam-impact');
+    gameEvents.emit('boss-purifier-cue', 'shockwave');
     this.spawnShockwave(-1);
     this.spawnShockwave(1);
   }
@@ -343,6 +357,18 @@ export class PurifierBossEnemy extends BossEnemy<PurifierBossPatternConfig> {
     this.stateEndsAt = time + this.pattern.vacuum.warnDuration;
     this.setVelocityX(0);
     this.playSpriteAnimation(this.sprite?.animations.suction ?? '');
+    this.vacuumAudioActive = true;
+    gameEvents.emit('boss-purifier-cue', 'vacuum-start');
+  }
+
+  /** 흡입음은 루프이므로, 패턴을 빠져나가는 모든 경로에서 반드시 닫아야 한다. */
+  private endVacuumAudio() {
+    if (!this.vacuumAudioActive) {
+      return;
+    }
+
+    this.vacuumAudioActive = false;
+    gameEvents.emit('boss-purifier-cue', 'vacuum-end');
   }
 
   private updateVacuumWarn(
@@ -378,6 +404,7 @@ export class PurifierBossEnemy extends BossEnemy<PurifierBossPatternConfig> {
   }
 
   private beginRecover(time: number) {
+    this.endVacuumAudio();
     this.attackState = 'recover';
     this.stateEndsAt =
       time +

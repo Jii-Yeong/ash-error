@@ -6,10 +6,15 @@ import {
   AUDIO_MIX_CONFIG,
   FOOTSTEP_SFX_BY_STAGE,
   PROJECTILE_BLOCK_SFX_BY_KIND,
+  STAGE_FIVE_BOSS_SFX_BY_CUE,
+  STAGE_FOUR_BOSS_SFX_BY_CUE,
   STAGE_ONE_BOSS_LASER_SFX_BY_CUE,
+  STAGE_THREE_BOSS_SFX_BY_CUE,
   STAGE_TWO_BOSS_ORB_SHOT_SFX,
   STAGE_TWO_BOSS_SCAN_SFX_BY_CUE,
   type AudioAssetKey,
+  type StageFiveBossCue,
+  type StageFourBossCue,
 } from '@/game/config/audioConfig';
 import { STAGES } from '@/game/config/stageConfig';
 import { gameEvents } from '@/game/events/gameEvents';
@@ -36,6 +41,7 @@ type AddedMusic = {
   config: Phaser.Types.Sound.SoundConfig;
   playCount: number;
   stopped: boolean;
+  paused: boolean;
   volumeUpdates: number[];
   complete?: () => void;
 };
@@ -69,6 +75,7 @@ function createFakeGame(
           config,
           playCount: 0,
           stopped: false,
+          paused: false,
           volumeUpdates: [],
         };
         added.push(music);
@@ -80,6 +87,14 @@ function createFakeGame(
           },
           stop: () => {
             music.stopped = true;
+            return true;
+          },
+          pause: () => {
+            music.paused = true;
+            return true;
+          },
+          resume: () => {
+            music.paused = false;
             return true;
           },
           setVolume: (volume: number) => {
@@ -326,6 +341,129 @@ describe('AudioDirector', () => {
       'sfx-stage2-boss-target-lock',
       'sfx-stage2-boss-scan-end',
     ]);
+  });
+
+  it('joins the stage three boss intake intro, loop and end cues', () => {
+    const { game, added, played } = createFakeGame({
+      loaded: Object.values(STAGE_THREE_BOSS_SFX_BY_CUE),
+    });
+    director = new AudioDirector(game);
+
+    gameEvents.emit('boss-purifier-cue', 'vacuum-start');
+    expect(added[0]).toMatchObject({
+      key: 'sfx-stage3-boss-vacuum-start',
+      playCount: 1,
+    });
+
+    added[0].complete?.();
+    expect(added[1]).toMatchObject({
+      key: 'sfx-stage3-boss-vacuum-loop',
+      playCount: 1,
+    });
+    expect(added[1].config.loop).toBe(true);
+
+    gameEvents.emit('boss-purifier-cue', 'vacuum-end');
+
+    expect(added[1].stopped).toBe(true);
+    expect(played.map(({ key }) => key)).toEqual([
+      'sfx-stage3-boss-vacuum-end',
+    ]);
+  });
+
+  it('plays the stage three slam cues as one-shots', () => {
+    const { game, played } = createFakeGame({
+      loaded: Object.values(STAGE_THREE_BOSS_SFX_BY_CUE),
+    });
+    director = new AudioDirector(game);
+
+    gameEvents.emit('boss-purifier-cue', 'slam-warn');
+    gameEvents.emit('boss-purifier-cue', 'slam-leap');
+    gameEvents.emit('boss-purifier-cue', 'slam-impact');
+    gameEvents.emit('boss-purifier-cue', 'shockwave');
+
+    expect(played.map(({ key }) => key)).toEqual([
+      'sfx-stage3-boss-slam-warn',
+      'sfx-stage3-boss-slam-leap',
+      'sfx-stage3-boss-slam-impact',
+      'sfx-stage3-boss-shockwave',
+    ]);
+  });
+
+  /**
+   * The boss that owns a loop stops emitting the moment its update stops being
+   * called, which death is exactly. Without this the intake hum plays over the
+   * death prompt until the player restarts.
+   */
+  it('silences a sustained boss bed when the player dies', () => {
+    const { game, added } = createFakeGame({
+      loaded: Object.values(STAGE_THREE_BOSS_SFX_BY_CUE),
+    });
+    director = new AudioDirector(game);
+
+    gameEvents.emit('boss-purifier-cue', 'vacuum-start');
+    added[0].complete?.();
+    gameEvents.emit('phase-changed', 'dead');
+
+    expect(added[1]).toMatchObject({
+      key: 'sfx-stage3-boss-vacuum-loop',
+      stopped: true,
+    });
+  });
+
+  it('suspends and resumes sustained beds with the pause menu', () => {
+    const { game, added } = createFakeGame({
+      loaded: Object.values(STAGE_THREE_BOSS_SFX_BY_CUE),
+    });
+    director = new AudioDirector(game);
+
+    gameEvents.emit('boss-purifier-cue', 'vacuum-start');
+    added[0].complete?.();
+
+    gameEvents.emit('pause-changed', true);
+    expect(added[1].paused).toBe(true);
+
+    gameEvents.emit('pause-changed', false);
+    expect(added[1].paused).toBe(false);
+    expect(added[1].stopped).toBe(false);
+  });
+
+  it('maps every stage four and five boss cue to its own sound', () => {
+    const { game, played } = createFakeGame({
+      loaded: [
+        ...Object.values(STAGE_FOUR_BOSS_SFX_BY_CUE),
+        ...Object.values(STAGE_FIVE_BOSS_SFX_BY_CUE),
+      ],
+    });
+    director = new AudioDirector(game);
+
+    for (const cue of Object.keys(
+      STAGE_FOUR_BOSS_SFX_BY_CUE,
+    ) as StageFourBossCue[]) {
+      gameEvents.emit('boss-infernal-cue', cue);
+    }
+    for (const cue of Object.keys(
+      STAGE_FIVE_BOSS_SFX_BY_CUE,
+    ) as StageFiveBossCue[]) {
+      gameEvents.emit('boss-architect-cue', cue);
+    }
+
+    expect(played.map(({ key }) => key)).toEqual([
+      ...Object.values(STAGE_FOUR_BOSS_SFX_BY_CUE),
+      ...Object.values(STAGE_FIVE_BOSS_SFX_BY_CUE),
+    ]);
+  });
+
+  it('collapses the four shard impacts that land in the same frame', () => {
+    const { game, played } = createFakeGame({
+      loaded: ['sfx-stage4-boss-shard-impact'],
+    });
+    director = new AudioDirector(game);
+
+    for (let lane = 0; lane < 4; lane += 1) {
+      gameEvents.emit('boss-infernal-cue', 'shard-impact');
+    }
+
+    expect(played).toHaveLength(1);
   });
 
   it('randomises the stage two boss orb shot cue', () => {

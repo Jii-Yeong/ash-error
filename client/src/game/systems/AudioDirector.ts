@@ -7,14 +7,22 @@ import {
   MUSIC_CONFIG,
   PROJECTILE_BLOCK_SFX_BY_KIND,
   SFX_CONFIG,
+  STAGE_FIVE_BOSS_SFX_BY_CUE,
+  STAGE_FOUR_BOSS_SFX_BY_CUE,
   STAGE_ONE_BOSS_LASER_SFX_BY_CUE,
+  STAGE_THREE_BOSS_SFX_BY_CUE,
   STAGE_TWO_BOSS_ORB_SHOT_SFX,
   STAGE_TWO_BOSS_SCAN_SFX_BY_CUE,
+  SUSTAINED_SFX,
   WEAPON_FIRE_SFX,
   type AudioAssetKey,
   type AudioMix,
   type MusicKey,
   type SfxKey,
+  type StageFiveBossCue,
+  type StageFourBossCue,
+  type StageThreeBossCue,
+  type SustainedSfxId,
 } from '@/game/config/audioConfig';
 import { STAGES } from '@/game/config/stageConfig';
 import { gameEvents } from '@/game/events/gameEvents';
@@ -43,6 +51,20 @@ function canDecode(
 }
 
 /**
+ * A start one-shot that hands over to a seamless loop.
+ *
+ * `active` is separate from the two sounds because the handover is asynchronous:
+ * a stop that arrives while the start sound is still playing has nothing to
+ * stop yet, and without the flag the loop would begin after the thing that
+ * wanted it silenced had already gone.
+ */
+type SustainedCue = {
+  active: boolean;
+  start?: VolumeControlledSound;
+  loop?: VolumeControlledSound;
+};
+
+/**
  * Owns every sound in the game. It is bound to the Phaser.Game rather than a
  * Scene so music survives scene.restart() and the title-to-game handover, and
  * it only listens to gameEvents so no gameplay system has to know audio exists.
@@ -54,9 +76,8 @@ export class AudioDirector {
   private readonly mix: AudioMix = { ...AUDIO_MIX_CONFIG };
   private readonly playedAt = new Map<string, number>();
   private music?: VolumeControlledSound;
-  private scanStartSound?: VolumeControlledSound;
-  private scanLoopSound?: VolumeControlledSound;
-  private scanActive = false;
+  /** Every sustained bed currently running, keyed by SUSTAINED_SFX id. */
+  private readonly sustained = new Map<SustainedSfxId, SustainedCue>();
   /** What should be playing, whether or not its file has arrived yet. */
   private wantedMusic?: MusicKey;
   private currentStageId?: string;
@@ -81,6 +102,10 @@ export class AudioDirector {
     gameEvents.on('boss-laser-fired', this.handleBossLaserFired);
     gameEvents.on('boss-scan-cue', this.handleBossScanCue);
     gameEvents.on('boss-orb-fired', this.handleBossOrbFired);
+    gameEvents.on('boss-purifier-cue', this.handlePurifierCue);
+    gameEvents.on('boss-infernal-cue', this.handleInfernalCue);
+    gameEvents.on('boss-architect-cue', this.handleArchitectCue);
+    gameEvents.on('pause-changed', this.handlePauseChanged);
   }
 
   destroy() {
@@ -99,8 +124,12 @@ export class AudioDirector {
     gameEvents.off('boss-laser-fired', this.handleBossLaserFired);
     gameEvents.off('boss-scan-cue', this.handleBossScanCue);
     gameEvents.off('boss-orb-fired', this.handleBossOrbFired);
+    gameEvents.off('boss-purifier-cue', this.handlePurifierCue);
+    gameEvents.off('boss-infernal-cue', this.handleInfernalCue);
+    gameEvents.off('boss-architect-cue', this.handleArchitectCue);
+    gameEvents.off('pause-changed', this.handlePauseChanged);
     this.game.sound.off(Phaser.Sound.Events.DECODED, this.handleDecoded);
-    this.stopBossScan();
+    this.stopAllSustained();
     this.stopMusic();
     this.playedAt.clear();
   }
@@ -177,7 +206,7 @@ export class AudioDirector {
       return;
     }
 
-    this.stopBossScan();
+    this.stopAllSustained();
     this.requestMusic('bgm-title');
     // The title is where the player reads and presses ENTER, which is the only
     // free moment stage one's track ever gets.
@@ -186,7 +215,7 @@ export class AudioDirector {
   };
 
   private readonly handleStageChanged = (stageId: string) => {
-    this.stopBossScan();
+    this.stopAllSustained();
     const index = STAGES.findIndex((candidate) => candidate.id === stageId);
 
     if (index < 0) {
@@ -200,9 +229,29 @@ export class AudioDirector {
     this.playMusic(STAGES[index].music);
   };
 
+  /**
+   * Death silences every sustained bed. The bosses that own them stop emitting
+   * the moment their update loop stops running, so nothing else is left that
+   * could ask for the loop to end — and an unended loop plays over the death
+   * prompt until the player restarts.
+   */
   private readonly handlePhaseChanged = (phase: GamePhase) => {
     if (phase === 'dead') {
+      this.stopAllSustained();
       this.playSfx('sfx-player-death');
+    }
+  };
+
+  /** Beds are suspended rather than dropped, so unpausing resumes mid-fight. */
+  private readonly handlePauseChanged = (paused: boolean) => {
+    for (const cue of this.sustained.values()) {
+      if (paused) {
+        cue.start?.pause();
+        cue.loop?.pause();
+      } else {
+        cue.start?.resume();
+        cue.loop?.resume();
+      }
     }
   };
 
@@ -230,12 +279,10 @@ export class AudioDirector {
       this.music.setVolume(this.musicVolume(this.wantedMusic));
     }
 
-    this.scanStartSound?.setVolume(
-      this.sfxVolume(STAGE_TWO_BOSS_SCAN_SFX_BY_CUE.start),
-    );
-    this.scanLoopSound?.setVolume(
-      this.sfxVolume(STAGE_TWO_BOSS_SCAN_SFX_BY_CUE.loop),
-    );
+    for (const [id, cue] of this.sustained) {
+      cue.start?.setVolume(this.sfxVolume(SUSTAINED_SFX[id].start));
+      cue.loop?.setVolume(this.sfxVolume(SUSTAINED_SFX[id].loop));
+    }
   }
 
   private readonly handleWeaponFired = (weaponId: string) => {
@@ -297,7 +344,7 @@ export class AudioDirector {
     cue: 'start' | 'target-lock' | 'end',
   ) => {
     if (cue === 'start') {
-      this.startBossScan();
+      this.startSustained('stage2-boss-scan');
       return;
     }
 
@@ -306,16 +353,41 @@ export class AudioDirector {
       return;
     }
 
-    this.stopBossScan();
+    this.stopSustained('stage2-boss-scan');
     this.playSfx(STAGE_TWO_BOSS_SCAN_SFX_BY_CUE.end);
   };
 
-  /** 시작음을 끝까지 재생한 뒤 스캔 반복음을 잇는다. */
-  private startBossScan() {
-    this.stopBossScan();
-    this.scanActive = true;
+  private readonly handlePurifierCue = (cue: StageThreeBossCue) => {
+    if (cue === 'vacuum-start') {
+      this.startSustained('stage3-boss-vacuum');
+      return;
+    }
 
-    const key = STAGE_TWO_BOSS_SCAN_SFX_BY_CUE.start;
+    if (cue === 'vacuum-end') {
+      this.stopSustained('stage3-boss-vacuum');
+      this.playSfx(STAGE_THREE_BOSS_SFX_BY_CUE['vacuum-end']);
+      return;
+    }
+
+    this.playSfx(STAGE_THREE_BOSS_SFX_BY_CUE[cue]);
+  };
+
+  private readonly handleInfernalCue = (cue: StageFourBossCue) => {
+    this.playSfx(STAGE_FOUR_BOSS_SFX_BY_CUE[cue]);
+  };
+
+  private readonly handleArchitectCue = (cue: StageFiveBossCue) => {
+    this.playSfx(STAGE_FIVE_BOSS_SFX_BY_CUE[cue]);
+  };
+
+  /** 시작음을 끝까지 재생한 뒤 반복음을 잇는다. */
+  private startSustained(id: SustainedSfxId) {
+    this.stopSustained(id);
+
+    const cue: SustainedCue = { active: true };
+    this.sustained.set(id, cue);
+
+    const key = SUSTAINED_SFX[id].start;
     if (!this.isLoaded(key) || this.game.sound.locked) {
       return;
     }
@@ -323,43 +395,60 @@ export class AudioDirector {
     const sound = this.game.sound.add(key, {
       volume: this.sfxVolume(key),
     }) as VolumeControlledSound;
-    this.scanStartSound = sound;
+    cue.start = sound;
     sound.once(Phaser.Sound.Events.COMPLETE, () => {
-      if (this.scanStartSound !== sound) {
+      if (cue.start !== sound) {
         return;
       }
 
-      this.scanStartSound = undefined;
+      cue.start = undefined;
       sound.destroy();
-      this.startBossScanLoop();
+      this.startSustainedLoop(id, cue);
     });
     sound.play();
   }
 
-  private startBossScanLoop() {
-    const key = STAGE_TWO_BOSS_SCAN_SFX_BY_CUE.loop;
-    if (!this.scanActive || !this.isLoaded(key) || this.game.sound.locked) {
+  private startSustainedLoop(id: SustainedSfxId, cue: SustainedCue) {
+    const key = SUSTAINED_SFX[id].loop;
+    if (!cue.active || !this.isLoaded(key) || this.game.sound.locked) {
       return;
     }
 
-    this.scanLoopSound = this.game.sound.add(key, {
+    cue.loop = this.game.sound.add(key, {
       loop: true,
       volume: this.sfxVolume(key),
     }) as VolumeControlledSound;
-    this.scanLoopSound.play();
+    cue.loop.play();
   }
 
-  private stopBossScan() {
-    this.scanActive = false;
-    const startSound = this.scanStartSound;
-    this.scanStartSound = undefined;
-    startSound?.stop();
-    startSound?.destroy();
+  private stopSustained(id: SustainedSfxId) {
+    const cue = this.sustained.get(id);
 
-    const loopSound = this.scanLoopSound;
-    this.scanLoopSound = undefined;
-    loopSound?.stop();
-    loopSound?.destroy();
+    if (!cue) {
+      return;
+    }
+
+    cue.active = false;
+    this.sustained.delete(id);
+
+    const { start, loop } = cue;
+    cue.start = undefined;
+    cue.loop = undefined;
+    start?.stop();
+    start?.destroy();
+    loop?.stop();
+    loop?.destroy();
+  }
+
+  /**
+   * `stopSustained` deletes the entry it is given, which is safe to do while
+   * iterating: a Map iterator only skips entries deleted *before* it reaches
+   * them, and this one deletes the entry it has just been handed.
+   */
+  private stopAllSustained() {
+    for (const id of this.sustained.keys()) {
+      this.stopSustained(id);
+    }
   }
 
   private playSfx(key: SfxKey, volumeScale = 1, intervalKey: string = key) {

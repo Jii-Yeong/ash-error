@@ -15,6 +15,7 @@ import { GAME_HEIGHT } from '@/game/config/gameDimensions';
 import { ArchitectBossView } from '@/game/entities/ArchitectBossView';
 import { BossEnemy } from '@/game/entities/BossEnemy';
 import type { EnemyProjectileAttack } from '@/game/entities/Enemy';
+import { gameEvents } from '@/game/events/gameEvents';
 import type { BossPhase } from '@/game/state/bossPhase';
 import { BossProjectileField } from '@/game/systems/BossProjectileField';
 import { CleanupRegistry } from '@/game/systems/CleanupRegistry';
@@ -395,6 +396,7 @@ export class ArchitectBossEnemy extends BossEnemy<ArchitectBossPatternConfig> {
     this.playSpriteAnimation(this.sprite?.animations.phaseTransition ?? '');
     this.scene.cameras.main.flash(260, 210, 224, 255);
     this.scene.cameras.main.shake(420, 0.009);
+    gameEvents.emit('boss-architect-cue', 'phase-shift');
   }
 
   private updatePhaseTransition(
@@ -438,6 +440,7 @@ export class ArchitectBossEnemy extends BossEnemy<ArchitectBossPatternConfig> {
         ? (this.sprite?.animations.chorus ?? '')
         : (this.sprite?.animations.haloCharge ?? ''),
     );
+    gameEvents.emit('boss-architect-cue', 'halo-warn');
   }
 
   private updateHaloWarning(time: number) {
@@ -512,6 +515,7 @@ export class ArchitectBossEnemy extends BossEnemy<ArchitectBossPatternConfig> {
 
     this.haloGapAngle += this.pattern.halo.gapStep;
     this.scene.cameras.main.shake(70, 0.003);
+    gameEvents.emit('boss-architect-cue', 'halo-ring');
   }
 
   private beginWings(time: number, firstStep = 0, finalStep = 2) {
@@ -522,6 +526,7 @@ export class ArchitectBossEnemy extends BossEnemy<ArchitectBossPatternConfig> {
     this.nextWingStepAt = time + this.pattern.wings.warnDuration;
     this.setVelocity(0, 0);
     this.playSpriteAnimation(this.wingAnimation(firstStep));
+    gameEvents.emit('boss-architect-cue', 'wings-warn');
   }
 
   private updateWings(time: number, target: Phaser.Physics.Arcade.Sprite) {
@@ -584,6 +589,8 @@ export class ArchitectBossEnemy extends BossEnemy<ArchitectBossPatternConfig> {
     }
 
     this.scene.cameras.main.shake(80, 0.0035);
+    // Step 2 fires two fans at once; they are one volley and get one cue.
+    gameEvents.emit('boss-architect-cue', 'wings-fan');
   }
 
   private fireFan(
@@ -628,6 +635,7 @@ export class ArchitectBossEnemy extends BossEnemy<ArchitectBossPatternConfig> {
     this.updateLockedTarget(target);
     this.setVelocity(0, 0);
     this.playSpriteAnimation(this.sprite?.animations.eyeTrack ?? '');
+    gameEvents.emit('boss-architect-cue', 'eye-track');
   }
 
   private updateEyeTracking(
@@ -651,6 +659,7 @@ export class ArchitectBossEnemy extends BossEnemy<ArchitectBossPatternConfig> {
       this.stateEndsAt = time + this.pattern.eye.lockedWarningDuration;
       this.playSpriteAnimation(this.sprite?.animations.eyeFire ?? '');
       this.scene.cameras.main.flash(90, 120, 220, 255);
+      gameEvents.emit('boss-architect-cue', 'eye-lock');
     }
   }
 
@@ -717,6 +726,7 @@ export class ArchitectBossEnemy extends BossEnemy<ArchitectBossPatternConfig> {
       );
     }
     this.scene.cameras.main.shake(120, 0.005);
+    gameEvents.emit('boss-architect-cue', 'eye-orb');
   }
 
   private spawnJudgmentOrb(x: number, y: number) {
@@ -768,6 +778,7 @@ export class ArchitectBossEnemy extends BossEnemy<ArchitectBossPatternConfig> {
     this.playSpriteAnimation(this.sprite?.animations.falseSalvation ?? '');
     this.scene.cameras.main.flash(600, 255, 224, 135);
     this.scene.cameras.main.shake(500, 0.01);
+    gameEvents.emit('boss-architect-cue', 'salvation');
   }
 
   private updateSalvationTransition(time: number) {
@@ -830,6 +841,7 @@ export class ArchitectBossEnemy extends BossEnemy<ArchitectBossPatternConfig> {
     this.projectiles.clear();
     this.playSpriteAnimation(this.sprite?.animations.coreExposed ?? '');
     this.scene.cameras.main.flash(260, 255, 255, 255);
+    gameEvents.emit('boss-architect-cue', 'core-exposed');
   }
 
   private drawExposedCore(time: number) {
