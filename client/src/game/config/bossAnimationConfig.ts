@@ -12,6 +12,39 @@ export const STAGE_ONE_BOSS_ATLAS_KEY = 'stage-1-boss';
 export const STAGE_ONE_BOSS_ATLAS_PNG = '/assets/bosses/stage-1-boss.png';
 export const STAGE_ONE_BOSS_ATLAS_JSON = '/assets/bosses/stage-1-boss.json';
 
+export const STAGE_ONE_BOSS_WEAPON_ASSETS = {
+  charge: {
+    key: 'stage-1-boss-charge-weapon',
+    url: '/assets/bosses/stage-1-boss-charge-weapon.png',
+    gripOffsetX: 5,
+    gripOffsetY: -16,
+    flippedGripOffsetY: -26,
+    originX: 0,
+    originY: 0,
+    barrelAngle: Math.atan2(28, 46),
+    barrelLength: Math.hypot(46, 28),
+    flippedBarrelAngle: Math.atan2(10, 46),
+    flippedBarrelLength: Math.hypot(46, 10),
+    muzzleOffsetY: 0,
+    flippedMuzzleOffsetY: 35,
+  },
+  fire: {
+    key: 'stage-1-boss-weapon',
+    url: '/assets/bosses/stage-1-boss-weapon.png',
+    gripOffsetX: -8,
+    gripOffsetY: 9,
+    flippedGripOffsetY: 9,
+    originX: 0,
+    originY: 0.5,
+    barrelAngle: Math.atan2(2.5, 77),
+    barrelLength: Math.hypot(77, 2.5),
+    flippedBarrelAngle: Math.atan2(-2.5, 77),
+    flippedBarrelLength: Math.hypot(77, 2.5),
+    muzzleOffsetY: 0,
+    flippedMuzzleOffsetY: 0,
+  },
+} as const;
+
 export const STAGE_ONE_BOSS_LASER_ASSETS = {
   back: {
     key: 'stage-1-boss-laser-back',
@@ -59,18 +92,16 @@ export const STAGE_ONE_BOSS_TAG_FRAMES: Record<
     duration: [180, 240, 180, 240][index],
   })),
   walk: [4, 5].map((index) => ({ frame: frameName(index), duration: 350 })),
-  charge: [7, 8, 9].map((index) => ({ frame: frameName(index), duration: 120 })),
+  // 6번 프레임에는 팔이 포함되어 있어 별도 회전 팔과 겹치므로 제외함.
+  charge: [{ frame: frameName(7), duration: 120 }],
   fire: [
-    { frame: frameName(10), duration: 90 },
-    { frame: frameName(11), duration: 60 },
+    { frame: frameName(8), duration: 90 },
+    { frame: frameName(9), duration: 60 },
   ],
-  recoil: [
+  recoil: [{ frame: frameName(10), duration: 100 }],
+  death: [
     { frame: frameName(12), duration: 100 },
     { frame: frameName(13), duration: 180 },
-  ],
-  death: [
-    { frame: frameName(14), duration: 100 },
-    { frame: frameName(15), duration: 180 },
   ],
 };
 

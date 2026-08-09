@@ -48,14 +48,6 @@
     "duration": 350
    },
    "stage-1-boss 6.aseprite": {
-    "frame": { "x": 194, "y": 1, "w": 192, "h": 172 },
-    "rotated": false,
-    "trimmed": true,
-    "spriteSourceSize": { "x": 0, "y": 13, "w": 190, "h": 170 },
-    "sourceSize": { "w": 192, "h": 192 },
-    "duration": 240
-   },
-   "stage-1-boss 7.aseprite": {
     "frame": { "x": 194, "y": 174, "w": 192, "h": 172 },
     "rotated": false,
     "trimmed": true,
@@ -63,7 +55,7 @@
     "sourceSize": { "w": 192, "h": 192 },
     "duration": 120
    },
-   "stage-1-boss 8.aseprite": {
+   "stage-1-boss 7.aseprite": {
     "frame": { "x": 387, "y": 174, "w": 192, "h": 172 },
     "rotated": false,
     "trimmed": true,
@@ -71,32 +63,40 @@
     "sourceSize": { "w": 192, "h": 192 },
     "duration": 120
    },
-   "stage-1-boss 9.aseprite": {
+   "stage-1-boss 8.aseprite": {
     "frame": { "x": 580, "y": 174, "w": 192, "h": 172 },
-    "rotated": false,
-    "trimmed": true,
-    "spriteSourceSize": { "x": 0, "y": 13, "w": 190, "h": 170 },
-    "sourceSize": { "w": 192, "h": 192 },
-    "duration": 120
-   },
-   "stage-1-boss 10.aseprite": {
-    "frame": { "x": 1, "y": 347, "w": 192, "h": 172 },
     "rotated": false,
     "trimmed": true,
     "spriteSourceSize": { "x": 0, "y": 13, "w": 190, "h": 170 },
     "sourceSize": { "w": 192, "h": 192 },
     "duration": 90
    },
-   "stage-1-boss 11.aseprite": {
-    "frame": { "x": 194, "y": 347, "w": 192, "h": 172 },
+   "stage-1-boss 9.aseprite": {
+    "frame": { "x": 1, "y": 347, "w": 192, "h": 172 },
     "rotated": false,
     "trimmed": true,
     "spriteSourceSize": { "x": 0, "y": 13, "w": 190, "h": 170 },
     "sourceSize": { "w": 192, "h": 192 },
     "duration": 60
    },
-   "stage-1-boss 12.aseprite": {
+   "stage-1-boss 10.aseprite": {
+    "frame": { "x": 194, "y": 347, "w": 192, "h": 172 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 0, "y": 13, "w": 190, "h": 170 },
+    "sourceSize": { "w": 192, "h": 192 },
+    "duration": 100
+   },
+   "stage-1-boss 11.aseprite": {
     "frame": { "x": 387, "y": 347, "w": 192, "h": 172 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 0, "y": 13, "w": 190, "h": 170 },
+    "sourceSize": { "w": 192, "h": 192 },
+    "duration": 180
+   },
+   "stage-1-boss 12.aseprite": {
+    "frame": { "x": 580, "y": 347, "w": 192, "h": 172 },
     "rotated": false,
     "trimmed": true,
     "spriteSourceSize": { "x": 0, "y": 13, "w": 190, "h": 170 },
@@ -104,23 +104,7 @@
     "duration": 100
    },
    "stage-1-boss 13.aseprite": {
-    "frame": { "x": 580, "y": 347, "w": 192, "h": 172 },
-    "rotated": false,
-    "trimmed": true,
-    "spriteSourceSize": { "x": 0, "y": 13, "w": 190, "h": 170 },
-    "sourceSize": { "w": 192, "h": 192 },
-    "duration": 180
-   },
-   "stage-1-boss 14.aseprite": {
     "frame": { "x": 1, "y": 520, "w": 192, "h": 172 },
-    "rotated": false,
-    "trimmed": true,
-    "spriteSourceSize": { "x": 0, "y": 13, "w": 190, "h": 170 },
-    "sourceSize": { "w": 192, "h": 192 },
-    "duration": 100
-   },
-   "stage-1-boss 15.aseprite": {
-    "frame": { "x": 194, "y": 520, "w": 192, "h": 172 },
     "rotated": false,
     "trimmed": true,
     "spriteSourceSize": { "x": 0, "y": 13, "w": 190, "h": 170 },
@@ -138,10 +122,10 @@
   "frameTags": [
    { "name": "idle", "from": 0, "to": 3, "direction": "forward", "color": "#000000ff" },
    { "name": "walk", "from": 4, "to": 5, "direction": "forward", "color": "#000000ff" },
-   { "name": "charge", "from": 7, "to": 9, "direction": "forward", "color": "#000000ff" },
-   { "name": "fire", "from": 10, "to": 11, "direction": "forward", "color": "#000000ff" },
-   { "name": "recoil", "from": 12, "to": 13, "direction": "forward", "color": "#000000ff" },
-   { "name": "death", "from": 14, "to": 15, "direction": "forward", "color": "#000000ff" }
+   { "name": "charge", "from": 6, "to": 7, "direction": "forward", "color": "#000000ff" },
+   { "name": "fire", "from": 8, "to": 9, "direction": "forward", "color": "#000000ff" },
+   { "name": "recoil", "from": 10, "to": 10, "direction": "forward", "color": "#000000ff" },
+   { "name": "death", "from": 12, "to": 13, "direction": "forward", "color": "#000000ff" }
   ],
   "layers": [
    { "name": "Layer 1", "opacity": 255, "blendMode": "normal" },

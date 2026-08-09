@@ -57,6 +57,17 @@ export class LaserAttackCycle {
     this.shotsRemaining -= 1;
   }
 
+  cancelCharge(time: number, enraged: boolean) {
+    if (this.state !== 'charging') {
+      return;
+    }
+
+    this.shotsRemaining = 0;
+    this.state = 'repositioning';
+    this.stateEndsAt =
+      time + getLaserPatternTuning(this.pattern, enraged).recoveryDuration;
+  }
+
   finishFiring(time: number, enraged: boolean) {
     if (this.shotsRemaining > 0) {
       this.beginCharge(time, enraged, true);

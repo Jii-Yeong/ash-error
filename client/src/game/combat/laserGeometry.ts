@@ -13,6 +13,15 @@ export const getLaserMuzzlePosition = (
   y: origin.y + verticalOffset,
 });
 
+export const getRotatedLaserMuzzlePosition = (
+  origin: Point,
+  angle: number,
+  distance: number,
+): Point => ({
+  x: origin.x + Math.cos(angle) * distance,
+  y: origin.y + Math.sin(angle) * distance,
+});
+
 /**
  * Facing, muzzle and aim angle for one shot, derived together.
  *
