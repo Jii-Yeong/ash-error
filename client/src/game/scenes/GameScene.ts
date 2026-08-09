@@ -654,6 +654,18 @@ export class GameScene extends Phaser.Scene {
       this.eventDirector.reskinSiege();
     });
     this.drawAscensionRoom();
+    // 엔딩 포위 장면의 배경만 검게 가리고 바닥·지형·등장인물은 앞에 남김.
+    this.add
+      .rectangle(
+        this.cameras.main.width / 2,
+        this.cameras.main.height / 2,
+        this.cameras.main.width,
+        this.cameras.main.height,
+        0x000000,
+        0.6,
+      )
+      .setDepth(-9.5)
+      .setScrollFactor(0);
     this.resetCameraToRoomEntrance();
     this.playerController.setMovementMode(MovementMode.GROUND);
   }
