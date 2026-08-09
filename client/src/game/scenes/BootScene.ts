@@ -7,9 +7,28 @@ import {
 import {
   BOSS_ANIMATION_ATLASES,
   STAGE_FIVE_BOSS_ATLAS_KEY,
+  STAGE_FOUR_MAGMA_RUPTURE_FIRE_PILLAR,
+  STAGE_FOUR_MAGMA_RUPTURE_WARNING,
+  STAGE_FOUR_MAGMA_SHARD,
+  STAGE_FOUR_MAGMA_SHARD_IMPACT,
   STAGE_ONE_BOSS_LASER_ASSETS,
+  STAGE_ONE_BOSS_WEAPON_ASSETS,
+  STAGE_TWO_BOSS_ENERGY_ORB,
+  STAGE_TWO_BOSS_HEAD,
+  STAGE_TWO_BOSS_SEARCHLIGHT,
+  STAGE_THREE_BOSS_SHOCKWAVE,
 } from '@/game/config/bossAnimationConfig';
 import { BOSS_COMBAT_CONFIGS } from '@/game/config/bossConfig';
+import {
+  STAGE_THREE_CEILING_MAINTAINER_BOMB,
+  STAGE_THREE_CEILING_MAINTAINER_BOMB_IMPACT,
+} from '@/game/config/ceilingMaintainerAnimationConfig';
+import { STAGE_THREE_CAPTOR_TETHER } from '@/game/config/captorAnimationConfig';
+import { MELEE_SWING_EFFECT } from '@/game/config/meleeEnemyAnimationConfig';
+import {
+  JUDGMENT_EYE_ORB,
+  JUDGMENT_EYE_RETICLE,
+} from '@/game/config/stageFourEnemyConfig';
 import {
   PLAYER_IDLE_FRAMES,
   PLAYER_RUN_FRAMES,
@@ -62,6 +81,57 @@ export class BootScene extends Phaser.Scene {
     for (const atlas of BOSS_ANIMATION_ATLASES) {
       this.load.atlas(atlas.texture, atlas.png, atlas.json);
     }
+    this.load.image(MELEE_SWING_EFFECT.texture, MELEE_SWING_EFFECT.png);
+    this.load.image(
+      STAGE_THREE_CEILING_MAINTAINER_BOMB.texture,
+      STAGE_THREE_CEILING_MAINTAINER_BOMB.png,
+    );
+    this.load.image(
+      STAGE_THREE_CEILING_MAINTAINER_BOMB_IMPACT.texture,
+      STAGE_THREE_CEILING_MAINTAINER_BOMB_IMPACT.png,
+    );
+    this.load.image(
+      STAGE_THREE_CAPTOR_TETHER.line.texture,
+      STAGE_THREE_CAPTOR_TETHER.line.png,
+    );
+    this.load.image(
+      STAGE_THREE_CAPTOR_TETHER.claw.texture,
+      STAGE_THREE_CAPTOR_TETHER.claw.png,
+    );
+    for (const asset of Object.values(STAGE_ONE_BOSS_WEAPON_ASSETS)) {
+      this.load.image(asset.key, asset.url);
+    }
+    this.load.image(
+      STAGE_TWO_BOSS_ENERGY_ORB.texture,
+      STAGE_TWO_BOSS_ENERGY_ORB.png,
+    );
+    this.load.image(STAGE_TWO_BOSS_HEAD.texture, STAGE_TWO_BOSS_HEAD.png);
+    this.load.image(
+      STAGE_TWO_BOSS_SEARCHLIGHT.texture,
+      STAGE_TWO_BOSS_SEARCHLIGHT.png,
+    );
+    this.load.image(
+      STAGE_THREE_BOSS_SHOCKWAVE.texture,
+      STAGE_THREE_BOSS_SHOCKWAVE.png,
+    );
+    this.load.image(
+      STAGE_FOUR_MAGMA_SHARD.texture,
+      STAGE_FOUR_MAGMA_SHARD.png,
+    );
+    this.load.image(
+      STAGE_FOUR_MAGMA_SHARD_IMPACT.texture,
+      STAGE_FOUR_MAGMA_SHARD_IMPACT.png,
+    );
+    this.load.image(
+      STAGE_FOUR_MAGMA_RUPTURE_WARNING.texture,
+      STAGE_FOUR_MAGMA_RUPTURE_WARNING.png,
+    );
+    this.load.image(
+      STAGE_FOUR_MAGMA_RUPTURE_FIRE_PILLAR.texture,
+      STAGE_FOUR_MAGMA_RUPTURE_FIRE_PILLAR.png,
+    );
+    this.load.image(JUDGMENT_EYE_RETICLE.texture, JUDGMENT_EYE_RETICLE.png);
+    this.load.image(JUDGMENT_EYE_ORB.texture, JUDGMENT_EYE_ORB.png);
     for (const asset of Object.values(STAGE_ONE_BOSS_LASER_ASSETS)) {
       this.load.image(asset.key, asset.url);
     }

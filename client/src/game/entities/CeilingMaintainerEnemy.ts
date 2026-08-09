@@ -5,6 +5,10 @@ import {
   type CeilingMaintainerState,
 } from '@/game/combat/stageThreeEnemyCombat';
 import type { CeilingPipe } from '@/game/config/roomConfig';
+import {
+  STAGE_THREE_CEILING_MAINTAINER_BOMB,
+  STAGE_THREE_CEILING_MAINTAINER_BOMB_IMPACT,
+} from '@/game/config/ceilingMaintainerAnimationConfig';
 import { CEILING_MAINTAINER_CONFIG } from '@/game/config/stageThreeEnemyConfig';
 import {
   Enemy,
@@ -33,7 +37,7 @@ export class CeilingMaintainerEnemy extends Enemy {
   private lockedDropX = 0;
   private warningMarker?: Phaser.GameObjects.Ellipse;
   private groundMarker?: Phaser.GameObjects.Ellipse;
-  private activeFragment?: Phaser.GameObjects.Rectangle;
+  private activeFragment?: Phaser.GameObjects.Image;
   private dropTween?: Phaser.Tweens.Tween;
   private contactReadyAt = 0;
   private lockedGroundTargetX = 0;
@@ -223,22 +227,37 @@ export class CeilingMaintainerEnemy extends Enemy {
     this.stateEndsAt = time + CEILING_MAINTAINER_CONFIG.warningDuration;
     this.lockedDropX = targetX;
     this.warningMarker = this.scene.add
-      .ellipse(targetX, FLOOR_SURFACE_Y - 4, DROP_BLAST_RADIUS * 2, 18, 0x78ff9c, 0.12)
-      .setStrokeStyle(2, 0x78ff9c, 0.9)
+      .ellipse(
+        targetX,
+        FLOOR_SURFACE_Y + 3,
+        DROP_BLAST_RADIUS * 2,
+        18,
+        0xff3b30,
+        0.5,
+      )
       .setDepth(7);
   }
 
   private launchDrop(target: Phaser.Physics.Arcade.Sprite) {
     this.clearTint();
     const fragment = this.scene.add
-      .rectangle(this.x, this.y + 18, 12, 24, 0x8fa4a7)
-      .setStrokeStyle(2, 0x9cff9b)
+      .image(
+        this.x,
+        this.y + 18,
+        STAGE_THREE_CEILING_MAINTAINER_BOMB.texture,
+      )
+      .setDisplaySize(
+        STAGE_THREE_CEILING_MAINTAINER_BOMB.width,
+        STAGE_THREE_CEILING_MAINTAINER_BOMB.height,
+      )
       .setDepth(9);
     this.activeFragment = fragment;
     this.dropTween = this.scene.tweens.add({
       targets: fragment,
       x: this.lockedDropX,
-      y: FLOOR_SURFACE_Y - 12,
+      y:
+        FLOOR_SURFACE_Y -
+        STAGE_THREE_CEILING_MAINTAINER_BOMB.height / 2,
       rotation: Math.PI * 2,
       duration: 420,
       ease: 'Quad.easeIn',
@@ -267,14 +286,26 @@ export class CeilingMaintainerEnemy extends Enemy {
 
   private flashDropImpact(x: number) {
     const pulse = this.scene.add
-      .ellipse(x, FLOOR_SURFACE_Y - 4, 30, 10, 0x89ff9c, 0.45)
+      .image(
+        x,
+        FLOOR_SURFACE_Y + 10,
+        STAGE_THREE_CEILING_MAINTAINER_BOMB_IMPACT.texture,
+      )
+      .setOrigin(0.5, STAGE_THREE_CEILING_MAINTAINER_BOMB_IMPACT.originY)
+      .setDisplaySize(
+        STAGE_THREE_CEILING_MAINTAINER_BOMB_IMPACT.width,
+        STAGE_THREE_CEILING_MAINTAINER_BOMB_IMPACT.height,
+      )
       .setDepth(9);
+    const targetScaleX = pulse.scaleX;
+    const targetScaleY = pulse.scaleY;
+    pulse.setScale(targetScaleX * 0.72, targetScaleY * 0.72);
     this.scene.tweens.add({
       targets: pulse,
-      scaleX: 4,
-      scaleY: 2,
+      scaleX: targetScaleX,
+      scaleY: targetScaleY,
       alpha: 0,
-      duration: 180,
+      duration: 220,
       onComplete: () => pulse.destroy(),
     });
   }

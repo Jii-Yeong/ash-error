@@ -57,8 +57,11 @@ function createFakeGame(
   const loaded = new Set<string>(options.loaded ?? []);
   const played: PlayedSfx[] = [];
   const added: AddedMusic[] = [];
+  const stopped: string[] = [];
+  const active = new Set<string>();
   let unlockListener: (() => void) | undefined;
   const decodedListeners = new Set<(key: string) => void>();
+  const gameListeners = new Map<string, Set<() => void>>();
 
   const game = {
     cache: {
@@ -68,7 +71,16 @@ function createFakeGame(
       locked: options.locked ?? false,
       play: (key: string, config: Phaser.Types.Sound.SoundConfig) => {
         played.push({ key, config });
+        active.add(key);
         return true;
+      },
+      stopByKey: (key: string) => {
+        if (!active.delete(key)) {
+          return 0;
+        }
+
+        stopped.push(key);
+        return 1;
       },
       add: (key: string, config: Phaser.Types.Sound.SoundConfig) => {
         const music: AddedMusic = {
@@ -135,12 +147,28 @@ function createFakeGame(
         decodedListeners.delete(listener);
       },
     },
+    events: {
+      on: (event: string, listener: () => void) => {
+        const listeners = gameListeners.get(event) ?? new Set();
+        listeners.add(listener);
+        gameListeners.set(event, listeners);
+      },
+      off: (event: string, listener: () => void) => {
+        gameListeners.get(event)?.delete(listener);
+      },
+    },
   };
 
   return {
     game: game as unknown as Phaser.Game,
     played,
     added,
+    stopped,
+    blur: () => {
+      for (const listener of gameListeners.get('blur') ?? []) {
+        listener();
+      }
+    },
     unlock: () => unlockListener?.(),
     /** Mimics a background track arriving after the game already asked for it. */
     finishDecoding: (key: string) => {
@@ -345,6 +373,18 @@ describe('AudioDirector', () => {
       'sfx-stage1-boss-laser-double-first',
       'sfx-stage1-boss-laser-double-second',
     ]);
+  });
+
+  it('stops a stage one laser cue when the game loses focus', () => {
+    const { game, blur, stopped } = createFakeGame({
+      loaded: Object.values(STAGE_ONE_BOSS_LASER_SFX_BY_CUE),
+    });
+    director = new AudioDirector(game);
+
+    gameEvents.emit('boss-laser-fired', 'single');
+    blur();
+
+    expect(stopped).toEqual(['sfx-stage1-boss-laser-single']);
   });
 
   it('joins the stage two boss scan intro, loop, lock and end cues', () => {
@@ -651,6 +691,69 @@ describe('AudioDirector', () => {
     await Promise.resolve();
 
     expect(new Set(urls).size).toBe(urls.length);
+  });
+
+  it('lays the monitor beep under a hit taken in the stages that foreshadow it', () => {
+    const { game, played } = createFakeGame({
+      loaded: ['sfx-player-hit', 'sfx-monitor-beep'],
+    });
+    director = new AudioDirector(game);
+
+    gameEvents.emit('stage-changed', 'stage-01');
+    gameEvents.emit('player-damaged', 0, 0);
+
+    expect(played.map((entry) => entry.key)).toEqual([
+      'sfx-player-hit',
+      'sfx-monitor-beep',
+    ]);
+    // 복선은 타격음 아래에 있어야 복선으로 들린다.
+    expect(played[1].config.volume).toBeLessThan(played[0].config.volume!);
+  });
+
+  it('drops the monitor beep once the stages it belongs to are past', () => {
+    const { game, played } = createFakeGame({
+      loaded: ['sfx-player-hit', 'sfx-monitor-beep'],
+    });
+    director = new AudioDirector(game);
+
+    gameEvents.emit('stage-changed', 'stage-04');
+    gameEvents.emit('player-damaged', 0, 0);
+
+    expect(played.map((entry) => entry.key)).toEqual(['sfx-player-hit']);
+  });
+
+  it('keeps the monitor beep silent before any stage has begun', () => {
+    const { game, played } = createFakeGame({
+      loaded: ['sfx-player-hit', 'sfx-monitor-beep'],
+    });
+    director = new AudioDirector(game);
+
+    gameEvents.emit('player-damaged', 0, 0);
+
+    expect(played.map((entry) => entry.key)).toEqual(['sfx-player-hit']);
+  });
+
+  it('stops laying the beep after the title is returned to', () => {
+    const { game, played } = createFakeGame({
+      loaded: ['sfx-player-hit', 'sfx-monitor-beep', 'bgm-title'],
+    });
+    director = new AudioDirector(game);
+
+    gameEvents.emit('stage-changed', 'stage-01');
+    gameEvents.emit('scene-changed', 'title');
+    gameEvents.emit('player-damaged', 0, 0);
+
+    expect(played.map((entry) => entry.key)).toEqual(['sfx-player-hit']);
+  });
+
+  it('skips the layer while its file is missing but still plays the hit', () => {
+    const { game, played } = createFakeGame({ loaded: ['sfx-player-hit'] });
+    director = new AudioDirector(game);
+
+    gameEvents.emit('stage-changed', 'stage-01');
+    gameEvents.emit('player-damaged', 0, 0);
+
+    expect(played.map((entry) => entry.key)).toEqual(['sfx-player-hit']);
   });
 
   it('stops responding to cues once destroyed', () => {

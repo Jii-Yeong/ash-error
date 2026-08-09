@@ -4,9 +4,11 @@ import type {
   LaserCannonPatternConfig,
   LaserBossCombatConfig,
 } from '@/game/config/bossConfigTypes';
+import { STAGE_ONE_BOSS_WEAPON_ASSETS } from '@/game/config/bossAnimationConfig';
 import {
   getLaserAim,
   getLaserMuzzlePosition,
+  getRotatedLaserMuzzlePosition,
   isPointInsideLaser,
 } from '@/game/combat/laserGeometry';
 import { LaserAttackCycle } from '@/game/combat/LaserAttackCycle';
@@ -17,6 +19,8 @@ import { gameEvents } from '@/game/events/gameEvents';
 import { BeamEffects } from '@/game/systems/BeamEffects';
 
 type PlayerDamageHandler = (damage: number) => void;
+type StageOneBossWeaponAsset =
+  (typeof STAGE_ONE_BOSS_WEAPON_ASSETS)[keyof typeof STAGE_ONE_BOSS_WEAPON_ASSETS];
 
 const DEATH_POSE_HOLD_MS = 2000;
 const DEATH_FADE_MS = 650;
@@ -27,7 +31,11 @@ export class LaserBossEnemy extends BossEnemy<LaserCannonPatternConfig> {
 
   private readonly effects: BeamEffects;
   private readonly attackCycle: LaserAttackCycle;
+  private readonly weapon?: Phaser.GameObjects.Image;
+  private activeWeaponAsset: StageOneBossWeaponAsset =
+    STAGE_ONE_BOSS_WEAPON_ASSETS.charge;
   private aimAngle = 0;
+  private aimDistance = Number.POSITIVE_INFINITY;
   private laserHit = false;
   private activeSpriteAnimation?: string;
   private recoilUntil = 0;
@@ -48,6 +56,16 @@ export class LaserBossEnemy extends BossEnemy<LaserCannonPatternConfig> {
 
     this.attackCycle = new LaserAttackCycle(config.pattern, scene.time.now);
     this.effects = new BeamEffects(scene, config.pattern);
+    this.weapon = sprite
+      ? scene.add
+          .image(x, y, STAGE_ONE_BOSS_WEAPON_ASSETS.charge.key)
+          .setOrigin(
+            STAGE_ONE_BOSS_WEAPON_ASSETS.charge.originX,
+            STAGE_ONE_BOSS_WEAPON_ASSETS.charge.originY,
+          )
+          .setScale(sprite.scale)
+          .setVisible(false)
+      : undefined;
     this.applyBossSprite();
   }
 
@@ -85,6 +103,7 @@ export class LaserBossEnemy extends BossEnemy<LaserCannonPatternConfig> {
   ) {
     if (!this.active || this.dying) {
       this.effects.hideAll();
+      this.weapon?.setVisible(false);
       return false;
     }
 
@@ -94,6 +113,7 @@ export class LaserBossEnemy extends BossEnemy<LaserCannonPatternConfig> {
     if (!targetInRange) {
       this.setVelocityX(0);
       this.effects.hideAll();
+      this.weapon?.setVisible(false);
       this.playSpriteAnimation(this.sprite?.animations.idle ?? '');
       return false;
     }
@@ -116,6 +136,7 @@ export class LaserBossEnemy extends BossEnemy<LaserCannonPatternConfig> {
   protected override onDefeated() {
     super.onDefeated();
     this.effects.hideAll();
+    this.weapon?.setVisible(false);
   }
 
   override defeat() {
@@ -155,6 +176,7 @@ export class LaserBossEnemy extends BossEnemy<LaserCannonPatternConfig> {
 
   override destroy(fromScene?: boolean) {
     this.effects.destroy();
+    this.weapon?.destroy();
     super.destroy(fromScene);
   }
 
@@ -163,6 +185,7 @@ export class LaserBossEnemy extends BossEnemy<LaserCannonPatternConfig> {
     target: Phaser.Physics.Arcade.Sprite,
   ) {
     this.effects.hideAll();
+    this.weapon?.setVisible(false);
     this.moveToPreferredDistance(time, target);
     if (time >= this.recoilUntil) {
       // 선호 거리로 다가가거나 물러나는 동안 walk. 자리 잡으면 idle.
@@ -177,6 +200,7 @@ export class LaserBossEnemy extends BossEnemy<LaserCannonPatternConfig> {
     if (this.attackCycle.isComplete(time)) {
       this.attackCycle.beginVolley(time, this.isEnraged);
       this.laserSoundCue = this.isEnraged ? 'double-first' : 'single';
+      this.activeWeaponAsset = STAGE_ONE_BOSS_WEAPON_ASSETS.charge;
       this.lockAimOn(target);
     }
   }
@@ -185,12 +209,23 @@ export class LaserBossEnemy extends BossEnemy<LaserCannonPatternConfig> {
     time: number,
     target: Phaser.Physics.Arcade.Sprite,
   ) {
+    if (
+      Math.abs(target.x - this.x) <
+      this.pattern.preferredDistance - this.pattern.distanceTolerance
+    ) {
+      this.attackCycle.cancelCharge(time, this.isEnraged);
+      this.updateRepositioning(time, target);
+      return;
+    }
+
     this.setVelocityX(0);
     this.playSpriteAnimation(this.sprite?.animations.charge ?? '');
+    this.activeWeaponAsset = STAGE_ONE_BOSS_WEAPON_ASSETS.charge;
 
     if (this.attackCycle.shouldTrackAim(time)) {
       this.lockAimOn(target);
     }
+    this.syncWeapon(STAGE_ONE_BOSS_WEAPON_ASSETS.charge);
     // Facing is not re-derived from the aim angle here. lockAimOn already set
     // it, and the muzzle it placed is what the angle was measured from — so
     // deriving one from the other flips the muzzle out from under a beam that
@@ -212,6 +247,7 @@ export class LaserBossEnemy extends BossEnemy<LaserCannonPatternConfig> {
   ) {
     this.setVelocityX(0);
     this.playSpriteAnimation(this.sprite?.animations.fire ?? '');
+    this.syncWeapon(STAGE_ONE_BOSS_WEAPON_ASSETS.fire);
     const muzzle = this.getMuzzlePosition();
     this.effects.updateBeam(muzzle, this.aimAngle);
 
@@ -225,15 +261,18 @@ export class LaserBossEnemy extends BossEnemy<LaserCannonPatternConfig> {
     }
 
     this.effects.hideBeam();
+    this.weapon?.setVisible(false);
     this.recoilUntil = time + 280;
     this.playSpriteAnimation(this.sprite?.animations.recoil ?? '');
     if (this.attackCycle.finishFiring(time, this.isEnraged)) {
       this.laserSoundCue = 'double-second';
+      this.activeWeaponAsset = STAGE_ONE_BOSS_WEAPON_ASSETS.charge;
       this.lockAimOn(target);
     }
   }
 
   private beginFiring(time: number) {
+    this.syncWeapon(STAGE_ONE_BOSS_WEAPON_ASSETS.fire);
     this.attackCycle.beginFiring(time);
     this.laserHit = false;
     this.effects.showBeam(this.getMuzzlePosition(), this.aimAngle);
@@ -272,6 +311,24 @@ export class LaserBossEnemy extends BossEnemy<LaserCannonPatternConfig> {
   }
 
   private lockAimOn(target: Phaser.Physics.Arcade.Sprite) {
+    if (this.weapon) {
+      this.setFlipX(target.x < this.x);
+      const grip = this.getWeaponGripPosition(this.activeWeaponAsset);
+      this.aimAngle = Phaser.Math.Angle.Between(
+        grip.x,
+        grip.y,
+        target.x,
+        target.y,
+      );
+      this.aimDistance = Phaser.Math.Distance.Between(
+        grip.x,
+        grip.y,
+        target.x,
+        target.y,
+      );
+      return;
+    }
+
     const aim = getLaserAim(
       this,
       target,
@@ -283,12 +340,59 @@ export class LaserBossEnemy extends BossEnemy<LaserCannonPatternConfig> {
   }
 
   private getMuzzlePosition() {
+    if (this.weapon) {
+      const barrelLength = this.flipX
+        ? this.activeWeaponAsset.flippedBarrelLength
+        : this.activeWeaponAsset.barrelLength;
+      const muzzle = getRotatedLaserMuzzlePosition(
+        this.getWeaponGripPosition(this.activeWeaponAsset),
+        this.aimAngle,
+        Math.min(barrelLength, this.aimDistance),
+      );
+      muzzle.y += this.flipX
+        ? this.activeWeaponAsset.flippedMuzzleOffsetY
+        : this.activeWeaponAsset.muzzleOffsetY;
+      return muzzle;
+    }
+
     return getLaserMuzzlePosition(
       this,
       this.flipX,
       this.pattern.muzzleOffset,
       this.pattern.muzzleOffsetY,
     );
+  }
+
+  private getWeaponGripPosition(asset: StageOneBossWeaponAsset) {
+    return getLaserMuzzlePosition(
+      this,
+      this.flipX,
+      asset.gripOffsetX,
+      this.flipX ? asset.flippedGripOffsetY : asset.gripOffsetY,
+    );
+  }
+
+  private syncWeapon(asset: StageOneBossWeaponAsset) {
+    if (!this.weapon) {
+      return;
+    }
+
+    this.activeWeaponAsset = asset;
+    const grip = this.getWeaponGripPosition(asset);
+    const barrelAngle = this.flipX
+      ? asset.flippedBarrelAngle
+      : asset.barrelAngle;
+    this.weapon
+      .setTexture(asset.key)
+      .setOrigin(
+        asset.originX,
+        this.flipX ? 1 - asset.originY : asset.originY,
+      )
+      .setPosition(grip.x, grip.y)
+      .setRotation(this.aimAngle - barrelAngle)
+      .setFlipY(this.flipX)
+      .setDepth(this.depth + 0.01)
+      .setVisible(true);
   }
 
   private isTargetInsideBeam(

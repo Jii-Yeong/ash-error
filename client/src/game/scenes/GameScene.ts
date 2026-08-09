@@ -494,14 +494,14 @@ export class GameScene extends Phaser.Scene {
       this.enterCurrentRoom();
       // 무겁고 동기적인 방 재구성 '이후'에만 플래시함. 그래야 효과가 깨끗한
       // 프레임에 걸쳐 애니메이션되고, 재구성 프레임 내내 풀 불투명으로
-      // 멈춰(민트 화면이 멈춘 것처럼 보이던) 있지 않음.
+      // 멈춰(화면이 멈춘 것처럼 보이던) 있지 않음.
       //
       // resetFX로 이전에 남아 멈춰 있을 수 있는 플래시(예: 일시정지 중 얼어붙은
       // 효과)를 먼저 지운다. 그러지 않으면 force 없는 flash는 아직 실행 중으로
-      // 표시된 옛 효과 때문에 무시되어, 민트 오버레이가 화면에 그대로 남는다.
+      // 표시된 옛 효과 때문에 무시되어, 흰색 오버레이가 화면에 그대로 남는다.
       // force=true로 항상 새로 시작해 반드시 끝까지 재생(소멸)되게 한다.
       this.cameras.main.resetFX();
-      this.cameras.main.flash(180, 182, 255, 228, true);
+      this.cameras.main.flash(180, 255, 255, 255, true);
       return;
     }
 
@@ -1091,7 +1091,12 @@ export class GameScene extends Phaser.Scene {
       return;
     }
 
-    // 추락한 쪽에서 가까운 가장자리 위로 되살린다(구덩이를 공짜로 건너지 않도록).
+    if (this.applyPlayerDamage(PIT_FALL_DAMAGE)) {
+      this.player.setVisible(false);
+      return;
+    }
+
+    // 살아남으면 추락한 쪽에서 가까운 가장자리 위로 되살린다.
     const pit = this.floorBuilder.findPitAt(this.player.x, FLOOR_TILE);
     let targetX = this.player.x;
     if (pit) {
@@ -1104,8 +1109,6 @@ export class GameScene extends Phaser.Scene {
     }
     this.player.setPosition(targetX, FLOOR_SURFACE_Y - PIT_RESPAWN_LIFT);
     body.setVelocity(0, 0);
-
-    this.applyPlayerDamage(PIT_FALL_DAMAGE);
   }
 
   private applyPlayerDamage(damage: number) {
@@ -1114,7 +1117,7 @@ export class GameScene extends Phaser.Scene {
       this.playerController.isInvulnerable ||
       useGameSettingsStore.getState().invincible
     ) {
-      return;
+      return false;
     }
 
     const playerDefeated = this.playerHealth.takeDamage(damage);
@@ -1126,6 +1129,8 @@ export class GameScene extends Phaser.Scene {
     if (playerDefeated) {
       this.handlePlayerDeath();
     }
+
+    return playerDefeated;
   }
 
   private flashPlayerDamage() {

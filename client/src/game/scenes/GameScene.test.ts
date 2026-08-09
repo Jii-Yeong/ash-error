@@ -77,4 +77,26 @@ describe('GameScene run reset', () => {
       STAGE_FIVE_PLAYER_SPRITE.deathFrames?.[1],
     );
   });
+
+  it('구덩이 피해로 죽으면 가장자리로 옮기지 않고 플레이어를 숨긴다', () => {
+    const setPosition = vi.fn();
+    const setVisible = vi.fn();
+    const applyPlayerDamage = vi.fn(() => true);
+    const gameScene = Object.assign(Object.create(GameScene.prototype), {
+      player: {
+        body: { bottom: 10_000 },
+        setPosition,
+        setVisible,
+      },
+      playerController: { isFlightMode: false },
+      activeRoomConfig: { kind: 'combat' },
+      applyPlayerDamage,
+    }) as GameScene;
+
+    (gameScene as unknown as { handlePitFall(): void }).handlePitFall();
+
+    expect(applyPlayerDamage).toHaveBeenCalledOnce();
+    expect(setVisible).toHaveBeenCalledWith(false);
+    expect(setPosition).not.toHaveBeenCalled();
+  });
 });

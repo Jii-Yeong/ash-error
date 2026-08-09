@@ -26,6 +26,11 @@ export type MeleeSpriteConfig = EnemySpriteConfig<
   GroundedEnemySpriteGeometry
 >;
 
+export const MELEE_SWING_EFFECT = {
+  texture: 'melee-swing-effect',
+  png: '/assets/enemies/melee-swing-effect.png',
+} as const;
+
 const MELEE_ATLAS_SET = defineEnemyAtlasSet({
   slug: 'neared',
   stages: [1, 2],

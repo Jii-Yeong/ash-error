@@ -42,7 +42,6 @@ export type HoundBossPatternConfig = {
   recoveryDuration: number;
   enragedRecoveryDuration: number;
   cone: {
-    color: number;
     range: number;
     halfAngleDegrees: number;
     tiltDegrees: number;
@@ -56,7 +55,6 @@ export type HoundBossPatternConfig = {
     speed: number;
     radius: number;
     damage: number;
-    color: number;
   };
 };
 

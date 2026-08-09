@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   getLaserAim,
   getLaserMuzzlePosition,
+  getRotatedLaserMuzzlePosition,
   isPointInsideLaser,
 } from '@/game/combat/laserGeometry';
 
@@ -43,6 +44,18 @@ describe('getLaserMuzzlePosition', () => {
       x: 36,
       y: 210,
     });
+  });
+});
+
+describe('getRotatedLaserMuzzlePosition', () => {
+  it('회전한 무기의 포구 좌표를 조준 방향에 맞춰 계산한다', () => {
+    expect(getRotatedLaserMuzzlePosition(start, 0, 87)).toEqual({
+      x: 187,
+      y: 200,
+    });
+    expect(
+      getRotatedLaserMuzzlePosition(start, Math.PI / 2, 40),
+    ).toEqual({ x: 100, y: 240 });
   });
 });
 

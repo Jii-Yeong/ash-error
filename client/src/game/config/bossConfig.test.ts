@@ -34,7 +34,7 @@ describe('boss combat configuration', () => {
 
     // A wide detection fan that reaches at least to the player's stand-off
     // distance, then a dodgeable orb that fires quicker once enraged.
-    expect(pattern.cone.halfAngleDegrees).toBeGreaterThan(0);
+    expect(pattern.cone.halfAngleDegrees).toBe(20);
     expect(pattern.cone.range).toBeGreaterThanOrEqual(pattern.preferredDistance);
     expect(pattern.orb.enragedLockDuration).toBeLessThan(
       pattern.orb.lockDuration,
