@@ -94,14 +94,18 @@ function railRifle() {
   const frames = Math.round(RATE * seconds);
   const source = noise(frames, 909);
 
-  const charge = sweptBandpass(noise(frames, 911), 320, 2600, 6);
+  const charge = sweptBandpass(noise(frames, 911), 320, 2600, 4);
   const snap = apply(source, biquad('highpass', 5000, BUTTER));
   const body = apply(source, biquad('highpass', 600, BUTTER), biquad('lowpass', 5000, BUTTER));
   const slam = apply(
     apply(source, biquad('lowpass', 150, BUTTER)),
     biquad('lowpass', 150, BUTTER),
   );
-  const coil = sweptBandpass(noise(frames, 913), 1800, 190, 9);
+  // Q는 4를 넘기지 않는다. 9로 두면 스윕이 아니라 **음**이 된다 — 실측 Q가
+  // 11.1로, 일부러 음정을 준 5스테이지 종(7.96)보다 뾰족했다. 760ms마다
+  // 반복되는 큐가 그 정도로 서 있으면 코일이 아니라 음계로 들린다.
+  // 스윕 자체는 남으므로 코일건이라는 성격은 유지된다.
+  const coil = sweptBandpass(noise(frames, 913), 1800, 190, 4);
 
   return wav(
     finish(
