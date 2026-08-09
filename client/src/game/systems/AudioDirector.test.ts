@@ -57,8 +57,11 @@ function createFakeGame(
   const loaded = new Set<string>(options.loaded ?? []);
   const played: PlayedSfx[] = [];
   const added: AddedMusic[] = [];
+  const stopped: string[] = [];
+  const active = new Set<string>();
   let unlockListener: (() => void) | undefined;
   const decodedListeners = new Set<(key: string) => void>();
+  const gameListeners = new Map<string, Set<() => void>>();
 
   const game = {
     cache: {
@@ -68,7 +71,16 @@ function createFakeGame(
       locked: options.locked ?? false,
       play: (key: string, config: Phaser.Types.Sound.SoundConfig) => {
         played.push({ key, config });
+        active.add(key);
         return true;
+      },
+      stopByKey: (key: string) => {
+        if (!active.delete(key)) {
+          return 0;
+        }
+
+        stopped.push(key);
+        return 1;
       },
       add: (key: string, config: Phaser.Types.Sound.SoundConfig) => {
         const music: AddedMusic = {
@@ -135,12 +147,28 @@ function createFakeGame(
         decodedListeners.delete(listener);
       },
     },
+    events: {
+      on: (event: string, listener: () => void) => {
+        const listeners = gameListeners.get(event) ?? new Set();
+        listeners.add(listener);
+        gameListeners.set(event, listeners);
+      },
+      off: (event: string, listener: () => void) => {
+        gameListeners.get(event)?.delete(listener);
+      },
+    },
   };
 
   return {
     game: game as unknown as Phaser.Game,
     played,
     added,
+    stopped,
+    blur: () => {
+      for (const listener of gameListeners.get('blur') ?? []) {
+        listener();
+      }
+    },
     unlock: () => unlockListener?.(),
     /** Mimics a background track arriving after the game already asked for it. */
     finishDecoding: (key: string) => {
@@ -345,6 +373,18 @@ describe('AudioDirector', () => {
       'sfx-stage1-boss-laser-double-first',
       'sfx-stage1-boss-laser-double-second',
     ]);
+  });
+
+  it('stops a stage one laser cue when the game loses focus', () => {
+    const { game, blur, stopped } = createFakeGame({
+      loaded: Object.values(STAGE_ONE_BOSS_LASER_SFX_BY_CUE),
+    });
+    director = new AudioDirector(game);
+
+    gameEvents.emit('boss-laser-fired', 'single');
+    blur();
+
+    expect(stopped).toEqual(['sfx-stage1-boss-laser-single']);
   });
 
   it('joins the stage two boss scan intro, loop, lock and end cues', () => {

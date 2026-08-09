@@ -88,6 +88,7 @@ export class AudioDirector {
 
   constructor(private readonly game: Phaser.Game) {
     this.game.sound.on(Phaser.Sound.Events.DECODED, this.handleDecoded);
+    this.game.events.on(Phaser.Core.Events.BLUR, this.handleGameBlur);
 
     gameEvents.on('scene-changed', this.handleSceneChanged);
     gameEvents.on('stage-changed', this.handleStageChanged);
@@ -111,6 +112,7 @@ export class AudioDirector {
   }
 
   destroy() {
+    this.game.events.off(Phaser.Core.Events.BLUR, this.handleGameBlur);
     gameEvents.off('scene-changed', this.handleSceneChanged);
     gameEvents.off('stage-changed', this.handleStageChanged);
     gameEvents.off('phase-changed', this.handlePhaseChanged);
@@ -209,6 +211,13 @@ export class AudioDirector {
   private readonly handleDecoded = (key: string) => {
     if (key === this.wantedMusic) {
       this.startMusic();
+    }
+  };
+
+  /** 화면 복귀 때 레이저 효과음의 큰 구간이 갑자기 재개되지 않게 끊는다. */
+  private readonly handleGameBlur = () => {
+    for (const key of Object.values(STAGE_ONE_BOSS_LASER_SFX_BY_CUE)) {
+      this.game.sound.stopByKey(key);
     }
   };
 
