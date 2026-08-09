@@ -151,8 +151,7 @@ export function App() {
                   role='status'
                   aria-live='assertive'
                 >
-                  <span>PHASE 2</span>
-                  <strong>CORE OVERLOAD</strong>
+                  <strong>PHASE 2</strong>
                 </div>
               )}
             </div>
