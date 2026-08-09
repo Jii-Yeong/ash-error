@@ -7,6 +7,7 @@ import { GAME_HEIGHT } from '@/game/config/gameDimensions';
 import {
   PLAYER_INITIAL_FRAME,
   PLAYER_SPRITE_CONFIG,
+  STAGE_ENDING_DRONE,
   STAGE_FIVE_PLAYER_HALO,
   STAGE_FIVE_PLAYER_SPRITE,
   STAGE_THREE_PLAYER_SPRITE,
@@ -100,7 +101,10 @@ const UNDERGROUND_LANDING_BACKDROP = {
 };
 const STAGE_THREE_ENDING_FRAME =
   STAGE_THREE_PLAYER_SPRITE.deathFrames?.at(-1) ?? PLAYER_INITIAL_FRAME;
-const ASCENSION_VICTORY_DELAY_MS = 2000;
+const ASCENSION_ALIVE_DELAY_MS = 1000;
+const ASCENSION_DRONE_FLIGHT_MS = 3200;
+const ASCENSION_DRONE_OFFSET_X = 120;
+const ASCENSION_DRONE_OFFSET_Y = -100;
 
 export class GameScene extends Phaser.Scene {
   private player!: Phaser.Physics.Arcade.Sprite;
@@ -641,6 +645,8 @@ export class GameScene extends Phaser.Scene {
 
     this.weaponSystem.hide();
     this.enemyCombatDirector.destroyEnemies();
+    // 흰 화면 뒤에서 3스테이지 방으로 교체되는 순간 음악도 함께 되돌림.
+    gameEvents.emit('stage-changed', STAGE_THREE_CONFIG.id);
     // 어드민으로 5스테이지 보스에 직행하면 3스테이지 지형은 아직 캐시에 없다.
     // 도착 뒤 다시 그려 콜드 로드에서도 바닥 스킨이 placeholder로 굳지 않게 한다.
     //
@@ -700,10 +706,33 @@ export class GameScene extends Phaser.Scene {
   }
 
   private playAscensionAlive(onComplete: () => void) {
-    this.player.once(Phaser.Animations.Events.ANIMATION_COMPLETE, () =>
-      this.time.delayedCall(ASCENSION_VICTORY_DELAY_MS, onComplete),
-    );
-    this.player.play(STAGE_THREE_PLAYER_SPRITE.animations.alive, true);
+    this.time.delayedCall(ASCENSION_ALIVE_DELAY_MS, () => {
+      this.player.once(Phaser.Animations.Events.ANIMATION_COMPLETE, () =>
+        this.flyInEndingDrone(onComplete),
+      );
+      this.player.play(STAGE_THREE_PLAYER_SPRITE.animations.alive, true);
+    });
+  }
+
+  private flyInEndingDrone(onComplete: () => void) {
+    const camera = this.cameras.main.worldView;
+    const drone = this.add
+      .sprite(
+        camera.right + (STAGE_ENDING_DRONE.width * STAGE_ENDING_DRONE.scale) / 2,
+        this.player.y + ASCENSION_DRONE_OFFSET_Y,
+        STAGE_ENDING_DRONE.texture,
+      )
+      .setFlipX(true)
+      .setScale(STAGE_ENDING_DRONE.scale)
+      .setDepth(PLAYER_STACK_DEPTH.frontArm + 1)
+      .play(STAGE_ENDING_DRONE.animation);
+    this.tweens.add({
+      targets: drone,
+      x: this.player.x + ASCENSION_DRONE_OFFSET_X,
+      duration: ASCENSION_DRONE_FLIGHT_MS,
+      ease: 'Sine.easeOut',
+      onComplete,
+    });
   }
 
   private emitStageLocation() {

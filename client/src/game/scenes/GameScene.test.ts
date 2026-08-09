@@ -1,7 +1,11 @@
 // @vitest-environment jsdom
 
 import { describe, expect, it, vi } from 'vitest';
-import { STAGE_FIVE_PLAYER_SPRITE } from '@/game/config/playerAnimationConfig';
+import {
+  STAGE_ENDING_DRONE,
+  STAGE_FIVE_PLAYER_SPRITE,
+  STAGE_THREE_PLAYER_SPRITE,
+} from '@/game/config/playerAnimationConfig';
 import type { Enemy } from '@/game/entities/Enemy';
 import { GameScene } from '@/game/scenes/GameScene';
 
@@ -98,5 +102,57 @@ describe('GameScene run reset', () => {
     expect(applyPlayerDamage).toHaveBeenCalledOnce();
     expect(setVisible).toHaveBeenCalledWith(false);
     expect(setPosition).not.toHaveBeenCalled();
+  });
+
+  it('줌인 뒤 쉬었다가 생존 애니메이션과 드론 진입을 순서대로 재생한다', () => {
+    let afterPause: (() => void) | undefined;
+    let afterAlive: (() => void) | undefined;
+    const onComplete = vi.fn();
+    const drone = {
+      play: vi.fn().mockReturnThis(),
+      setDepth: vi.fn().mockReturnThis(),
+      setFlipX: vi.fn().mockReturnThis(),
+      setScale: vi.fn().mockReturnThis(),
+    };
+    const tween = vi.fn();
+    const player = {
+      once: vi.fn((_event: string, callback: () => void) => {
+        afterAlive = callback;
+      }),
+      play: vi.fn(),
+      x: 640,
+      y: 620,
+    };
+    const gameScene = Object.assign(Object.create(GameScene.prototype), {
+      add: { sprite: vi.fn(() => drone) },
+      cameras: { main: { worldView: { right: 1280 } } },
+      player,
+      time: {
+        delayedCall: vi.fn((_delay: number, callback: () => void) => {
+          afterPause = callback;
+        }),
+      },
+      tweens: { add: tween },
+    }) as GameScene;
+
+    (
+      gameScene as unknown as {
+        playAscensionAlive(callback: () => void): void;
+      }
+    ).playAscensionAlive(onComplete);
+
+    expect(player.play).not.toHaveBeenCalled();
+    afterPause?.();
+    expect(player.play).toHaveBeenCalledWith(
+      STAGE_THREE_PLAYER_SPRITE.animations.alive,
+      true,
+    );
+    afterAlive?.();
+    expect(drone.setFlipX).toHaveBeenCalledWith(true);
+    expect(drone.play).toHaveBeenCalledWith(STAGE_ENDING_DRONE.animation);
+    const droneTween = tween.mock.calls[0]?.[0] as { onComplete: () => void };
+    expect(onComplete).not.toHaveBeenCalled();
+    droneTween.onComplete();
+    expect(onComplete).toHaveBeenCalledOnce();
   });
 });

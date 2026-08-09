@@ -33,6 +33,7 @@ import {
   PLAYER_IDLE_FRAMES,
   PLAYER_RUN_FRAMES,
   PLAYER_SPRITE_CONFIG,
+  STAGE_ENDING_DRONE,
   STAGE_FIVE_PLAYER_HALO,
   STAGE_FIVE_PLAYER_SPRITE,
   STAGE_FOUR_PLAYER_SPRITE,
@@ -78,6 +79,11 @@ export class BootScene extends Phaser.Scene {
     for (const sprite of PLAYER_SPRITES) {
       this.load.atlas(sprite.texture, sprite.png, sprite.json);
     }
+    this.load.atlas(
+      STAGE_ENDING_DRONE.texture,
+      STAGE_ENDING_DRONE.png,
+      STAGE_ENDING_DRONE.json,
+    );
     for (const atlas of BOSS_ANIMATION_ATLASES) {
       this.load.atlas(atlas.texture, atlas.png, atlas.json);
     }
@@ -533,6 +539,15 @@ export class BootScene extends Phaser.Scene {
         });
       }
     }
+    this.anims.create({
+      key: STAGE_ENDING_DRONE.animation,
+      frames: STAGE_ENDING_DRONE.frames.map((frame) => ({
+        key: STAGE_ENDING_DRONE.texture,
+        frame,
+      })),
+      duration: 500,
+      repeat: -1,
+    });
     this.anims.create({
       key: STAGE_FIVE_PLAYER_HALO.animation,
       frames: this.anims.generateFrameNumbers(

@@ -92,6 +92,19 @@ export const STAGE_FIVE_PLAYER_SPRITE: PlayerSpriteConfig = {
   deathFrames: [15, 16].map(frameName),
 };
 
+export const STAGE_ENDING_DRONE = {
+  texture: 'stage-ending-drone',
+  png: '/assets/player/stage-ending-dron.png',
+  json: '/assets/player/stage-ending-dron.json',
+  animation: 'stage-ending-drone-fly',
+  frames: [
+    'stage-ending-dron 0.aseprite',
+    'stage-ending-dron 1.aseprite',
+  ],
+  width: 105,
+  scale: 1.35,
+} as const;
+
 /** 5스테이지 플레이어 뒤에서 회전하는 헤일로. */
 export const STAGE_FIVE_PLAYER_HALO = {
   texture: 'stage-5-player-halo',
