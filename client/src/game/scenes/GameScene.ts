@@ -1091,7 +1091,12 @@ export class GameScene extends Phaser.Scene {
       return;
     }
 
-    // 추락한 쪽에서 가까운 가장자리 위로 되살린다(구덩이를 공짜로 건너지 않도록).
+    if (this.applyPlayerDamage(PIT_FALL_DAMAGE)) {
+      this.player.setVisible(false);
+      return;
+    }
+
+    // 살아남으면 추락한 쪽에서 가까운 가장자리 위로 되살린다.
     const pit = this.floorBuilder.findPitAt(this.player.x, FLOOR_TILE);
     let targetX = this.player.x;
     if (pit) {
@@ -1104,8 +1109,6 @@ export class GameScene extends Phaser.Scene {
     }
     this.player.setPosition(targetX, FLOOR_SURFACE_Y - PIT_RESPAWN_LIFT);
     body.setVelocity(0, 0);
-
-    this.applyPlayerDamage(PIT_FALL_DAMAGE);
   }
 
   private applyPlayerDamage(damage: number) {
@@ -1114,7 +1117,7 @@ export class GameScene extends Phaser.Scene {
       this.playerController.isInvulnerable ||
       useGameSettingsStore.getState().invincible
     ) {
-      return;
+      return false;
     }
 
     const playerDefeated = this.playerHealth.takeDamage(damage);
@@ -1126,6 +1129,8 @@ export class GameScene extends Phaser.Scene {
     if (playerDefeated) {
       this.handlePlayerDeath();
     }
+
+    return playerDefeated;
   }
 
   private flashPlayerDamage() {
