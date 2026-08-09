@@ -153,10 +153,10 @@ export class StageEndEventDirector {
         const worldCenterX = this.scene.physics.world.bounds.centerX;
         const enemies = this.spawnUndergroundSiege(worldCenterX, true);
 
-        // 흰빛을 옅게 내려 지하 포위 방과 잡몹 대형을 드러낸다.
+        // 흰빛을 완전히 내려 지하 포위 방과 잡몹 대형을 선명하게 드러낸다.
         this.scene.tweens.add({
           targets: white,
-          alpha: 0.2,
+          alpha: 0,
           duration: 700,
           delay: ASCENSION_WHITE_HOLD_MS,
         });
