@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { matchAudioAssets } from '@/game/config/audioAssets';
 import {
+  DEFERRED_SFX_BY_STAGE,
   DEFERRED_SFX_KEYS,
   MUSIC_CONFIG,
   SFX_CONFIG,
 } from '@/game/config/audioConfig';
+import { STAGES } from '@/game/config/stageConfig';
 
 const AUDIO_ROOT = '../../assets/audio';
 
@@ -99,6 +101,22 @@ describe('matchAudioAssets', () => {
 
     expect(stageScoped.length).toBeGreaterThan(0);
     expect(deferred).toEqual(stageScoped.sort());
+  });
+
+  /**
+   * 큐는 STAGES와 별개의 표에 스테이지 id로 걸려 있다. 스테이지를 하나 더
+   * 만들면서 이 표를 잊으면 조회가 그냥 비어서 **그 스테이지 전체가 무음으로
+   * 진행된다** — 예외도, 실패하는 테스트도, dev 경고도 없다. 그 침묵을 여기서
+   * 깨뜨린다.
+   *
+   * 비행 스테이지처럼 발소리가 없는 것이 정상인 경우가 있으므로 발소리는
+   * 제외하고, 스테이지마다 최소한 지연 큐 항목은 있어야 한다고 본다.
+   */
+  it('gives every stage a cue table entry', () => {
+    const missing = STAGES.filter(({ id }) => !DEFERRED_SFX_BY_STAGE[id]);
+
+    expect(STAGES.length).toBeGreaterThan(0);
+    expect(missing.map(({ id }) => id)).toEqual([]);
   });
 
   it('flags files that answer no cue so the name can be fixed', () => {

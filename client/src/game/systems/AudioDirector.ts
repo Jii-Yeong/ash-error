@@ -18,6 +18,7 @@ import {
   WEAPON_FIRE_SFX,
   type AudioAssetKey,
   type AudioMix,
+  type FootstepStageId,
   type MusicKey,
   type SfxKey,
   type StageFiveBossCue,
@@ -314,18 +315,16 @@ export class AudioDirector {
     this.playSfx('sfx-player-dash');
   };
 
+  /** 발소리가 없는 스테이지(비행 구간)는 조회 결과가 비어 그대로 지나간다. */
   private readonly handlePlayerStepped = () => {
-    if (
-      !this.currentStageId ||
-      !Object.hasOwn(FOOTSTEP_SFX_BY_STAGE, this.currentStageId)
-    ) {
+    const footsteps = this.currentStageId
+      ? FOOTSTEP_SFX_BY_STAGE[this.currentStageId as FootstepStageId]
+      : undefined;
+
+    if (!footsteps) {
       return;
     }
 
-    const footsteps =
-      FOOTSTEP_SFX_BY_STAGE[
-        this.currentStageId as keyof typeof FOOTSTEP_SFX_BY_STAGE
-      ];
     this.playSfx(this.pickRandom(footsteps));
   };
 

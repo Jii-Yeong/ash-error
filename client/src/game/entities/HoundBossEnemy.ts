@@ -123,7 +123,12 @@ export class HoundBossEnemy extends BossEnemy<HoundBossPatternConfig> {
     target: Phaser.Physics.Arcade.Sprite,
     _fireProjectile: EnemyProjectileAttack,
   ) {
+    // 두 경로 모두 스캔을 중단하고 콘을 지운다. 스캔음은 루프라 여기서 함께
+    // 닫지 않으면, 보스가 살아 있고 플레이어만 멀어진 상황에서 화면에는
+    // 아무것도 없는데 스캔 험만 계속 돈다. AudioDirector의 일괄 정지는
+    // 사망·일시정지·스테이지 전환만 덮으므로 이 경로는 걸리지 않는다.
     if (!this.active || this.dying) {
+      this.endScanAudio();
       this.cone.hide();
       return false;
     }
@@ -132,6 +137,7 @@ export class HoundBossEnemy extends BossEnemy<HoundBossPatternConfig> {
       Phaser.Math.Distance.Between(this.x, this.y, target.x, target.y) <=
       this.aggroRadius;
     if (!targetInRange) {
+      this.endScanAudio();
       this.setVelocityX(0);
       this.cone.hide();
       this.playSpriteAnimation(this.sprite?.animations.idle ?? '');
@@ -209,12 +215,13 @@ export class HoundBossEnemy extends BossEnemy<HoundBossPatternConfig> {
 
     if (time >= this.stateEndsAt) {
       this.attackState = 'scanning';
-      this.scanAudioActive = true;
-      gameEvents.emit('boss-scan-cue', 'start');
     }
   }
 
   private updateScanning(time: number, target: Phaser.Physics.Arcade.Sprite) {
+    // 전이 시점이 아니라 상태를 따라간다. 어그로 밖으로 나가면 스캔음을 닫는데,
+    // 전이에서만 켰다면 돌아왔을 때 콘은 도는데 소리는 없는 사이클이 생긴다.
+    this.beginScanAudio();
     this.moveToPreferredDistance(time, target);
     this.updateLocomotionAnimation(time);
     this.aimConeAt(target);
@@ -264,6 +271,15 @@ export class HoundBossEnemy extends BossEnemy<HoundBossPatternConfig> {
         ? this.pattern.enragedRecoveryDuration
         : this.pattern.recoveryDuration);
     this.cone.hide();
+  }
+
+  private beginScanAudio() {
+    if (this.scanAudioActive) {
+      return;
+    }
+
+    this.scanAudioActive = true;
+    gameEvents.emit('boss-scan-cue', 'start');
   }
 
   private endScanAudio() {
