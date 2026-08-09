@@ -445,8 +445,10 @@ const BELL = [
   { ratio: 1, gain: 1.0, tau: 0.5 },
   { ratio: 2.02, gain: 0.6, tau: 0.32 },
   { ratio: 2.99, gain: 0.42, tau: 0.2 },
-  { ratio: 4.17, gain: 0.28, tau: 0.13 },
-  { ratio: 5.42, gain: 0.16, tau: 0.08 },
+  // 위쪽 둘은 한 번 들으면 좋은데 halo는 패턴당 2~3발, wings는 3연발이다.
+  // 반복되는 큐에서 이 대역이 세면 종이 아니라 삑삑거림으로 굳는다.
+  { ratio: 4.17, gain: 0.18, tau: 0.11 },
+  { ratio: 5.42, gain: 0.08, tau: 0.06 },
 ];
 
 /** The halo charging. Choir-like, rising, no transient — nothing has happened. */
@@ -468,7 +470,7 @@ function haloWarn() {
       mix(
         frames,
         [choir, swell(frames, 0.56, 0.16), 1.0],
-        [shimmer, swell(frames, 0.6, 0.1), 0.16],
+        [shimmer, swell(frames, 0.6, 0.1), 0.08],
       ),
       frames,
       0.07,
@@ -631,9 +633,11 @@ function architectPhase() {
     finish(
       mix(
         frames,
-        [bell, hold(frames), 0.9],
+        // 종의 2.02배음(296.6Hz)이 성가의 D4(293.7Hz)와 2.9Hz로 맥놀이한다.
+        // 종을 앞세울 이유가 없는 큐라 게인을 낮춰 맥놀이 깊이를 줄인다.
+        [bell, hold(frames), 0.5],
         [choir, swell(frames, 0.5, 0.5), 1.0],
-        [shimmer, swell(frames, 0.55, 0.3), 0.18],
+        [shimmer, swell(frames, 0.55, 0.3), 0.09],
       ),
       frames,
       0.12,
@@ -669,7 +673,7 @@ function falseSalvation() {
         frames,
         [triad, swell(frames, 0.5, 0.9), 1.0],
         [bell, hold(frames), 0.55],
-        [light, swell(frames, 0.6, 0.6), 0.14],
+        [light, swell(frames, 0.6, 0.6), 0.07],
       ),
       frames,
       0.16,
@@ -681,13 +685,19 @@ function falseSalvation() {
  * The core opening — the only window in which the boss can be hurt. Held and
  * hollow: an octave with the upper voice pulled flat, so the cue is unpleasant
  * to sit inside and the player is pushed to spend the window shooting.
+ *
+ * How flat matters more than it looks. The first pass used 1.97, which puts the
+ * upper voice 8.8Hz under the true octave — and 3~30Hz is the band the ear
+ * fuses into *roughness* rather than hearing as two notes. The cue read as
+ * buzzing, not as unease. 1.996 lands the beat near 1Hz: one slow drift across
+ * the window, which is the wrongness that was wanted.
  */
 function coreExposed() {
   const frames = seconds(0.92);
   const hollow = mix(
     frames,
     [sine(frames, D4), hold(frames), 1.0],
-    [sine(frames, D4 * 1.97), hold(frames), 0.7],
+    [sine(frames, D4 * 1.996), hold(frames), 0.7],
   );
   const grind = apply(noise(frames, 6001), biquad('bandpass', 1100, 2.4));
 
