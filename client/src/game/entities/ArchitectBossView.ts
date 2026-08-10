@@ -70,26 +70,6 @@ export class ArchitectBossView {
     this.phaseOverlay.clear();
   }
 
-  drawHaloWarning(
-    x: number,
-    y: number,
-    gapAngle: number,
-    progress: number,
-  ) {
-    const pulse = 0.45 + progress * 0.5;
-    this.telegraph
-      .lineStyle(4, this.pattern.goldColor, pulse)
-      .lineBetween(x - 52, y - 64, x - 22, y - 64)
-      .lineBetween(x + 22, y - 64, x + 52, y - 64)
-      .lineStyle(5, this.pattern.skyColor, 0.9)
-      .lineBetween(
-        x,
-        y - 64,
-        x + Math.cos(gapAngle) * 92,
-        y - 64 + Math.sin(gapAngle) * 92,
-      );
-  }
-
   drawWingWarning(x: number, y: number, time: number, step: number) {
     const pulse = 0.55 + Math.sin(time * 0.025) * 0.18;
     if (step === 0 || step === 2) {

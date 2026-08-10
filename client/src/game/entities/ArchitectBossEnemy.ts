@@ -472,13 +472,6 @@ export class ArchitectBossEnemy extends BossEnemy<ArchitectBossPatternConfig> {
 
   private updateHaloWarning(time: number) {
     this.setVelocity(0, 0);
-    const progress = this.stateProgress(time);
-    this.view.drawHaloWarning(
-      this.x,
-      this.y,
-      this.haloGapAngle,
-      progress,
-    );
 
     if (time >= this.stateEndsAt) {
       this.attackState = 'halo-firing';
