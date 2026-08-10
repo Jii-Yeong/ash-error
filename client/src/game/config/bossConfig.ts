@@ -37,7 +37,7 @@ export const BOSS_COMBAT_CONFIGS = {
       bodyColor: 0x286783,
       accentColor: 0x8ee3ff,
     },
-    maxHealth: 500,
+    maxHealth: 1200,
     aggroRadius: 1500,
     aggroIndicatorColor: 0x61c6ff,
     contactDamage: 18,

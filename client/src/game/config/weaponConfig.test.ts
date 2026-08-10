@@ -78,7 +78,7 @@ describe('weapon progression', () => {
       ...WEAPON_CONFIGS.map(getWeaponSustainedDamagePerSecond),
     );
     const targetClearSeconds = {
-      'city-warden': 6,
+      'city-warden': 13,
       'alley-hunter': 7,
       'underground-guardian': 9,
       'infernal-executioner': 11,
