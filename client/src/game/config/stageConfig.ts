@@ -83,6 +83,8 @@ export type StageConfig = {
   playerMaxHealth: number;
   movementMode: MovementMode;
   palette: StagePalette;
+  /** 배경 팔레트와 별도로 포탈에 적용할 색상. */
+  portalTint?: number;
   music: MusicKey;
   rooms: StageRooms;
   endEvent?: StageEndEvent;
@@ -153,6 +155,7 @@ export const STAGE_TWO_CONFIG: StageConfig = {
     accentSecondary: 0x3b4a6b,
     neonFlicker: true,
   },
+  portalTint: 0xb6ffe4,
   music: 'bgm-alley',
   background: {
     key: 'stage-02-bg',

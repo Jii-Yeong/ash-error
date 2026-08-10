@@ -118,6 +118,30 @@
     "spriteSourceSize": { "x": 3, "y": 0, "w": 92, "h": 96 },
     "sourceSize": { "w": 96, "h": 96 },
     "duration": 200
+   },
+   "shoot-posture-hand 15.aseprite": {
+    "frame": { "x": 191, "y": 298, "w": 94, "h": 98 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 3, "y": 0, "w": 92, "h": 96 },
+    "sourceSize": { "w": 96, "h": 96 },
+    "duration": 500
+   },
+   "shoot-posture-hand 16.aseprite": {
+    "frame": { "x": 286, "y": 298, "w": 94, "h": 98 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 3, "y": 0, "w": 92, "h": 96 },
+    "sourceSize": { "w": 96, "h": 96 },
+    "duration": 200
+   },
+   "shoot-posture-hand 17.aseprite": {
+    "frame": { "x": 191, "y": 298, "w": 94, "h": 98 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 3, "y": 0, "w": 92, "h": 96 },
+    "sourceSize": { "w": 96, "h": 96 },
+    "duration": 500
    }
  },
  "meta": {
@@ -131,7 +155,8 @@
    { "name": "player_idle_rifle", "from": 0, "to": 3, "direction": "forward", "color": "#000000ff" },
    { "name": "player_jump_down", "from": 4, "to": 6, "direction": "reverse", "color": "#000000ff" },
    { "name": "player_run", "from": 7, "to": 12, "direction": "forward", "color": "#000000ff" },
-   { "name": "death", "from": 13, "to": 14, "direction": "forward", "color": "#000000ff" }
+   { "name": "death", "from": 13, "to": 14, "direction": "forward", "color": "#000000ff" },
+   { "name": "alive", "from": 15, "to": 17, "direction": "forward", "color": "#000000ff" }
   ],
   "layers": [
    { "name": "Layer", "opacity": 255, "blendMode": "normal" },

@@ -34,7 +34,7 @@ describe('boss combat configuration', () => {
 
     // A wide detection fan that reaches at least to the player's stand-off
     // distance, then a dodgeable orb that fires quicker once enraged.
-    expect(pattern.cone.halfAngleDegrees).toBeGreaterThan(0);
+    expect(pattern.cone.halfAngleDegrees).toBe(20);
     expect(pattern.cone.range).toBeGreaterThanOrEqual(pattern.preferredDistance);
     expect(pattern.orb.enragedLockDuration).toBeLessThan(
       pattern.orb.lockDuration,
@@ -149,13 +149,14 @@ describe('boss combat configuration', () => {
     });
     expect(
       ARCHITECT_BOSS_SPRITES['returning-architect']!.scale * 267,
-    ).toBe(220);
+    ).toBe(350);
     expect(STAGE_FIVE_BOSS_TAG_FRAMES).toMatchObject({
-      eyeTrack: [{ frame: '2' }],
-      eyeFire: [{ frame: '8' }],
-      falseSalvation: [{ frame: '7' }],
-      coreExposed: [{ frame: '10' }],
-      death: [{ frame: '13' }],
+      idle: [{ frame: '0' }],
+      eyeTrack: [{ frame: '1' }],
+      eyeFire: [{ frame: '7' }],
+      falseSalvation: [{ frame: '6' }],
+      coreExposed: [{ frame: '9' }],
+      death: [{ frame: '12' }],
     });
   });
 });

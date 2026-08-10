@@ -90,9 +90,9 @@ export const BOSS_COMBAT_CONFIGS = {
       recoveryDuration: 950,
       enragedRecoveryDuration: 700,
       cone: {
-        color: 0xff3b3b,
         range: 720,
-        halfAngleDegrees: 40,
+        // 전체 감시각 40°.
+        halfAngleDegrees: 20,
         tiltDegrees: 14,
         // 머리(눈)에서 부채꼴이 나오도록 전방·위쪽으로 이동.
         apexOffsetY: -50,
@@ -104,7 +104,6 @@ export const BOSS_COMBAT_CONFIGS = {
         speed: 430,
         radius: 16,
         damage: 22,
-        color: 0xff5a4a,
       },
     },
   },
@@ -223,7 +222,7 @@ export const BOSS_COMBAT_CONFIGS = {
       recoveryDuration: 900,
       enragedRecoveryDuration: 700,
       phaseTransitionDuration: 1000,
-      goldColor: 0xffd86b,
+      goldColor: 0xffff66,
       skyColor: 0x9eeeff,
       corruptionColor: 0x17131f,
       aerial: {
@@ -353,8 +352,8 @@ export const ARCHITECT_BOSS_SPRITES: Partial<
 > = {
   'returning-architect': {
     animations: STAGE_FIVE_BOSS_ANIMATIONS,
-    // 원본 불투명 높이 267px를 게임 내 보스 높이 220px로 표시함.
-    scale: 220 / 267,
+    // 원본 불투명 높이 267px를 게임 내 보스 높이 350px로 표시함.
+    scale: 350 / 267,
     bodyWidth: 110,
     bodyHeight: 190,
   },

@@ -168,7 +168,8 @@ export class EnemyFactory {
     }
 
     // 발판(2층)에 걸리지 않고 천장에서 1층 바닥까지 떨어지도록 지형 충돌은 끈다.
-    // 구덩이 가장자리 장벽도 무시해, 지상 돌진 중 구덩이를 만나면 그대로 추락한다.
+    // 구덩이 장벽도 무시한다. 이 적은 구덩이에 빠뜨려 처리하는 것이 공략이고,
+    // 장벽을 켜면 구덩이 위 허공(바닥에서 160px)에 착지해 회수되지 않는다.
     return this.finishSpawn(
       new CeilingMaintainerEnemy(
         this.scene,

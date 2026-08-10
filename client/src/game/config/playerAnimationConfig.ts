@@ -10,6 +10,7 @@ export const PLAYER_ANIMATIONS = {
   flyMove: 'player_fly_move',
   flyDash: 'player_fly_dash',
   death: 'player-death',
+  alive: 'player-alive',
 } as const;
 
 export type PlayerAnimationSet = {
@@ -23,6 +24,7 @@ export type PlayerSpriteConfig = {
   animations: PlayerAnimationSet;
   flyFrames?: readonly string[];
   deathFrames?: readonly string[];
+  aliveFrames?: readonly string[];
 };
 
 export const PLAYER_SPRITE_CONFIG: PlayerSpriteConfig = {
@@ -54,8 +56,10 @@ export const STAGE_THREE_PLAYER_SPRITE: PlayerSpriteConfig = {
     idle: 'stage-3-player-idle',
     run: 'stage-3-player-run',
     death: 'stage-3-player-death',
+    alive: 'stage-3-player-alive',
   },
   deathFrames: [13, 14].map(frameName),
+  aliveFrames: [15, 16, 17].map(frameName),
 };
 
 export const STAGE_FOUR_PLAYER_SPRITE: PlayerSpriteConfig = {
@@ -87,6 +91,19 @@ export const STAGE_FIVE_PLAYER_SPRITE: PlayerSpriteConfig = {
   flyFrames: [13, 14].map(frameName),
   deathFrames: [15, 16].map(frameName),
 };
+
+export const STAGE_ENDING_DRONE = {
+  texture: 'stage-ending-drone',
+  png: '/assets/player/stage-ending-dron.png',
+  json: '/assets/player/stage-ending-dron.json',
+  animation: 'stage-ending-drone-fly',
+  frames: [
+    'stage-ending-dron 0.aseprite',
+    'stage-ending-dron 1.aseprite',
+  ],
+  width: 105,
+  scale: 1.35,
+} as const;
 
 /** 5스테이지 플레이어 뒤에서 회전하는 헤일로. */
 export const STAGE_FIVE_PLAYER_HALO = {

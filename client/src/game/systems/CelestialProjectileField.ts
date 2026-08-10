@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { CELESTIAL_PROJECTILE_BOUNDS } from '@/game/config/stageFiveEnemyConfig';
+import { SceneUpdateLoop } from '@/game/systems/SceneUpdateLoop';
 
 type CelestialProjectile = {
   sprite: Phaser.Physics.Arcade.Image;
@@ -37,11 +38,22 @@ export class CelestialProjectileField {
   private readonly pooled: Phaser.Physics.Arcade.Image[] = [];
   private readonly sprites = new Set<Phaser.Physics.Arcade.Image>();
   private lastUpdateAt = 0;
+  private target?: Phaser.Physics.Arcade.Sprite;
+  private destroyed = false;
+  /** 사망 뒤 남은 탄환을 씬 갱신으로 굴리는 자체 정지 루프. */
+  private readonly detachLoop: SceneUpdateLoop;
 
   constructor(
     private readonly scene: Phaser.Scene,
     private readonly config: CelestialProjectileFieldConfig,
-  ) {}
+  ) {
+    this.detachLoop = new SceneUpdateLoop(scene, (time) => {
+      this.updateProjectiles(time, this.target);
+      if (this.active.length === 0) {
+        this.detachLoop.stop();
+      }
+    });
+  }
 
   spawn({
     x,
@@ -70,6 +82,22 @@ export class CelestialProjectileField {
   }
 
   update(time: number, target: Phaser.Physics.Arcade.Sprite) {
+    this.target = target;
+    this.updateProjectiles(time, target);
+  }
+
+  /** 적 사망 뒤 남은 탄환을 씬 갱신에 넘겨 수명 종료까지 이동시킴. */
+  detach() {
+    if (this.destroyed || this.active.length === 0) {
+      return;
+    }
+    this.detachLoop.start();
+  }
+
+  private updateProjectiles(
+    time: number,
+    target?: Phaser.Physics.Arcade.Sprite,
+  ) {
     const deltaSeconds = Math.min(
       Math.max(0, time - this.lastUpdateAt) / 1_000,
       0.05,
@@ -93,7 +121,7 @@ export class CelestialProjectileField {
         continue;
       }
 
-      if (time <= projectile.homingUntil && target.active) {
+      if (time <= projectile.homingUntil && target?.active) {
         projectile.angle = Phaser.Math.Angle.RotateTo(
           projectile.angle,
           Phaser.Math.Angle.Between(sprite.x, sprite.y, target.x, target.y),
@@ -109,7 +137,7 @@ export class CelestialProjectileField {
       );
 
       if (
-        target.active &&
+        target?.active &&
         Phaser.Math.Distance.Between(sprite.x, sprite.y, target.x, target.y) <=
           this.config.radius + 16
       ) {
@@ -123,9 +151,15 @@ export class CelestialProjectileField {
     for (let index = this.active.length - 1; index >= 0; index -= 1) {
       this.release(index);
     }
+    this.detachLoop.stop();
   }
 
   destroy() {
+    if (this.destroyed) {
+      return;
+    }
+    this.destroyed = true;
+    this.detachLoop.stop();
     for (const sprite of this.sprites) {
       sprite.destroy();
     }

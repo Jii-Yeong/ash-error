@@ -132,4 +132,12 @@ export const UNDERGROUND_LANDING_ROOM = defineRoom({
   kind: 'descent',
   worldWidth: GAME_WIDTH * 4,
   enemySpawns: [],
+  ceilingPipes: [
+    {
+      id: 'landing-overhead',
+      x: GAME_WIDTH,
+      y: 72,
+      width: GAME_WIDTH * 2,
+    },
+  ],
 });

@@ -93,11 +93,13 @@ export class SanctumEnforcerEnemy extends CoordinatedAerialEnemy {
 
   protected override onDefeated() {
     super.onDefeated();
-    this.clearAttackObjects();
+    this.enforcerState = 'ready';
+    this.clearWarning();
+    this.projectileField.detach();
   }
 
   override destroy(fromScene?: boolean) {
-    this.clearAttackObjects();
+    this.clearWarning();
     this.projectileField.destroy();
     super.destroy(fromScene);
   }
@@ -232,12 +234,11 @@ export class SanctumEnforcerEnemy extends CoordinatedAerialEnemy {
     this.moveToward(desiredX, desiredY, SANCTUM_ENFORCER_CONFIG.moveSpeed);
   }
 
-  private clearAttackObjects() {
+  private clearWarning() {
     if (this.warningLine.active) {
       this.warningLine.clear();
       this.warningLine.destroy();
     }
-    this.projectileField.clear();
   }
 
   private patternPose(pattern: EnforcerPattern) {

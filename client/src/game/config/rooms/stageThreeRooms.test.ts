@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   createUndergroundDescentRoom,
+  UNDERGROUND_LANDING_ROOM,
   UNDERGROUND_ROOM_ONE,
   UNDERGROUND_ROOM_TWO,
 } from '@/game/config/rooms/stageThreeRooms';
@@ -46,5 +47,16 @@ describe('stage three combat rooms', () => {
 
     expect(room.worldWidth).toBe(1600);
     expect(room.pits).toEqual([{ x: 600, width: 400 }]);
+  });
+
+  it('covers the landing view with a stage three ceiling pipe', () => {
+    expect(UNDERGROUND_LANDING_ROOM.ceilingPipes).toEqual([
+      {
+        id: 'landing-overhead',
+        x: 1280,
+        y: 72,
+        width: 2560,
+      },
+    ]);
   });
 });

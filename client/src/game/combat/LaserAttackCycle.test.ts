@@ -46,4 +46,15 @@ describe('LaserAttackCycle', () => {
     expect(cycle.shouldTrackAim(2020)).toBe(false);
     expect(cycle.isComplete(2220)).toBe(true);
   });
+
+  it('플레이어 접근으로 차징을 취소하면 회복 상태로 돌아간다', () => {
+    const cycle = new LaserAttackCycle(pattern, 0);
+
+    cycle.beginVolley(800, false);
+    cycle.cancelCharge(1000, false);
+
+    expect(cycle.state).toBe('repositioning');
+    expect(cycle.isComplete(2249)).toBe(false);
+    expect(cycle.isComplete(2250)).toBe(true);
+  });
 });

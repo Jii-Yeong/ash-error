@@ -1465,6 +1465,17 @@ test('stage five boss direct jump loads the ascension room floor skin', async ({
     'data-room-state',
     'cleared',
   );
+  expect(
+    await page.evaluate(() => {
+      type RuntimeScene = {
+        weaponSystem: { feedback: { display: { visible: boolean } } };
+      };
+      type DebugGame = { scene: { getScene: (key: string) => unknown } };
+      const game = (window as unknown as { __game?: DebugGame }).__game!;
+      return (game.scene.getScene('game') as RuntimeScene).weaponSystem
+        .feedback.display.visible;
+    }),
+  ).toBe(true);
 
   await expect
     .poll(
@@ -1472,29 +1483,111 @@ test('stage five boss direct jump loads the ascension room floor skin', async ({
         page.evaluate(() => {
           type RuntimeScene = {
             activeRoomConfig: { id: string };
+            cameras: { main: { midPoint: { x: number }; zoom: number } };
+            children: {
+              list: Array<{
+                active: boolean;
+                alpha: number;
+                texture?: { key: string };
+              }>;
+            };
+            combatUi: { victoryOverlay: { visible: boolean } };
             floorBuilder: {
               skinObjects: Array<{ texture?: { key: string } }>;
+            };
+            player: { x: number };
+            weaponSystem: {
+              feedback: { display: { visible: boolean } };
             };
           };
           type DebugGame = { scene: { getScene: (key: string) => unknown } };
           const game = (window as unknown as { __game?: DebugGame }).__game!;
           const scene = game.scene.getScene('game') as RuntimeScene;
           return {
+            cameraCenterOffset: Math.abs(
+              scene.cameras.main.midPoint.x - scene.player.x,
+            ),
+            cameraZoom: scene.cameras.main.zoom,
             roomId: scene.activeRoomConfig.id,
+            siegeTextureKeys: scene.children.list.flatMap(
+              ({ active, alpha, texture }) =>
+                active &&
+                alpha === 1 &&
+                texture &&
+                ['stage-3-neared', 'stage-3-ranged', 'stage-3-flying'].includes(
+                  texture.key,
+                )
+                  ? [texture.key]
+                  : [],
+            ),
             textureKeys: scene.floorBuilder.skinObjects.flatMap(({ texture }) =>
               texture ? [texture.key] : [],
             ),
+            victoryVisible: scene.combatUi.victoryOverlay.visible,
+            weaponVisible: scene.weaponSystem.feedback.display.visible,
           };
         }),
       { timeout: 10_000 },
     )
     .toEqual({
+      cameraCenterOffset: 0,
+      cameraZoom: 1,
       roomId: 'underground-landing',
+      siegeTextureKeys: expect.arrayContaining([
+        'stage-3-neared',
+        'stage-3-ranged',
+        'stage-3-flying',
+      ]),
       textureKeys: expect.arrayContaining([
         'stage-3-floor-left',
         'stage-3-floor-middle',
         'stage-3-floor-right',
       ]),
+      victoryVisible: false,
+      weaponVisible: false,
+    });
+
+  await expect
+    .poll(
+      () =>
+        page.evaluate(() => {
+          type RuntimeScene = {
+            cameras: { main: { zoom: number } };
+            children: {
+              list: Array<{ active: boolean; texture?: { key: string } }>;
+            };
+            combatUi: { victoryOverlay: { visible: boolean } };
+            player: {
+              anims: { currentAnim?: { frames: unknown[]; key: string } };
+            };
+          };
+          type DebugGame = { scene: { getScene: (key: string) => unknown } };
+          const game = (window as unknown as { __game?: DebugGame }).__game!;
+          const scene = game.scene.getScene('game') as RuntimeScene;
+          return {
+            cameraZoom: scene.cameras.main.zoom,
+            siegeEnemies: scene.children.list.filter(
+              ({ active, texture }) =>
+                active &&
+                texture &&
+                ['stage-3-neared', 'stage-3-ranged', 'stage-3-flying'].includes(
+                  texture.key,
+                ),
+            ).length,
+            playerAnimation: scene.player.anims.currentAnim?.key,
+            playerAnimationFrames:
+              scene.player.anims.currentAnim?.frames.length,
+            victoryVisible: scene.combatUi.victoryOverlay.visible,
+          };
+        }),
+      { timeout: 12_000 },
+    )
+    .toEqual({
+      cameraZoom: 1.35,
+      playerAnimation: 'stage-3-player-alive',
+      playerAnimationFrames: 3,
+      siegeEnemies: 0,
+      victoryVisible: true,
     });
 });
 

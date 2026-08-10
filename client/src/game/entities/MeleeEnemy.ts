@@ -1,6 +1,9 @@
 import Phaser from 'phaser';
 import type { MeleeSwingConfig } from '@/game/config/combatConfig';
-import type { MeleeSpriteConfig } from '@/game/config/meleeEnemyAnimationConfig';
+import {
+  MELEE_SWING_EFFECT,
+  type MeleeSpriteConfig,
+} from '@/game/config/meleeEnemyAnimationConfig';
 import {
   Enemy,
   ENEMY_DEPTH,
@@ -34,15 +37,8 @@ const ROD_REST_ANGLE = 0.38;
 const ROD_RAISED_ANGLE = -2.05;
 const ROD_FORWARD_ANGLE = 0.85;
 
-/** 슬래시 VFX 기하(오른쪽 기준). 적이 왼쪽을 보면 좌우 반전됨. */
 const SLASH_DEPTH = 9;
-const SLASH_INNER_RADIUS = 30;
-const SLASH_OUTER_RADIUS = 96;
-const SLASH_START_ANGLE = -1.95;
-const SLASH_END_ANGLE = 0.8;
-/** 칼날 궤적의 각도 폭(라디안). */
-const SLASH_ARC = 0.95;
-const SLASH_COLOR = 0xbff4ff;
+const SLASH_SIZE = 128;
 
 export class MeleeEnemy extends Enemy {
   readonly aggroRadius: number;
@@ -59,7 +55,7 @@ export class MeleeEnemy extends Enemy {
   private readonly sprite?: MeleeSpriteConfig;
   private readonly damagePlayer?: PlayerDamageHandler;
   private readonly rod?: Phaser.GameObjects.Rectangle;
-  private readonly slash?: Phaser.GameObjects.Graphics;
+  private readonly slash?: Phaser.GameObjects.Image;
   private readonly rig?: GroundedEnemySprite;
   private attackState: MeleeState = 'chase';
   private stateStartedAt = 0;
@@ -93,7 +89,10 @@ export class MeleeEnemy extends Enemy {
     this.setDepth(ENEMY_DEPTH);
 
     if (this.sprite) {
-      this.slash = scene.add.graphics().setDepth(SLASH_DEPTH);
+      this.slash = scene.add
+        .image(x, y, MELEE_SWING_EFFECT.texture)
+        .setDepth(SLASH_DEPTH)
+        .setVisible(false);
       this.rig = new GroundedEnemySprite(this, this.sprite);
       this.rig.apply();
     } else if (this.swing) {
@@ -276,7 +275,7 @@ export class MeleeEnemy extends Enemy {
     }
 
     if (time >= this.stateEndsAt) {
-      this.slash?.clear();
+      this.slash?.setVisible(false);
       this.beginState('recover', time, this.swing!.recoverDuration);
     }
   }
@@ -323,7 +322,7 @@ export class MeleeEnemy extends Enemy {
     } else {
       this.positionRod(ROD_REST_ANGLE);
     }
-    this.slash?.clear();
+    this.slash?.setVisible(false);
   }
 
   private beginAttackVisual() {
@@ -338,28 +337,16 @@ export class MeleeEnemy extends Enemy {
     }
 
     const facing = this.flipX ? -1 : 1;
-    const cx = this.x + facing * HAND_OFFSET_X;
-    const cy = this.y + HAND_OFFSET_Y;
-    const leadRight = Phaser.Math.Linear(
-      SLASH_START_ANGLE,
-      SLASH_END_ANGLE,
-      sweep,
-    );
-    const trailRight = leadRight - SLASH_ARC;
-    // 왼쪽을 볼 때 궤적을 세로축 기준으로 반전.
-    const a = facing === 1 ? trailRight : Math.PI - leadRight;
-    const b = facing === 1 ? leadRight : Math.PI - trailRight;
-    const alpha = 0.2 + fade * 0.55;
-
-    this.slash.clear().fillStyle(SLASH_COLOR, alpha).beginPath();
-    this.slash.arc(cx, cy, SLASH_OUTER_RADIUS, a, b, false);
-    this.slash.arc(cx, cy, SLASH_INNER_RADIUS, b, a, true);
-    this.slash.closePath();
-    this.slash.fillPath();
-    // 밝은 선단부.
-    this.slash.lineStyle(3, 0xffffff, alpha).beginPath();
-    this.slash.arc(cx, cy, SLASH_OUTER_RADIUS, a, b, false);
-    this.slash.strokePath();
+    const size = SLASH_SIZE * (0.86 + sweep * 0.14);
+    this.slash
+      .setPosition(
+        this.x + facing * HAND_OFFSET_X,
+        this.y + HAND_OFFSET_Y,
+      )
+      .setFlipX(facing < 0)
+      .setDisplaySize(size, size)
+      .setAlpha(0.25 + fade * 0.75)
+      .setVisible(true);
   }
 
   private positionRod(angleForRight: number) {

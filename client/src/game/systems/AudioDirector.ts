@@ -3,14 +3,29 @@ import { resolveAudioAssets } from '@/game/config/audioAssets';
 import {
   AUDIO_MIX_CONFIG,
   clampAudioMixValue,
+  DEFERRED_SFX_BY_STAGE,
+  FOOTSTEP_SFX_BY_STAGE,
   MUSIC_CONFIG,
+  PROJECTILE_BLOCK_SFX_BY_KIND,
   SFX_CONFIG,
+  STAGE_FIVE_BOSS_SFX_BY_CUE,
+  STAGE_FOUR_BOSS_SFX_BY_CUE,
+  STAGE_ONE_BOSS_LASER_SFX_BY_CUE,
+  STAGE_THREE_BOSS_SFX_BY_CUE,
+  STAGE_TWO_BOSS_ORB_SHOT_SFX,
+  STAGE_TWO_BOSS_SCAN_SFX_BY_CUE,
+  SUSTAINED_SFX,
   WEAPON_FIRE_SFX,
   type AudioAssetKey,
   type AudioMix,
+  type FootstepStageId,
   type MusicKey,
   type SfxKey,
   type SfxLayerConfig,
+  type StageFiveBossCue,
+  type StageFourBossCue,
+  type StageThreeBossCue,
+  type SustainedSfxId,
 } from '@/game/config/audioConfig';
 import { STAGES } from '@/game/config/stageConfig';
 import { gameEvents } from '@/game/events/gameEvents';
@@ -39,6 +54,20 @@ function canDecode(
 }
 
 /**
+ * A start one-shot that hands over to a seamless loop.
+ *
+ * `active` is separate from the two sounds because the handover is asynchronous:
+ * a stop that arrives while the start sound is still playing has nothing to
+ * stop yet, and without the flag the loop would begin after the thing that
+ * wanted it silenced had already gone.
+ */
+type SustainedCue = {
+  active: boolean;
+  start?: VolumeControlledSound;
+  loop?: VolumeControlledSound;
+};
+
+/**
  * Owns every sound in the game. It is bound to the Phaser.Game rather than a
  * Scene so music survives scene.restart() and the title-to-game handover, and
  * it only listens to gameEvents so no gameplay system has to know audio exists.
@@ -48,65 +77,102 @@ function canDecode(
  */
 export class AudioDirector {
   private readonly mix: AudioMix = { ...AUDIO_MIX_CONFIG };
-  private readonly playedAt = new Map<SfxKey, number>();
+  private readonly playedAt = new Map<string, number>();
   private music?: VolumeControlledSound;
+  /** Every sustained bed currently running, keyed by SUSTAINED_SFX id. */
+  private readonly sustained = new Map<SustainedSfxId, SustainedCue>();
   /** What should be playing, whether or not its file has arrived yet. */
   private wantedMusic?: MusicKey;
+  private currentStageId?: string;
+  /** 화면 파괴가 끝날 때까지 다음 스테이지 음악 시작을 보류함. */
+  private deferStageMusic = false;
   /** Tracks already fetched, so a revisited stage does not download twice. */
-  private readonly requested = new Set<MusicKey>();
-  /** 지금 진행 중인 스테이지. 일부 스테이지에서만 울리는 큐를 가르는 데 쓴다. */
-  private stageId?: string;
+  private readonly requested = new Set<AudioAssetKey>();
 
   constructor(private readonly game: Phaser.Game) {
     this.game.sound.on(Phaser.Sound.Events.DECODED, this.handleDecoded);
+    this.game.events.on(Phaser.Core.Events.BLUR, this.handleGameBlur);
 
     gameEvents.on('scene-changed', this.handleSceneChanged);
     gameEvents.on('stage-changed', this.handleStageChanged);
+    gameEvents.on('stage-shatter-cue', this.handleStageShatterCue);
     gameEvents.on('phase-changed', this.handlePhaseChanged);
     gameEvents.on('room-state-changed', this.handleRoomStateChanged);
     gameEvents.on('audio-mix-changed', this.handleAudioMixChanged);
     gameEvents.on('weapon-fired', this.handleWeaponFired);
     gameEvents.on('player-damaged', this.handlePlayerDamaged);
     gameEvents.on('player-dashed', this.handlePlayerDashed);
+    gameEvents.on('player-stepped', this.handlePlayerStepped);
     gameEvents.on('enemy-damaged', this.handleEnemyDamaged);
+    gameEvents.on('enemy-projectile-blocked', this.handleProjectileBlocked);
     gameEvents.on('enemy-defeated', this.handleEnemyDefeated);
+    gameEvents.on('boss-laser-fired', this.handleBossLaserFired);
+    gameEvents.on('boss-scan-cue', this.handleBossScanCue);
+    gameEvents.on('boss-orb-fired', this.handleBossOrbFired);
+    gameEvents.on('boss-purifier-cue', this.handlePurifierCue);
+    gameEvents.on('boss-infernal-cue', this.handleInfernalCue);
+    gameEvents.on('boss-architect-cue', this.handleArchitectCue);
+    gameEvents.on('ending-ascension-cue', this.handleEndingAscensionCue);
+    gameEvents.on('pause-changed', this.handlePauseChanged);
   }
 
   destroy() {
+    this.game.events.off(Phaser.Core.Events.BLUR, this.handleGameBlur);
     gameEvents.off('scene-changed', this.handleSceneChanged);
     gameEvents.off('stage-changed', this.handleStageChanged);
+    gameEvents.off('stage-shatter-cue', this.handleStageShatterCue);
     gameEvents.off('phase-changed', this.handlePhaseChanged);
     gameEvents.off('room-state-changed', this.handleRoomStateChanged);
     gameEvents.off('audio-mix-changed', this.handleAudioMixChanged);
     gameEvents.off('weapon-fired', this.handleWeaponFired);
     gameEvents.off('player-damaged', this.handlePlayerDamaged);
     gameEvents.off('player-dashed', this.handlePlayerDashed);
+    gameEvents.off('player-stepped', this.handlePlayerStepped);
     gameEvents.off('enemy-damaged', this.handleEnemyDamaged);
+    gameEvents.off('enemy-projectile-blocked', this.handleProjectileBlocked);
     gameEvents.off('enemy-defeated', this.handleEnemyDefeated);
+    gameEvents.off('boss-laser-fired', this.handleBossLaserFired);
+    gameEvents.off('boss-scan-cue', this.handleBossScanCue);
+    gameEvents.off('boss-orb-fired', this.handleBossOrbFired);
+    gameEvents.off('boss-purifier-cue', this.handlePurifierCue);
+    gameEvents.off('boss-infernal-cue', this.handleInfernalCue);
+    gameEvents.off('boss-architect-cue', this.handleArchitectCue);
+    gameEvents.off('ending-ascension-cue', this.handleEndingAscensionCue);
+    gameEvents.off('pause-changed', this.handlePauseChanged);
     this.game.sound.off(Phaser.Sound.Events.DECODED, this.handleDecoded);
+    this.stopAllSustained();
     this.stopMusic();
     this.playedAt.clear();
   }
 
   /** Built once; the glob behind it is resolved at build time. */
-  private musicUrls?: Map<string, string>;
+  private assetUrls?: Map<string, string>;
 
-  private urlFor(key: MusicKey) {
-    if (!this.musicUrls) {
-      this.musicUrls = new Map(
-        resolveAudioAssets()
-          .assets.filter((asset) => asset.key in MUSIC_CONFIG)
-          .map((asset) => [asset.key, asset.url]),
+  private urlFor(key: AudioAssetKey) {
+    if (!this.assetUrls) {
+      this.assetUrls = new Map(
+        resolveAudioAssets().assets.map((asset) => [asset.key, asset.url]),
       );
     }
 
-    return this.musicUrls.get(key);
+    return this.assetUrls.get(key);
+  }
+
+  /** 도달할 스테이지의 전용 큐를 미리 가져온다. 정책은 음악과 같다. */
+  private requestStageSfx(stageId: string | undefined) {
+    if (!stageId) {
+      return;
+    }
+
+    for (const key of DEFERRED_SFX_BY_STAGE[stageId] ?? []) {
+      this.requestAudio(key);
+    }
   }
 
   /**
    * 스테이지 음악은 부팅 중이 아니라 이후에 가져온다. 타이틀 곡은 예외로,
    * BootScene에서 미리 불러와 플레이어가 브라우저 시작 안내를 통과하는 즉시
-   * 재생을 시도할 수 있게 한다. 효과음 전체는 113KB지만 음악 한 곡은 1MB가 넘는다.
+   * 재생을 시도할 수 있게 한다. 작은 효과음 묶음과 달리 음악 한 곡은 1MB가 넘는다.
    *
    * Only the track that is about to be needed is fetched, plus the one for the
    * stage after it. Fetching every track up front would mean a player who
@@ -119,7 +185,7 @@ export class AudioDirector {
    * no Scene outlives the boot to title to game handover; a loader started in
    * one is torn down with it.
    */
-  private requestMusic(key: MusicKey | undefined) {
+  private requestAudio(key: AudioAssetKey | undefined) {
     const manager = this.game.sound;
 
     // BootScene이 타이틀 곡을 미리 불러오므로 타이틀 표시 즉시 재생할 수 있다.
@@ -155,37 +221,87 @@ export class AudioDirector {
     }
   };
 
+  /** 화면 복귀 때 레이저 효과음의 큰 구간이 갑자기 재개되지 않게 끊는다. */
+  private readonly handleGameBlur = () => {
+    for (const key of Object.values(STAGE_ONE_BOSS_LASER_SFX_BY_CUE)) {
+      this.game.sound.stopByKey(key);
+    }
+  };
+
   private readonly handleSceneChanged = (scene: GameSceneKey) => {
     if (scene !== 'title') {
       return;
     }
 
-    // 타이틀로 돌아가면 진행 중이던 스테이지가 끝난 것이므로, 스테이지가
-    // 걸린 레이어가 다음 판까지 살아남으면 안 된다.
-    this.stageId = undefined;
-    this.requestMusic('bgm-title');
+    this.stopAllSustained();
+    this.deferStageMusic = false;
+    this.currentStageId = undefined;
+    this.requestAudio('bgm-title');
     // The title is where the player reads and presses ENTER, which is the only
     // free moment stage one's track ever gets.
-    this.requestMusic(STAGES[0]?.music);
+    this.requestAudio(STAGES[0]?.music);
+    this.requestStageSfx(STAGES[0]?.id);
     this.playMusic('bgm-title');
   };
 
   private readonly handleStageChanged = (stageId: string) => {
+    this.stopAllSustained();
     const index = STAGES.findIndex((candidate) => candidate.id === stageId);
 
     if (index < 0) {
       return;
     }
 
-    this.stageId = stageId;
-    this.requestMusic(STAGES[index].music);
-    this.requestMusic(STAGES[index + 1]?.music);
-    this.playMusic(STAGES[index].music);
+    this.currentStageId = stageId;
+
+    this.requestAudio(STAGES[index].music);
+    this.requestAudio(STAGES[index + 1]?.music);
+    this.requestStageSfx(stageId);
+    this.requestStageSfx(STAGES[index + 1]?.id);
+    if (!this.deferStageMusic) {
+      this.playMusic(STAGES[index].music);
+    }
   };
 
+  private readonly handleStageShatterCue = (cue: 'start' | 'complete') => {
+    if (cue === 'start') {
+      this.deferStageMusic = true;
+      return;
+    }
+    if (!this.deferStageMusic) {
+      return;
+    }
+
+    this.deferStageMusic = false;
+    const stage = STAGES.find(({ id }) => id === this.currentStageId);
+    if (stage) {
+      this.playMusic(stage.music);
+    }
+  };
+
+  /**
+   * Death silences every sustained bed. The bosses that own them stop emitting
+   * the moment their update loop stops running, so nothing else is left that
+   * could ask for the loop to end — and an unended loop plays over the death
+   * prompt until the player restarts.
+   */
   private readonly handlePhaseChanged = (phase: GamePhase) => {
     if (phase === 'dead') {
+      this.stopAllSustained();
       this.playSfx('sfx-player-death');
+    }
+  };
+
+  /** Beds are suspended rather than dropped, so unpausing resumes mid-fight. */
+  private readonly handlePauseChanged = (paused: boolean) => {
+    for (const cue of this.sustained.values()) {
+      if (paused) {
+        cue.start?.pause();
+        cue.loop?.pause();
+      } else {
+        cue.start?.resume();
+        cue.loop?.resume();
+      }
     }
   };
 
@@ -212,6 +328,11 @@ export class AudioDirector {
     if (this.music && this.wantedMusic) {
       this.music.setVolume(this.musicVolume(this.wantedMusic));
     }
+
+    for (const [id, cue] of this.sustained) {
+      cue.start?.setVolume(this.sfxVolume(SUSTAINED_SFX[id].start));
+      cue.loop?.setVolume(this.sfxVolume(SUSTAINED_SFX[id].loop));
+    }
   }
 
   private readonly handleWeaponFired = (weaponId: string) => {
@@ -230,13 +351,178 @@ export class AudioDirector {
     this.playSfx('sfx-player-dash');
   };
 
+  /** 발소리가 없는 스테이지(비행 구간)는 조회 결과가 비어 그대로 지나간다. */
+  private readonly handlePlayerStepped = () => {
+    const footsteps = this.currentStageId
+      ? FOOTSTEP_SFX_BY_STAGE[this.currentStageId as FootstepStageId]
+      : undefined;
+
+    if (!footsteps) {
+      return;
+    }
+
+    this.playSfx(this.pickRandom(footsteps));
+  };
+
   private readonly handleEnemyDamaged = () => {
     this.playSfx('sfx-enemy-hit');
+  };
+
+  private readonly handleProjectileBlocked = (
+    kind: keyof typeof PROJECTILE_BLOCK_SFX_BY_KIND,
+  ) => {
+    this.playSfx(this.pickRandom(PROJECTILE_BLOCK_SFX_BY_KIND[kind]), kind);
   };
 
   private readonly handleEnemyDefeated = () => {
     this.playSfx('sfx-enemy-down');
   };
+
+  private readonly handleBossLaserFired = (
+    cue: keyof typeof STAGE_ONE_BOSS_LASER_SFX_BY_CUE,
+  ) => {
+    this.playSfx(STAGE_ONE_BOSS_LASER_SFX_BY_CUE[cue]);
+  };
+
+  private readonly handleBossOrbFired = () => {
+    this.playSfx(this.pickRandom(STAGE_TWO_BOSS_ORB_SHOT_SFX));
+  };
+
+  private readonly handleBossScanCue = (
+    cue: 'start' | 'target-lock' | 'end',
+  ) => {
+    if (cue === 'start') {
+      this.startSustained('stage2-boss-scan');
+      return;
+    }
+
+    if (cue === 'target-lock') {
+      this.playSfx(STAGE_TWO_BOSS_SCAN_SFX_BY_CUE['target-lock']);
+      return;
+    }
+
+    this.stopSustained('stage2-boss-scan');
+    this.playSfx(STAGE_TWO_BOSS_SCAN_SFX_BY_CUE.end);
+  };
+
+  private readonly handlePurifierCue = (cue: StageThreeBossCue) => {
+    if (cue === 'vacuum-start') {
+      this.startSustained('stage3-boss-vacuum');
+      return;
+    }
+
+    if (cue === 'vacuum-end') {
+      this.stopSustained('stage3-boss-vacuum');
+      this.playSfx(STAGE_THREE_BOSS_SFX_BY_CUE['vacuum-end']);
+      return;
+    }
+
+    this.playSfx(STAGE_THREE_BOSS_SFX_BY_CUE[cue]);
+  };
+
+  private readonly handleInfernalCue = (cue: StageFourBossCue) => {
+    this.playSfx(STAGE_FOUR_BOSS_SFX_BY_CUE[cue]);
+  };
+
+  private readonly handleArchitectCue = (cue: StageFiveBossCue) => {
+    this.playSfx(STAGE_FIVE_BOSS_SFX_BY_CUE[cue]);
+  };
+
+  /** 엔딩 포위 장면은 음악 없이 3스테이지 발소리만 재사용함. */
+  private readonly handleEndingAscensionCue = (
+    cue: 'transition-start' | 'silence' | 'siege-footstep',
+  ) => {
+    if (cue === 'transition-start') {
+      this.stopAllSustained();
+      this.stopMusic();
+      this.playSfx('sfx-stage5-ending-transition');
+      return;
+    }
+
+    if (cue === 'silence') {
+      this.stopAllSustained();
+      this.stopMusic();
+      this.requestStageSfx('stage-03');
+      return;
+    }
+
+    this.playSfx(
+      this.pickRandom(FOOTSTEP_SFX_BY_STAGE['stage-03']),
+      'ending-siege-footstep',
+      0.65,
+    );
+  };
+
+  /** 시작음을 끝까지 재생한 뒤 반복음을 잇는다. */
+  private startSustained(id: SustainedSfxId) {
+    this.stopSustained(id);
+
+    const cue: SustainedCue = { active: true };
+    this.sustained.set(id, cue);
+
+    const key = SUSTAINED_SFX[id].start;
+    if (!this.isLoaded(key) || this.game.sound.locked) {
+      return;
+    }
+
+    const sound = this.game.sound.add(key, {
+      volume: this.sfxVolume(key),
+    }) as VolumeControlledSound;
+    cue.start = sound;
+    sound.once(Phaser.Sound.Events.COMPLETE, () => {
+      if (cue.start !== sound) {
+        return;
+      }
+
+      cue.start = undefined;
+      sound.destroy();
+      this.startSustainedLoop(id, cue);
+    });
+    sound.play();
+  }
+
+  private startSustainedLoop(id: SustainedSfxId, cue: SustainedCue) {
+    const key = SUSTAINED_SFX[id].loop;
+    if (!cue.active || !this.isLoaded(key) || this.game.sound.locked) {
+      return;
+    }
+
+    cue.loop = this.game.sound.add(key, {
+      loop: true,
+      volume: this.sfxVolume(key),
+    }) as VolumeControlledSound;
+    cue.loop.play();
+  }
+
+  private stopSustained(id: SustainedSfxId) {
+    const cue = this.sustained.get(id);
+
+    if (!cue) {
+      return;
+    }
+
+    cue.active = false;
+    this.sustained.delete(id);
+
+    const { start, loop } = cue;
+    cue.start = undefined;
+    cue.loop = undefined;
+    start?.stop();
+    start?.destroy();
+    loop?.stop();
+    loop?.destroy();
+  }
+
+  /**
+   * `stopSustained` deletes the entry it is given, which is safe to do while
+   * iterating: a Map iterator only skips entries deleted *before* it reaches
+   * them, and this one deletes the entry it has just been handed.
+   */
+  private stopAllSustained() {
+    for (const id of this.sustained.keys()) {
+      this.stopSustained(id);
+    }
+  }
 
   /**
    * 큐를 울리고, 실제로 울렸을 때만 그 큐가 달고 있는 레이어를 함께 울린다.
@@ -244,28 +530,36 @@ export class AudioDirector {
    * 레이어가 또 레이어를 갖지는 못한다 — 한 겹으로 묶어 두면 설정이 자기를
    * 가리켜도 무한 재귀가 되지 않는다.
    */
-  private playSfx(key: SfxKey) {
-    if (!this.emitSfx(key)) {
+  private playSfx(
+    key: SfxKey,
+    intervalKey: string = key,
+    volumeMultiplier = 1,
+  ) {
+    if (!this.emitSfx(key, intervalKey, volumeMultiplier)) {
       return;
     }
 
     const layer = SFX_CONFIG[key].layer;
 
     if (layer && this.hearsLayer(layer)) {
-      this.emitSfx(layer.key);
+      this.emitSfx(layer.key, layer.key, volumeMultiplier);
     }
   }
 
   /** 지금 스테이지가 이 레이어를 위해 적어 둔 스테이지인지. */
   private hearsLayer(layer: SfxLayerConfig) {
-    return !layer.stages || layer.stages.includes(this.stageId ?? '');
+    return !layer.stages || layer.stages.includes(this.currentStageId ?? '');
   }
 
   /** 큐가 사운드 매니저까지 도달했는지 돌려준다. */
-  private emitSfx(key: SfxKey) {
+  private emitSfx(
+    key: SfxKey,
+    intervalKey: string = key,
+    volumeMultiplier = 1,
+  ) {
     const config = SFX_CONFIG[key];
     const now = Date.now();
-    const playedAt = this.playedAt.get(key);
+    const playedAt = this.playedAt.get(intervalKey);
 
     if (
       config.minInterval !== undefined &&
@@ -281,10 +575,15 @@ export class AudioDirector {
       return false;
     }
 
-    this.playedAt.set(key, now);
+    this.playedAt.set(intervalKey, now);
     this.game.sound.play(key, {
-      volume: config.volume * this.mix.sfx * this.mix.master,
-      rate: this.jitteredRate(config.rateJitter),
+      volume:
+        config.volume *
+        this.jitteredVolume(config.volumeJitter) *
+        this.mix.sfx *
+        this.mix.master *
+        volumeMultiplier,
+      rate: (config.rate ?? 1) * this.jitteredRate(config.rateJitter),
     });
 
     return true;
@@ -345,7 +644,21 @@ export class AudioDirector {
     return MUSIC_CONFIG[key].volume * this.mix.music * this.mix.master;
   }
 
+  private sfxVolume(key: SfxKey) {
+    return SFX_CONFIG[key].volume * this.mix.sfx * this.mix.master;
+  }
+
   private jitteredRate(rateJitter = 0) {
     return rateJitter === 0 ? 1 : 1 + (Math.random() * 2 - 1) * rateJitter;
+  }
+
+  /** 아래로만 흔든다. `volume`이 이 큐가 낼 수 있는 최대여야 믹스를 읽을 수 있다. */
+  private jitteredVolume(volumeJitter = 0) {
+    return volumeJitter === 0 ? 1 : 1 - Math.random() * volumeJitter;
+  }
+
+  /** 여러 변형 중 하나를 무작위로 골라 같은 효과음이 반복되지 않게 한다. */
+  private pickRandom<T>(items: readonly T[]): T {
+    return items[Math.floor(Math.random() * items.length)]!;
   }
 }

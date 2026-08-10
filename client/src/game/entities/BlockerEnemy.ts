@@ -54,7 +54,13 @@ export class BlockerEnemy extends Enemy {
 
     const distance = Math.abs(target.x - this.x);
     const targetInRange = distance <= this.aggroRadius;
-    this.setFlipX(target.x > this.x);
+    const body = this.body as Phaser.Physics.Arcade.Body;
+    const targetBody = target.body as Phaser.Physics.Arcade.Body;
+    const waitingBelowTarget =
+      distance <= BLOCKER_CONFIG.slamRange && targetBody.bottom <= body.top;
+    if (!waitingBelowTarget) {
+      this.setFlipX(target.x > this.x);
+    }
 
     if (this.blockerState === 'windup') {
       this.setVelocityX(0);
@@ -88,6 +94,12 @@ export class BlockerEnemy extends Enemy {
       this.chargeStartedAt = time;
     }
 
+    if (waitingBelowTarget) {
+      this.setVelocityX(0);
+      this.rig.play(POSE.idle);
+      return true;
+    }
+
     if (
       distance <= BLOCKER_CONFIG.slamRange &&
       time >= this.nextSlamAt &&
@@ -119,7 +131,7 @@ export class BlockerEnemy extends Enemy {
         BLOCKER_CONFIG.projectileHitTolerance,
       )
     ) {
-      this.showShieldImpact(hitX, hitY);
+      this.showProjectileBlockedImpact(hitX, hitY, 'shield');
       return { applied: false, defeated: false };
     }
     return super.takeProjectileDamage(amount, hitX, hitY);
@@ -157,16 +169,6 @@ export class BlockerEnemy extends Enemy {
   }
 
   private slam(target: Phaser.Physics.Arcade.Sprite) {
-    const wave = this.scene.add
-      .rectangle(this.x, FLOOR_SURFACE_Y - 7, 50, 12, 0x8cff9d, 0.7)
-      .setDepth(9);
-    this.scene.tweens.add({
-      targets: wave,
-      displayWidth: BLOCKER_CONFIG.shockwaveRange * 2,
-      alpha: 0,
-      duration: 260,
-      onComplete: () => wave.destroy(),
-    });
     const body = target.body as Phaser.Physics.Arcade.Body;
     const nearFloor = body.blocked.down || body.bottom >= FLOOR_SURFACE_Y - 18;
     if (
@@ -194,19 +196,5 @@ export class BlockerEnemy extends Enemy {
     this.setFlipX(this.patrolDirection > 0);
     this.setVelocityX(this.patrolDirection * BLOCKER_CONFIG.moveSpeed);
     this.rig.play(POSE.walk);
-  }
-
-  private showShieldImpact(x: number, y: number) {
-    const spark = this.scene.add
-      .circle(x, y, 5, 0xb9d5d2, 0.9)
-      .setStrokeStyle(2, 0xffffff)
-      .setDepth(12);
-    this.scene.tweens.add({
-      targets: spark,
-      scale: 2.4,
-      alpha: 0,
-      duration: 100,
-      onComplete: () => spark.destroy(),
-    });
   }
 }

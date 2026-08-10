@@ -6,6 +6,7 @@ import {
   UNDERGROUND_LANDING_ROOM,
 } from '@/game/config/rooms/stageThreeRooms';
 import type { StageExitPlan } from '@/game/config/stageProgression';
+import { gameEvents } from '@/game/events/gameEvents';
 import { FLOOR_SURFACE_Y } from '@/game/systems/FloorBuilder';
 import { StageEndEventDirector } from '@/game/systems/StageEndEventDirector';
 
@@ -22,6 +23,7 @@ type StageTransitionDirectorOptions = {
   enterCurrentRoom: () => void;
   enterLandingRoom: (mode: 'descent' | 'ascension') => void;
   setAscensionPose: () => void;
+  playAscensionAlive: (onComplete: () => void) => void;
   completeStageExit: (nextStageIndex: number | null) => void;
   finish: (outcome: 'victory' | 'stage-end') => void;
   idleAnimation: () => string;
@@ -105,17 +107,20 @@ export class StageTransitionDirector {
     }
     this.ascensionStarted = true;
     this.options.prepare();
-    this.options.scene.time.delayedCall(3000, () => {
-      this.options.eventDirector.playAscension(
-        () => {
-          this.roomConfig = UNDERGROUND_LANDING_ROOM;
-          this.options.enterLandingRoom('ascension');
-          this.placePlayer(FLOOR_SURFACE_Y - 40);
-          this.options.setAscensionPose();
-        },
-        () => this.options.finish('victory'),
-      );
-    });
+    gameEvents.emit('ending-ascension-cue', 'silence');
+    gameEvents.emit('ending-ascension-cue', 'transition-start');
+    this.options.eventDirector.playAscension(
+      () => {
+        this.roomConfig = UNDERGROUND_LANDING_ROOM;
+        this.options.enterLandingRoom('ascension');
+        this.placePlayer(FLOOR_SURFACE_Y - 40);
+        this.options.setAscensionPose();
+      },
+      () =>
+        this.options.playAscensionAlive(() =>
+          this.options.finish('victory'),
+        ),
+    );
   }
 
   private enterDescentRoom(
@@ -190,6 +195,7 @@ export class StageTransitionDirector {
     body.reset(centerX, y);
     this.options.player.setVelocity(0, 0);
     this.options.player.play(this.options.idleAnimation(), true);
+    this.options.scene.cameras.main.centerOnX(centerX);
   }
 
   private playDescentLookAround() {

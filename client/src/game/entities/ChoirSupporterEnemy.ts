@@ -93,11 +93,12 @@ export class ChoirSupporterEnemy extends CoordinatedAerialEnemy {
 
   protected override onDefeated() {
     super.onDefeated();
-    this.clearAttackObjects();
+    this.activePattern = undefined;
+    this.projectileField.detach();
   }
 
   override destroy(fromScene?: boolean) {
-    this.clearAttackObjects();
+    this.activePattern = undefined;
     this.projectileField.destroy();
     super.destroy(fromScene);
   }
@@ -206,11 +207,6 @@ export class ChoirSupporterEnemy extends CoordinatedAerialEnemy {
     this.playPose(POSE.idle);
     this.finishAttack();
     this.nextAttackAt = time + CHOIR_SUPPORTER_CONFIG.attackCooldown;
-  }
-
-  private clearAttackObjects() {
-    this.activePattern = undefined;
-    this.projectileField.clear();
   }
 
   private patternPose(pattern: SupporterPattern) {

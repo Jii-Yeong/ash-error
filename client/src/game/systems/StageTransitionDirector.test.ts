@@ -13,6 +13,24 @@ vi.hoisted(() => {
 });
 
 describe('StageTransitionDirector', () => {
+  it('starts the ascension transition after final boss cleanup', () => {
+    const prepare = vi.fn();
+    const playAscension = vi.fn();
+    const director = Object.assign(
+      Object.create(StageTransitionDirector.prototype),
+      {
+        ascensionStarted: false,
+        options: { prepare, eventDirector: { playAscension } },
+      },
+    ) as StageTransitionDirector;
+
+    director.beginAscension();
+    director.beginAscension();
+
+    expect(prepare).toHaveBeenCalledOnce();
+    expect(playAscension).toHaveBeenCalledOnce();
+  });
+
   it('clears the room override and cutscene guards on reset', () => {
     const destroyPrompt = vi.fn();
     const director = Object.assign(
@@ -36,5 +54,38 @@ describe('StageTransitionDirector', () => {
       ascensionStarted: false,
       pendingNextStageIndex: null,
     });
+  });
+
+  it('centers the camera immediately when placing the landing-room player', () => {
+    const centerOnX = vi.fn();
+    const body = {
+      checkCollision: { none: true },
+      setCollideWorldBounds: vi.fn(),
+      reset: vi.fn(),
+    };
+    const player = {
+      body,
+      play: vi.fn(),
+      setPosition: vi.fn(),
+      setVelocity: vi.fn(),
+    };
+    const director = Object.assign(
+      Object.create(StageTransitionDirector.prototype),
+      {
+        options: {
+          scene: {
+            cameras: { main: { centerOnX } },
+            physics: { world: { bounds: { width: 5_120 } } },
+          },
+          player,
+          idleAnimation: () => 'idle',
+        },
+      },
+    ) as StageTransitionDirector;
+
+    (director as unknown as { placePlayer(y: number): void }).placePlayer(680);
+
+    expect(player.setPosition).toHaveBeenCalledWith(2_560, 680);
+    expect(centerOnX).toHaveBeenCalledWith(2_560);
   });
 });

@@ -3,7 +3,15 @@ import type { BossPhase } from '@/game/state/bossPhase';
 import type { GamePhase } from '@/game/state/gamePhase';
 import type { GameSceneKey } from '@/game/state/gameSceneKey';
 import type { RoomState } from '@/game/state/roomState';
-import type { AudioMix } from '@/game/config/audioConfig';
+import type {
+  AudioMix,
+  StageFiveBossCue,
+  StageFourBossCue,
+  StageThreeBossCue,
+} from '@/game/config/audioConfig';
+
+/** 무엇이 투사체를 막았는지. 소리와 이펙트가 이걸로 갈린다. */
+export type ProjectileBlockKind = 'shield' | 'boss';
 
 /**
  * State events describe what the world *is* and drive the React HUD. Cue events
@@ -24,6 +32,7 @@ type GameEventMap = {
   'room-state-changed': [state: RoomState];
   'scene-changed': [scene: GameSceneKey];
   'stage-changed': [stageId: string];
+  'stage-shatter-cue': [cue: 'start' | 'complete'];
   'stage-location-changed': [stageLabel: string, roomNumber: number];
   'admin-stage-requested': [stageIndex: number];
   'admin-stage-boss-requested': [stageIndex: number];
@@ -39,8 +48,26 @@ type GameEventMap = {
   'weapon-fired': [weaponId: string, x: number, y: number];
   'player-damaged': [x: number, y: number];
   'player-dashed': [x: number, y: number];
+  'player-stepped': [];
   'enemy-damaged': [x: number, y: number];
+  'enemy-projectile-blocked': [kind: ProjectileBlockKind];
   'enemy-defeated': [x: number, y: number];
+  'boss-laser-fired': [
+    cue: 'single' | 'double-first' | 'double-second',
+  ];
+  'boss-scan-cue': [cue: 'start' | 'target-lock' | 'end'];
+  'boss-orb-fired': [];
+  /**
+   * One event per stage-3-to-5 boss, carrying the pattern moment rather than a
+   * sound. The unions come from the cue maps in audioConfig, so a boss cannot
+   * emit a moment that has no cue behind it.
+   */
+  'boss-purifier-cue': [cue: StageThreeBossCue];
+  'boss-infernal-cue': [cue: StageFourBossCue];
+  'boss-architect-cue': [cue: StageFiveBossCue];
+  'ending-ascension-cue': [
+    cue: 'transition-start' | 'silence' | 'siege-footstep',
+  ];
   'weapon-changed': [id: string, label: string];
   'weapon-inventory-changed': [
     slots: readonly (string | null)[],

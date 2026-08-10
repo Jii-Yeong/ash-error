@@ -301,9 +301,10 @@ input {
   outline: none;
 }
 
+/* 크기는 위 규칙 그대로 둔다. 두 버튼은 같은 자리에 쌓이므로 높이가 어긋나면
+   바로 보인다 — 여기서는 강조 차이(테두리·글자색)만 준다. */
 .pause-overlay__settings {
   margin-top: 2px;
-  padding: 2px 20px;
   border-image-source: url('/assets/ui/controls/button-frame-neutral.png');
   color: #aeb8bc;
   background: none;
@@ -314,12 +315,6 @@ input {
   border-image-source: url('/assets/ui/controls/button-frame-active.png');
   color: #b6ffe4;
   outline: none;
-}
-
-.pause-overlay__hint {
-  color: #5f6c72;
-  font-size: 11px;
-  letter-spacing: 0.1em;
 }
 
 .settings-overlay {

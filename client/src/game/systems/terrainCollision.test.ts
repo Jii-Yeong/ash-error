@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  terrainBlocksFlyingProjectiles,
   terrainBlocksProjectiles,
   terrainCollisionFaces,
   projectileCollisionFaces,
@@ -30,6 +31,11 @@ describe('terrain collision faces', () => {
   it('blocks regular projectiles with every terrain piece', () => {
     expect(terrainBlocksProjectiles('platform')).toBe(true);
     expect(terrainBlocksProjectiles('wall')).toBe(true);
+  });
+
+  it('lets stage one and two flying projectiles pass platforms', () => {
+    expect(terrainBlocksFlyingProjectiles('platform')).toBe(false);
+    expect(terrainBlocksFlyingProjectiles('wall')).toBe(true);
   });
 
   it('uses solid collision faces for projectiles without changing player movement', () => {

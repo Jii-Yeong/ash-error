@@ -27,6 +27,7 @@ function createInfernalBoss(overrides: Record<string, unknown> = {}) {
         charge: { coreDamageMultiplier: 1.5 },
       },
     },
+    showProjectileBlockedImpact: vi.fn(),
     ...overrides,
   }) as InfernalBossEnemy;
 }
@@ -47,6 +48,7 @@ function createArchitectBoss(overrides: Record<string, unknown> = {}) {
         salvation: { coreDamageMultiplier: 2 },
       },
     },
+    showProjectileBlockedImpact: vi.fn(),
     ...overrides,
   }) as ArchitectBossEnemy;
 }
@@ -128,23 +130,29 @@ describe('phase boss introductions', () => {
   });
 
   it('ends invulnerability when the introduced pattern finishes', () => {
+    const infernalBlockedImpact = vi.fn();
     const infernal = createInfernalBoss({
       phaseTwo: true,
       attackState: 'shards',
       health: 500,
+      showProjectileBlockedImpact: infernalBlockedImpact,
     });
     expect(infernal.takeProjectileDamage(100, 0, 0).applied).toBe(false);
+    expect(infernalBlockedImpact).toHaveBeenCalledWith(0, 0, 'boss');
     Object.assign(infernal, { attackState: 'recover' });
     expect(infernal.takeProjectileDamage(100, 0, 0).applied).toBe(true);
     expect(infernal.currentHealth).toBe(400);
 
+    const architectBlockedImpact = vi.fn();
     const architect = createArchitectBoss({
       phaseTwo: true,
       chorusActive: true,
       attackState: 'halo-warning',
       health: 600,
+      showProjectileBlockedImpact: architectBlockedImpact,
     });
     expect(architect.takeProjectileDamage(100, 0, 0).applied).toBe(false);
+    expect(architectBlockedImpact).toHaveBeenCalledWith(0, 0, 'boss');
     Object.assign(architect, { chorusActive: false, attackState: 'recover' });
     expect(architect.takeProjectileDamage(100, 0, 0).applied).toBe(true);
     expect(architect.currentHealth).toBe(500);

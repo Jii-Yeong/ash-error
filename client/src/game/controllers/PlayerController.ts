@@ -47,6 +47,8 @@ const JUMP_SUPPRESS_AFTER_PORTAL = 200;
 const FLIGHT_ENTRY_LANDING_DURATION = 180;
 /** 비행 밴드 중앙보다 높게 잡는 포탈 진입 점프의 정점. */
 const FLIGHT_ENTRY_JUMP_APEX_HEIGHT = 90;
+/** 480ms 달리기 루프에서 양발이 한 번씩 닿는 간격. */
+const PLAYER_FOOTSTEP_INTERVAL = 240;
 
 export class PlayerController {
   private readonly movementKeys: MovementKeys;
@@ -62,6 +64,7 @@ export class PlayerController {
   private jumpSuppressedUntil = 0;
   private wasGrounded = true;
   private landingPoseUntil = 0;
+  private nextFootstepAt = 0;
   private currentPose: string | null = null;
   private animations: PlayerAnimationSet = PLAYER_ANIMATIONS;
   private movementMode = MovementMode.GROUND;
@@ -138,6 +141,7 @@ export class PlayerController {
     this.jumpBufferedUntil = 0;
     this.wasGrounded = mode === MovementMode.GROUND;
     this.landingPoseUntil = 0;
+    this.nextFootstepAt = 0;
     this.currentPose = null;
     this.flightEntryLift = undefined;
 
@@ -248,6 +252,7 @@ export class PlayerController {
     this.wasGrounded = grounded;
 
     if (!grounded) {
+      this.nextFootstepAt = 0;
       const velocityY = body?.velocity.y ?? 0;
       this.setPose(
         Math.abs(velocityY) < JUMP_APEX_VELOCITY_THRESHOLD
@@ -258,14 +263,30 @@ export class PlayerController {
     }
 
     if (time < this.landingPoseUntil) {
+      this.nextFootstepAt = 0;
       this.setPose(PLAYER_JUMP_FRAMES.landing);
       return;
     }
 
     const isRunning = Math.abs(body?.velocity.x ?? 0) > 1;
+    this.updateFootsteps(time, isRunning);
     this.playAnimation(
       isRunning ? this.animations.run : this.animations.idle,
     );
+  }
+
+  private updateFootsteps(time: number, isRunning: boolean) {
+    if (!isRunning) {
+      this.nextFootstepAt = 0;
+      return;
+    }
+
+    if (time < this.nextFootstepAt) {
+      return;
+    }
+
+    this.nextFootstepAt = time + PLAYER_FOOTSTEP_INTERVAL;
+    gameEvents.emit('player-stepped');
   }
 
   private setPose(frameName: string) {
@@ -336,6 +357,7 @@ export class PlayerController {
   stop() {
     this.finishDash();
     this.flightEntryLift = undefined;
+    this.nextFootstepAt = 0;
     // 방 전환 시 중력을 스테이지 모드에 맞춰 강제 복원한다. 보스 그랩·포박·대시
     // 등으로 중력이 꺼진 채 다음 방으로 넘어가 플레이어가 공중에 멈추는 것을 막는다.
     (this.player.body as Phaser.Physics.Arcade.Body).setAllowGravity(

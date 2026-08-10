@@ -44,3 +44,15 @@ const CAPTOR_ATLAS_SET = defineEnemyAtlasSet({
 export const CAPTOR_ANIMATION_ATLASES = CAPTOR_ATLAS_SET.atlases;
 export const STAGE_THREE_CAPTOR_SPRITE: CaptorSpriteConfig =
   CAPTOR_ATLAS_SET.sprites[3];
+
+export const STAGE_THREE_CAPTOR_TETHER = {
+  line: {
+    texture: 'stage-3-ranged-line',
+    png: '/assets/enemies/stage-3-ranged-line.png',
+    height: 5,
+  },
+  claw: {
+    texture: 'stage-3-ranged-claw',
+    png: '/assets/enemies/stage-3-ranged-claw.png',
+  },
+} as const;

@@ -4,9 +4,14 @@ import type {
   PurifierBossCombatConfig,
   PurifierBossSpriteConfig,
 } from '@/game/config/bossConfigTypes';
+import {
+  STAGE_THREE_BOSS_SHOCKWAVE,
+  STAGE_THREE_BOSS_VACUUM,
+} from '@/game/config/bossAnimationConfig';
 import { getSlamLeapVelocity } from '@/game/combat/slamLeap';
 import { BossEnemy } from '@/game/entities/BossEnemy';
 import type { EnemyProjectileAttack } from '@/game/entities/Enemy';
+import { gameEvents } from '@/game/events/gameEvents';
 import { destroyCollider } from '@/game/systems/arcadePhysicsCleanup';
 import { CleanupRegistry } from '@/game/systems/CleanupRegistry';
 import { FLOOR_SURFACE_Y } from '@/game/systems/FloorBuilder';
@@ -24,6 +29,7 @@ type PlayerPullHandler = (bossX: number, pullSpeed: number) => void;
 
 const TELEGRAPH_DEPTH = 7;
 const SHOCKWAVE_DEPTH = 6;
+const VACUUM_DEPTH = 6;
 const MARKER_HEIGHT = 74;
 const LANDING_GRACE_DURATION = 400;
 /** 죽음 포즈를 보여주는 시간과, 그 뒤 페이드아웃에 걸리는 시간. */
@@ -41,6 +47,7 @@ const DEATH_FADE_MS = 600;
  */
 export class PurifierBossEnemy extends BossEnemy<PurifierBossPatternConfig> {
   private readonly telegraph: Phaser.GameObjects.Graphics;
+  private readonly vacuumEffect: Phaser.GameObjects.Sprite;
   private readonly waveCleanups = new CleanupRegistry();
   private attackState: PurifierState = 'recover';
   private stateStartedAt = 0;
@@ -53,6 +60,7 @@ export class PurifierBossEnemy extends BossEnemy<PurifierBossPatternConfig> {
   private playerTarget?: Phaser.Physics.Arcade.Sprite;
   private activeSpriteAnimation?: string;
   private dying = false;
+  private vacuumAudioActive = false;
 
   constructor(
     scene: Phaser.Scene,
@@ -68,6 +76,11 @@ export class PurifierBossEnemy extends BossEnemy<PurifierBossPatternConfig> {
 
     this.stateEndsAt = scene.time.now + config.pattern.firstAttackDelay;
     this.telegraph = scene.add.graphics().setDepth(TELEGRAPH_DEPTH);
+    this.vacuumEffect = scene.add
+      .sprite(0, 0, STAGE_THREE_BOSS_VACUUM.texture)
+      .setDisplaySize(220, STAGE_THREE_BOSS_VACUUM.height)
+      .setDepth(VACUUM_DEPTH)
+      .setVisible(false);
     this.applyBossSprite();
   }
 
@@ -126,8 +139,12 @@ export class PurifierBossEnemy extends BossEnemy<PurifierBossPatternConfig> {
   ) {
     this.playerTarget = target;
 
+    // Both exits below leave the pattern mid-flight, so the intake bed has to
+    // be closed here too: it is a loop, and the only other thing that ends it
+    // is a state transition this update will no longer reach.
     if (!this.active || this.dying) {
       this.telegraph.clear();
+      this.endVacuumAudio();
       return false;
     }
 
@@ -137,6 +154,7 @@ export class PurifierBossEnemy extends BossEnemy<PurifierBossPatternConfig> {
     if (!inRange) {
       this.setVelocityX(0);
       this.telegraph.clear();
+      this.endVacuumAudio();
       return false;
     }
 
@@ -154,10 +172,10 @@ export class PurifierBossEnemy extends BossEnemy<PurifierBossPatternConfig> {
         this.updateSlamStrike(time);
         break;
       case 'vacuum-warn':
-        this.updateVacuumWarn(time, target);
+        this.updateVacuumWarn(time);
         break;
       case 'vacuum-active':
-        this.updateVacuumActive(time, target);
+        this.updateVacuumActive(time);
         break;
     }
 
@@ -166,6 +184,7 @@ export class PurifierBossEnemy extends BossEnemy<PurifierBossPatternConfig> {
 
   protected override onDefeated() {
     super.onDefeated();
+    this.endVacuumAudio();
     this.telegraph.clear();
     this.clearTint();
     this.waveCleanups.clear();
@@ -209,6 +228,7 @@ export class PurifierBossEnemy extends BossEnemy<PurifierBossPatternConfig> {
 
   override destroy(fromScene?: boolean) {
     this.telegraph.destroy();
+    this.vacuumEffect.destroy();
     this.waveCleanups.clear();
     super.destroy(fromScene);
   }
@@ -239,6 +259,7 @@ export class PurifierBossEnemy extends BossEnemy<PurifierBossPatternConfig> {
     this.stateEndsAt = time + this.pattern.slam.warnDuration;
     this.slamTargetX = target.x;
     this.playSpriteAnimation(this.sprite?.animations.slamWindup ?? '');
+    gameEvents.emit('boss-purifier-cue', 'slam-warn');
   }
 
   private updateSlamWarn(
@@ -276,6 +297,7 @@ export class PurifierBossEnemy extends BossEnemy<PurifierBossPatternConfig> {
     this.setFlipX(leap.velocityX < 0);
     this.setVelocity(leap.velocityX, leap.velocityY);
     this.playSpriteAnimation(this.sprite?.animations.slamAir ?? '');
+    gameEvents.emit('boss-purifier-cue', 'slam-leap');
   }
 
   private updateSlamLeap(time: number, target: Phaser.Physics.Arcade.Sprite) {
@@ -326,6 +348,10 @@ export class PurifierBossEnemy extends BossEnemy<PurifierBossPatternConfig> {
     this.telegraph.clear();
     this.playSpriteAnimation(this.sprite?.animations.slamStrike ?? '');
     this.scene.cameras.main.shake(180, 0.012);
+    // One cue for the pair: the two waves are symmetrical and simultaneous, so
+    // playing it twice only doubles the level.
+    gameEvents.emit('boss-purifier-cue', 'slam-impact');
+    gameEvents.emit('boss-purifier-cue', 'shockwave');
     this.spawnShockwave(-1);
     this.spawnShockwave(1);
   }
@@ -343,14 +369,41 @@ export class PurifierBossEnemy extends BossEnemy<PurifierBossPatternConfig> {
     this.stateEndsAt = time + this.pattern.vacuum.warnDuration;
     this.setVelocityX(0);
     this.playSpriteAnimation(this.sprite?.animations.suction ?? '');
+    this.beginVacuumAudio();
   }
 
-  private updateVacuumWarn(
-    time: number,
-    target: Phaser.Physics.Arcade.Sprite,
-  ) {
+  /**
+   * 흡입음은 전이 시점이 아니라 상태를 따라간다.
+   *
+   * 조기 반환 경로가 소리를 닫으므로, 전이에서만 켜면 그 뒤 다시 들어왔을 때
+   * 흡입은 계속되는데 소리만 없는 구간이 남는다. HoundBossEnemy의 스캔음과
+   * 같은 처리다.
+   */
+  private beginVacuumAudio() {
+    if (this.vacuumAudioActive) {
+      return;
+    }
+
+    this.vacuumEffect.play(STAGE_THREE_BOSS_VACUUM.animation);
+    this.vacuumAudioActive = true;
+    gameEvents.emit('boss-purifier-cue', 'vacuum-start');
+  }
+
+  /** 흡입음은 루프이므로, 패턴을 빠져나가는 모든 경로에서 반드시 닫아야 한다. */
+  private endVacuumAudio() {
+    this.vacuumEffect.stop().setVisible(false);
+    if (!this.vacuumAudioActive) {
+      return;
+    }
+
+    this.vacuumAudioActive = false;
+    gameEvents.emit('boss-purifier-cue', 'vacuum-end');
+  }
+
+  private updateVacuumWarn(time: number) {
     this.setVelocityX(0);
-    this.drawVacuumFlow(time, target, this.stateProgress(time) * 0.45);
+    this.beginVacuumAudio();
+    this.updateVacuumEffect();
 
     if (time >= this.stateEndsAt) {
       this.attackState = 'vacuum-active';
@@ -359,12 +412,10 @@ export class PurifierBossEnemy extends BossEnemy<PurifierBossPatternConfig> {
     }
   }
 
-  private updateVacuumActive(
-    time: number,
-    target: Phaser.Physics.Arcade.Sprite,
-  ) {
+  private updateVacuumActive(time: number) {
     this.setVelocityX(0);
-    this.drawVacuumFlow(time, target, 1);
+    this.beginVacuumAudio();
+    this.updateVacuumEffect();
     this.pullPlayer(
       this.x,
       this.isEnraged
@@ -377,7 +428,35 @@ export class PurifierBossEnemy extends BossEnemy<PurifierBossPatternConfig> {
     }
   }
 
+  /** 플레이어에서 흡입구 방향으로 흐르는 스프라이트를 갱신함. */
+  private updateVacuumEffect() {
+    const target = this.playerTarget;
+    if (!target) {
+      this.vacuumEffect.setVisible(false);
+      return;
+    }
+
+    const directionToBoss = Math.sign(this.x - target.x) || 1;
+    const intakeX = this.x - directionToBoss * 105;
+    const playerEdgeX =
+      target.x +
+      directionToBoss *
+        ((target.body as Phaser.Physics.Arcade.Body).halfWidth + 3);
+    const distance = Math.abs(intakeX - playerEdgeX);
+    this.vacuumEffect
+      .setPosition((playerEdgeX + intakeX) / 2, this.y + 28)
+      .setDisplaySize(
+        Phaser.Math.Clamp(distance, 160, 720),
+        STAGE_THREE_BOSS_VACUUM.height,
+      )
+      .setDepth(target.depth - 0.01)
+      .setFlipX(directionToBoss < 0)
+      .setAlpha(0.78)
+      .setVisible(distance > 24);
+  }
+
   private beginRecover(time: number) {
+    this.endVacuumAudio();
     this.attackState = 'recover';
     this.stateEndsAt =
       time +
@@ -390,20 +469,28 @@ export class PurifierBossEnemy extends BossEnemy<PurifierBossPatternConfig> {
 
   private spawnShockwave(direction: number) {
     const slam = this.pattern.slam;
+    const waveWidth = slam.shockwaveWidth * 4.4;
+    const waveHeight = slam.shockwaveHeight * 2.5;
     const wave = this.scene.add
-      .rectangle(
+      .image(
         this.x + direction * 70,
-        FLOOR_SURFACE_Y - slam.shockwaveHeight / 2,
-        slam.shockwaveWidth,
-        slam.shockwaveHeight,
-        this.pattern.telegraphColor,
-        0.55,
+        FLOOR_SURFACE_Y - waveHeight / 2 + 20,
+        STAGE_THREE_BOSS_SHOCKWAVE.texture,
       )
-      .setStrokeStyle(2, 0xffffff, 0.5)
+      .setFlipX(direction < 0)
+      .setDisplaySize(waveWidth, waveHeight)
       .setDepth(SHOCKWAVE_DEPTH);
     this.scene.physics.add.existing(wave);
     const body = wave.body as Phaser.Physics.Arcade.Body;
     body.setAllowGravity(false);
+    body.setSize(
+      slam.shockwaveWidth / wave.scaleX,
+      slam.shockwaveHeight / wave.scaleY,
+    );
+    body.setOffset(
+      (wave.width - body.sourceWidth) / 2,
+      wave.height - body.sourceHeight - 20 / wave.scaleY,
+    );
     body.setVelocityX(direction * slam.shockwaveSpeed);
 
     let hit = false;
@@ -443,47 +530,8 @@ export class PurifierBossEnemy extends BossEnemy<PurifierBossPatternConfig> {
     const top = FLOOR_SURFACE_Y - MARKER_HEIGHT;
     this.telegraph
       .clear()
-      .fillStyle(this.pattern.telegraphColor, 0.12 + intensity * 0.4)
-      .fillRect(x - width / 2, top, width, MARKER_HEIGHT)
-      .lineStyle(2, this.pattern.telegraphColor, 0.4 + intensity * 0.5)
-      .strokeRect(x - width / 2, top, width, MARKER_HEIGHT);
-  }
-
-  private drawVacuumFlow(
-    time: number,
-    target: Phaser.Physics.Arcade.Sprite,
-    intensity: number,
-  ) {
-    const direction = Math.sign(this.x - target.x) || 1;
-    const intakeX = this.x - direction * this.displayWidth * 0.35;
-    const intakeY = this.y;
-    const particleCount = 8;
-
-    this.telegraph
-      .clear()
-      .lineStyle(3, this.pattern.telegraphColor, 0.18 + intensity * 0.28)
-      .lineBetween(target.x, target.y, intakeX, intakeY)
-      .lineStyle(2, this.pattern.telegraphColor, 0.3 + intensity * 0.45)
-      .strokeCircle(
-        this.x,
-        this.y,
-        58 + Math.sin(time * 0.018) * 7,
-      );
-
-    for (let index = 0; index < particleCount; index += 1) {
-      const progress =
-        (time * 0.0012 + index / particleCount) % 1;
-      const x = Phaser.Math.Linear(target.x, intakeX, progress);
-      const y =
-        Phaser.Math.Linear(target.y, intakeY, progress) +
-        Math.sin(progress * Math.PI * 4 + index) * 18 * (1 - progress);
-      this.telegraph
-        .fillStyle(
-          this.pattern.telegraphColor,
-          (0.25 + progress * 0.65) * intensity,
-        )
-        .fillCircle(x, y, 3 + progress * 4);
-    }
+      .fillStyle(0xff3b30, 0.22 + intensity * 0.35)
+      .fillRect(x - width / 2, top, width, MARKER_HEIGHT);
   }
 
   private moveToPreferredDistance(

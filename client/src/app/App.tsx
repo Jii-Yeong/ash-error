@@ -151,8 +151,7 @@ export function App() {
                   role='status'
                   aria-live='assertive'
                 >
-                  <span>PHASE 2</span>
-                  <strong>CORE OVERLOAD</strong>
+                  <strong>PHASE 2</strong>
                 </div>
               )}
             </div>
@@ -177,7 +176,6 @@ export function App() {
                   >
                     설정
                   </button>
-                  <p className='pause-overlay__hint'>ESC 로도 재개됩니다</p>
                 </div>
               </div>
             )}

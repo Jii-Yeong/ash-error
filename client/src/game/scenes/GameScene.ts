@@ -7,6 +7,7 @@ import { GAME_HEIGHT } from '@/game/config/gameDimensions';
 import {
   PLAYER_INITIAL_FRAME,
   PLAYER_SPRITE_CONFIG,
+  STAGE_ENDING_DRONE,
   STAGE_FIVE_PLAYER_HALO,
   STAGE_FIVE_PLAYER_SPRITE,
   STAGE_THREE_PLAYER_SPRITE,
@@ -21,6 +22,7 @@ import {
   STAGE_THREE_CONFIG,
   STARTING_STAGE_INDEX,
   STAGES,
+  type StageConfig,
 } from '@/game/config/stageConfig';
 import { formatStageLabel } from '@/game/config/stageLabel';
 import { getStageExitPlan } from '@/game/config/stageProgression';
@@ -66,8 +68,12 @@ import { WeaponDropDirector } from '@/game/systems/WeaponDropDirector';
 import { WeaponSystem } from '@/game/systems/WeaponSystem';
 import { useGameSettingsStore } from '@/stores/gameSettingsStore';
 
+/** 4스테이지 보스가 사라진 뒤 화면 파괴까지 장면을 유지하는 시간. */
+const SHATTER_POST_BOSS_DELAY_MS = 1000;
 const PLAYER_DAMAGE_FLASH_DURATION = 80;
 const PLAYER_DEATH_PROMPT_DELAY = 1000;
+/** 공중 사망 시 1층 바닥으로 떨어지는 속도(px/s). */
+const PLAYER_DEATH_FALL_SPEED = 720;
 
 /**
  * 구덩이 추락 판정 깊이. 발이 이만큼 바닥선 아래로 내려가야 추락으로 친다.
@@ -92,6 +98,10 @@ const UNDERGROUND_LANDING_BACKDROP = {
 };
 const STAGE_THREE_ENDING_FRAME =
   STAGE_THREE_PLAYER_SPRITE.deathFrames?.at(-1) ?? PLAYER_INITIAL_FRAME;
+const ASCENSION_ALIVE_DELAY_MS = 1000;
+const ASCENSION_DRONE_FLIGHT_MS = 3200;
+const ASCENSION_DRONE_OFFSET_X = 120;
+const ASCENSION_DRONE_OFFSET_Y = -100;
 
 export class GameScene extends Phaser.Scene {
   private player!: Phaser.Physics.Arcade.Sprite;
@@ -111,6 +121,7 @@ export class GameScene extends Phaser.Scene {
   private weaponDropDirector!: WeaponDropDirector;
   private weaponSystem!: WeaponSystem;
   private stageTransitionDirector!: StageTransitionDirector;
+  private eventDirector!: StageEndEventDirector;
   private stageAssetPreloader!: StageAssetPreloader;
   private enemyCombatDirector!: EnemyCombatDirector;
   private backdropDirector!: BackdropDirector;
@@ -167,14 +178,19 @@ export class GameScene extends Phaser.Scene {
     this.configureCamera();
     this.createCombatSystems();
     this.combatUi = new CombatUi(this);
+    // 씬도 참조를 든다. 늦게 도착한 3스테이지 아틀라스를 이미 세워 둔 포위
+    // 대형에 입히려면 전환 연출 밖에서도 이 디렉터에 닿아야 한다.
+    this.eventDirector = new StageEndEventDirector(this);
     this.stageTransitionDirector = new StageTransitionDirector({
       scene: this,
       player: this.player,
-      eventDirector: new StageEndEventDirector(this),
+      eventDirector: this.eventDirector,
       prepare: () => this.prepareStageTransition(),
       enterCurrentRoom: () => this.enterCurrentRoom(),
       enterLandingRoom: (mode) => this.enterTransitionLandingRoom(mode),
       setAscensionPose: () => this.showAscensionPlayerPose(),
+      playAscensionAlive: (onComplete) =>
+        this.playAscensionAlive(onComplete),
       completeStageExit: (nextStageIndex) =>
         this.completeStageExit(nextStageIndex),
       finish: (outcome) => {
@@ -293,6 +309,22 @@ export class GameScene extends Phaser.Scene {
     );
   }
 
+  /**
+   * `rebuildFloorForRoom`의 지형 짝.
+   *
+   * 방과 스테이지를 받는 이유는 엔딩이 5스테이지에 있으면서 3스테이지 지형을
+   * 그리기 때문이다. 네 곳에 흩어져 있던 같은 호출을 여기로 모았다 —
+   * `TerrainBuilder.build`에 인자가 하나 늘면 이제 고칠 곳도 하나다.
+   */
+  private rebuildTerrainForRoom(roomConfig: RoomConfig, stage: StageConfig) {
+    this.terrainBuilder.build(
+      roomConfig.terrain,
+      stage.terrainSkin,
+      roomConfig.ceilingPipes,
+      stage.pipeSkin,
+    );
+  }
+
   private createPlayer() {
     this.player = this.physics.add.sprite(
       this.getStartingPlayerX(),
@@ -353,7 +385,7 @@ export class GameScene extends Phaser.Scene {
     this.cameras.main.shakeEffect.reset();
     this.cameras.main.resetFX();
     this.cameras.main.stopFollow();
-    this.cameras.main.setScroll(0, 0);
+    this.cameras.main.setScroll(0, 0).setZoom(1);
     this.configureCamera();
   }
 
@@ -372,7 +404,7 @@ export class GameScene extends Phaser.Scene {
       scene: this,
       player: this.player,
       config: roomConfig,
-      portalTint: this.stage.palette.accentSecondary,
+      portalTint: this.stage.portalTint ?? this.stage.palette.accentSecondary,
       onStateChanged: (state) => this.handleRoomStateChanged(state),
       onExitRequested: () => {
         this.roomExitRequested = true;
@@ -384,12 +416,7 @@ export class GameScene extends Phaser.Scene {
     gameEvents.emit('room-state-changed', this.roomState);
     this.enemyCombatDirector.emitEnemyHealth();
 
-    this.terrainBuilder.build(
-      roomConfig.terrain,
-      this.stage.terrainSkin,
-      roomConfig.ceilingPipes,
-      this.stage.pipeSkin,
-    );
+    this.rebuildTerrainForRoom(roomConfig, this.stage);
 
     // 연출용 강하 방은 교전 없이 자유 이동만 한다.
     if (roomConfig.kind === 'descent') {
@@ -466,18 +493,25 @@ export class GameScene extends Phaser.Scene {
       this.enterCurrentRoom();
       // 무겁고 동기적인 방 재구성 '이후'에만 플래시함. 그래야 효과가 깨끗한
       // 프레임에 걸쳐 애니메이션되고, 재구성 프레임 내내 풀 불투명으로
-      // 멈춰(민트 화면이 멈춘 것처럼 보이던) 있지 않음.
+      // 멈춰(화면이 멈춘 것처럼 보이던) 있지 않음.
       //
       // resetFX로 이전에 남아 멈춰 있을 수 있는 플래시(예: 일시정지 중 얼어붙은
       // 효과)를 먼저 지운다. 그러지 않으면 force 없는 flash는 아직 실행 중으로
-      // 표시된 옛 효과 때문에 무시되어, 민트 오버레이가 화면에 그대로 남는다.
+      // 표시된 옛 효과 때문에 무시되어, 흰색 오버레이가 화면에 그대로 남는다.
       // force=true로 항상 새로 시작해 반드시 끝까지 재생(소멸)되게 한다.
       this.cameras.main.resetFX();
-      this.cameras.main.flash(180, 182, 255, 228, true);
+      this.cameras.main.flash(180, 255, 255, 255, true);
       return;
     }
 
     this.advanceToNextStage();
+  }
+
+  /** 보스가 사라진 장면을 잠시 유지한 뒤 화면 파괴 연출로 넘어간다. */
+  private beginShatterExit() {
+    this.time.delayedCall(SHATTER_POST_BOSS_DELAY_MS, () =>
+      this.advanceToNextStage(),
+    );
   }
 
   private advanceToNextStage() {
@@ -553,7 +587,10 @@ export class GameScene extends Phaser.Scene {
     this.weaponSystem.cancelHitStop();
     this.playerController.stop();
     this.player.setVelocity(0);
-    this.weaponSystem.hide();
+    // 5스테이지 엔딩은 흰 화면이 방 교체를 가릴 때까지 무기를 든 자세를 유지한다.
+    if (this.stage.endEvent !== 'ascension') {
+      this.weaponSystem.hide();
+    }
     this.weaponDropDirector.clear();
     this.combatUi.clearGuides();
   }
@@ -564,20 +601,41 @@ export class GameScene extends Phaser.Scene {
     this.configureRoomWorld();
     if (mode === 'descent') {
       this.rebuildFloorForRoom();
+      this.rebuildTerrainForRoom(this.activeRoomConfig, this.stage);
       this.showUndergroundLandingBackdrop();
       this.resetCameraToRoomEntrance();
       return;
     }
 
+    this.weaponSystem.hide();
     this.enemyCombatDirector.destroyEnemies();
+    // 흰 화면 뒤에서 엔딩 방으로 교체되는 순간 현재 음악을 완전히 끔.
+    gameEvents.emit('ending-ascension-cue', 'silence');
     // 어드민으로 5스테이지 보스에 직행하면 3스테이지 지형은 아직 캐시에 없다.
     // 도착 뒤 다시 그려 콜드 로드에서도 바닥 스킨이 placeholder로 굳지 않게 한다.
+    //
+    // 포위 대형도 같이 복구한다. 스프라이트는 이 프리로드가 끝나기를 기다리지
+    // 않고 흰 화면 뒤에서 곧바로 생성되므로, 아틀라스가 늦으면 엔딩 내내
+    // __MISSING 박스가 대형을 이룬 채 걸어 나간다.
     this.stageAssetPreloader.preload(STAGE_THREE_CONFIG, () => {
       if (this.activeRoomConfig === UNDERGROUND_LANDING_ROOM) {
         this.drawAscensionRoom();
       }
+      this.eventDirector.reskinSiege();
     });
     this.drawAscensionRoom();
+    // 엔딩 포위 장면의 배경만 검게 가리고 바닥·지형·등장인물은 앞에 남김.
+    this.add
+      .rectangle(
+        this.cameras.main.width / 2,
+        this.cameras.main.height / 2,
+        this.cameras.main.width,
+        this.cameras.main.height,
+        0x000000,
+        0.6,
+      )
+      .setDepth(-9.5)
+      .setScrollFactor(0);
     this.resetCameraToRoomEntrance();
     this.playerController.setMovementMode(MovementMode.GROUND);
   }
@@ -590,6 +648,7 @@ export class GameScene extends Phaser.Scene {
       STAGE_THREE_CONFIG.showFloor,
       STAGE_THREE_CONFIG.floorSkin,
     );
+    this.rebuildTerrainForRoom(UNDERGROUND_LANDING_ROOM, STAGE_THREE_CONFIG);
     this.showUndergroundLandingBackdrop();
   }
 
@@ -608,6 +667,36 @@ export class GameScene extends Phaser.Scene {
       STAGE_THREE_ENDING_FRAME,
     );
     this.playerHalo.setVisible(false);
+  }
+
+  private playAscensionAlive(onComplete: () => void) {
+    this.time.delayedCall(ASCENSION_ALIVE_DELAY_MS, () => {
+      this.player.once(Phaser.Animations.Events.ANIMATION_COMPLETE, () =>
+        this.flyInEndingDrone(onComplete),
+      );
+      this.player.play(STAGE_THREE_PLAYER_SPRITE.animations.alive, true);
+    });
+  }
+
+  private flyInEndingDrone(onComplete: () => void) {
+    const camera = this.cameras.main.worldView;
+    const drone = this.add
+      .sprite(
+        camera.right + (STAGE_ENDING_DRONE.width * STAGE_ENDING_DRONE.scale) / 2,
+        this.player.y + ASCENSION_DRONE_OFFSET_Y,
+        STAGE_ENDING_DRONE.texture,
+      )
+      .setFlipX(true)
+      .setScale(STAGE_ENDING_DRONE.scale)
+      .setDepth(PLAYER_STACK_DEPTH.frontArm + 1)
+      .play(STAGE_ENDING_DRONE.animation);
+    this.tweens.add({
+      targets: drone,
+      x: this.player.x + ASCENSION_DRONE_OFFSET_X,
+      duration: ASCENSION_DRONE_FLIGHT_MS,
+      ease: 'Sine.easeOut',
+      onComplete,
+    });
   }
 
   private emitStageLocation() {
@@ -635,6 +724,9 @@ export class GameScene extends Phaser.Scene {
       this.reskinCurrentRoom(),
     );
     this.stageAssetPreloader.preload(STAGES[this.currentStageIndex + 1]);
+    if (this.stage.endEvent === 'ascension') {
+      this.stageAssetPreloader.preload(STAGE_THREE_CONFIG);
+    }
   }
 
   /**
@@ -649,12 +741,7 @@ export class GameScene extends Phaser.Scene {
     }
 
     this.rebuildFloorForRoom();
-    this.terrainBuilder.build(
-      this.activeRoomConfig.terrain,
-      this.stage.terrainSkin,
-      this.activeRoomConfig.ceilingPipes,
-      this.stage.pipeSkin,
-    );
+    this.rebuildTerrainForRoom(this.activeRoomConfig, this.stage);
     for (const enemy of this.enemies) {
       enemy.refreshAtlasSprite();
     }
@@ -672,18 +759,28 @@ export class GameScene extends Phaser.Scene {
       player: this.player,
       enemies: this.enemies,
       projectileBlockers: this.terrainBuilder.projectileGroup,
+      projectileFloor: this.floorBuilder.group,
       canDamageEnemy: () =>
         this.phase === 'playing' && this.roomState === 'locked',
       isPlayerInvulnerable: () => this.playerController.isInvulnerable,
       damagePlayer: (damage) => this.applyPlayerDamage(damage),
+      isOverPit: (x) => this.floorBuilder.isOverPit(x),
       notifyEnemyDefeated: (enemy) =>
         this.roomDirector.notifyEnemyDefeated(enemy),
-      dropBossReward: (enemy) =>
+      dropBossReward: (enemy) => {
+        // 포탈 없이 종료 연출로 넘어가는 보스는 총기를 남기지 않음.
+        if (
+          this.stage.endEvent === 'shatter' ||
+          this.stage.endEvent === 'ascension'
+        ) {
+          return;
+        }
         this.weaponDropDirector.dropBossReward(
           enemy.x,
           enemy.y,
           this.weaponSystem.ownedWeaponIds,
-        ),
+        );
+      },
       clearEnemyRanges: () => this.combatUi?.clearEnemyRanges(),
       drawEnemyRange: (enemy, targetInRange) => {
         if (useGameSettingsStore.getState().showEnemyRanges) {
@@ -869,10 +966,10 @@ export class GameScene extends Phaser.Scene {
         !this.stageTransitionDirector.hasRoomOverride &&
         this.currentRoomIndex === this.stage.rooms.length - 1
       ) {
-        this.advanceToNextStage();
+        this.beginShatterExit();
       }
 
-      // 5스테이지: 보스 처치 3초 뒤 포탈 없이 종료 연출을 시작한다.
+      // 5스테이지: 보스 사망 연출이 끝나면 포탈 없이 종료 연출을 시작한다.
       if (
         this.stage.endEvent === 'ascension' &&
         !this.stageTransitionDirector.hasRoomOverride &&
@@ -1004,7 +1101,12 @@ export class GameScene extends Phaser.Scene {
       return;
     }
 
-    // 추락한 쪽에서 가까운 가장자리 위로 되살린다(구덩이를 공짜로 건너지 않도록).
+    if (this.applyPlayerDamage(PIT_FALL_DAMAGE)) {
+      this.player.setVisible(false);
+      return;
+    }
+
+    // 살아남으면 추락한 쪽에서 가까운 가장자리 위로 되살린다.
     const pit = this.floorBuilder.findPitAt(this.player.x, FLOOR_TILE);
     let targetX = this.player.x;
     if (pit) {
@@ -1017,8 +1119,6 @@ export class GameScene extends Phaser.Scene {
     }
     this.player.setPosition(targetX, FLOOR_SURFACE_Y - PIT_RESPAWN_LIFT);
     body.setVelocity(0, 0);
-
-    this.applyPlayerDamage(PIT_FALL_DAMAGE);
   }
 
   private applyPlayerDamage(damage: number) {
@@ -1027,7 +1127,7 @@ export class GameScene extends Phaser.Scene {
       this.playerController.isInvulnerable ||
       useGameSettingsStore.getState().invincible
     ) {
-      return;
+      return false;
     }
 
     const playerDefeated = this.playerHealth.takeDamage(damage);
@@ -1039,6 +1139,8 @@ export class GameScene extends Phaser.Scene {
     if (playerDefeated) {
       this.handlePlayerDeath();
     }
+
+    return playerDefeated;
   }
 
   private flashPlayerDamage() {
@@ -1070,12 +1172,7 @@ export class GameScene extends Phaser.Scene {
     this.setPhase('dead');
     this.restartEnabled = false;
     this.player.setVelocity(0).clearTint().setAlpha(1);
-    const deathAnimation = this.playerSprite.animations.death;
-    if (this.anims.exists(deathAnimation)) {
-      this.player.play(deathAnimation, true);
-    } else {
-      this.player.anims.stop();
-    }
+    this.playPlayerDeathAnimation();
     this.weaponSystem.hide();
     this.weaponDropDirector.clear();
     (this.player.body as Phaser.Physics.Arcade.Body).setAllowGravity(false);
@@ -1090,6 +1187,38 @@ export class GameScene extends Phaser.Scene {
       this.combatUi.showDeath();
     });
     this.cameras.main.shake(180, 0.008);
+  }
+
+  /** 공중에서는 첫 death 자세로 1층까지 추락한 뒤 두 번째 자세로 전환한다. */
+  private playPlayerDeathAnimation() {
+    const body = this.player.body as Phaser.Physics.Arcade.Body;
+    const [fallFrame, landFrame] = this.playerSprite.deathFrames ?? [];
+    const fallDistance = Math.max(0, FLOOR_SURFACE_Y - body.bottom);
+
+    if (!body.blocked.down && fallDistance > 1 && fallFrame && landFrame) {
+      body.enable = false;
+      this.player.anims.stop();
+      this.player.setFrame(fallFrame);
+      this.tweens.add({
+        targets: this.player,
+        y: this.player.y + fallDistance,
+        duration: Phaser.Math.Clamp(
+          (fallDistance / PLAYER_DEATH_FALL_SPEED) * 1000,
+          120,
+          900,
+        ),
+        ease: 'Quad.easeIn',
+        onComplete: () => this.player.setFrame(landFrame),
+      });
+      return;
+    }
+
+    const deathAnimation = this.playerSprite.animations.death;
+    if (this.anims.exists(deathAnimation)) {
+      this.player.play(deathAnimation, true);
+    } else {
+      this.player.anims.stop();
+    }
   }
 
 }

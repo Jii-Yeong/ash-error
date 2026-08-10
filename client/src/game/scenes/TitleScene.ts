@@ -13,6 +13,7 @@ export class TitleScene extends Phaser.Scene {
 
   preload() {
     this.load.image('title-player', '/assets/title-player.png');
+    this.load.image('title-logo', '/assets/ui/title/ash-error-logo.png');
   }
 
   create() {
@@ -54,21 +55,26 @@ export class TitleScene extends Phaser.Scene {
       .setDepth(-1);
     player.setScale((viewportHeight * 0.8) / player.height);
 
-    // SOOT: 검은 글자로 잠시 표시 후 페이드아웃.
+    // 로고는 원본 비율을 유지하며 플레이어와 겹치지 않는 빈 영역에 배치한다.
+    // 자동으로 사라지지 않고 로고를 직접 클릭했을 때만 페이드아웃한다.
     const title = this.add
-      .text(viewportWidth / 2, viewportHeight / 2 - 32, 'SOOT', {
-        color: '#0b0b0b',
-        fontFamily: 'Arial, sans-serif',
-        fontSize: '84px',
-        fontStyle: 'bold',
-      })
-      .setOrigin(0.5);
-    this.tweens.add({
-      targets: title,
-      alpha: 0,
-      delay: 1200,
-      duration: 600,
-      onComplete: () => title.destroy(),
+      .image(viewportWidth * 0.42, viewportHeight / 2 - 32, 'title-logo')
+      .setOrigin(0.5)
+      .setInteractive({ useHandCursor: true });
+    title.setScale(
+      Math.min(
+        (viewportWidth * 0.58) / title.width,
+        (viewportHeight * 0.14) / title.height,
+      ),
+    );
+    title.once('pointerdown', () => {
+      title.disableInteractive();
+      this.tweens.add({
+        targets: title,
+        alpha: 0,
+        duration: 600,
+        onComplete: () => title.destroy(),
+      });
     });
 
     const prompt = this.add
