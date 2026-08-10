@@ -11,6 +11,7 @@ import {
 } from '@/game/entities/Enemy';
 import { HallucinatedAndroidEnemy } from '@/game/entities/HallucinatedAndroidEnemy';
 import type { EnemyAttackCoordinator } from '@/game/systems/EnemyAttackCoordinator';
+import { SceneUpdateLoop } from '@/game/systems/SceneUpdateLoop';
 
 type EyeState = 'ready' | 'tracking' | 'orb' | 'repositioning';
 const POSE = JUDGMENT_EYE_CONFIG.animations;
@@ -37,7 +38,8 @@ export class JudgmentEyeEnemy extends HallucinatedAndroidEnemy {
   /** 방사 탄막을 매번 새로 만들지 않고 재사용하는 탄환 풀(비활성 스프라이트). */
   private readonly bulletPool: Phaser.Physics.Arcade.Image[] = [];
   private bulletTarget?: Phaser.Physics.Arcade.Sprite;
-  private bulletsDetached = false;
+  /** 사망 뒤 남은 탄환을 씬 갱신으로 굴리는 자체 정지 루프. */
+  private readonly detachLoop: SceneUpdateLoop;
   private dying = false;
 
   constructor(
@@ -70,6 +72,12 @@ export class JudgmentEyeEnemy extends HallucinatedAndroidEnemy {
       .setDepth(8)
       .setBlendMode(Phaser.BlendModes.ADD)
       .setVisible(false);
+    this.detachLoop = new SceneUpdateLoop(scene, (time) => {
+      this.updateBullets(time, this.bulletTarget);
+      if (this.bullets.length === 0) {
+        this.detachLoop.stop();
+      }
+    });
   }
 
   override get playsOwnDeathAnimation() {
@@ -112,7 +120,7 @@ export class JudgmentEyeEnemy extends HallucinatedAndroidEnemy {
     _fireProjectile: EnemyProjectileAttack,
   ) {
     this.bulletTarget = target;
-    if (!this.bulletsDetached) {
+    if (!this.detachLoop.isRunning) {
       this.updateBullets(time, target);
     }
     if (!this.active || this.dying) {
@@ -194,7 +202,7 @@ export class JudgmentEyeEnemy extends HallucinatedAndroidEnemy {
 
   override destroy(fromScene?: boolean) {
     this.clearAttackTelegraph();
-    this.stopDetachedBulletUpdates();
+    this.detachLoop.stop();
     this.clearBullets();
     this.destroyBulletPool();
     super.destroy(fromScene);
@@ -329,34 +337,10 @@ export class JudgmentEyeEnemy extends HallucinatedAndroidEnemy {
 
   /** 사망 뒤 활성 탄환만 씬 갱신으로 넘기고 경고 연출은 즉시 정리함. */
   private detachBullets() {
-    if (this.bulletsDetached || this.bullets.length === 0) {
-      return;
-    }
-    this.bulletsDetached = true;
-    this.scene.events.on(
-      Phaser.Scenes.Events.UPDATE,
-      this.updateDetachedBullets,
-      this,
-    );
-  }
-
-  private updateDetachedBullets(time: number) {
-    this.updateBullets(time, this.bulletTarget);
     if (this.bullets.length === 0) {
-      this.stopDetachedBulletUpdates();
-    }
-  }
-
-  private stopDetachedBulletUpdates() {
-    if (!this.bulletsDetached) {
       return;
     }
-    this.scene.events.off(
-      Phaser.Scenes.Events.UPDATE,
-      this.updateDetachedBullets,
-      this,
-    );
-    this.bulletsDetached = false;
+    this.detachLoop.start();
   }
 
   private clearAttackTelegraph() {

@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { CELESTIAL_PROJECTILE_BOUNDS } from '@/game/config/stageFiveEnemyConfig';
+import { SceneUpdateLoop } from '@/game/systems/SceneUpdateLoop';
 
 type CelestialProjectile = {
   sprite: Phaser.Physics.Arcade.Image;
@@ -38,13 +39,21 @@ export class CelestialProjectileField {
   private readonly sprites = new Set<Phaser.Physics.Arcade.Image>();
   private lastUpdateAt = 0;
   private target?: Phaser.Physics.Arcade.Sprite;
-  private detached = false;
   private destroyed = false;
+  /** 사망 뒤 남은 탄환을 씬 갱신으로 굴리는 자체 정지 루프. */
+  private readonly detachLoop: SceneUpdateLoop;
 
   constructor(
     private readonly scene: Phaser.Scene,
     private readonly config: CelestialProjectileFieldConfig,
-  ) {}
+  ) {
+    this.detachLoop = new SceneUpdateLoop(scene, (time) => {
+      this.updateProjectiles(time, this.target);
+      if (this.active.length === 0) {
+        this.detachLoop.stop();
+      }
+    });
+  }
 
   spawn({
     x,
@@ -79,15 +88,10 @@ export class CelestialProjectileField {
 
   /** 적 사망 뒤 남은 탄환을 씬 갱신에 넘겨 수명 종료까지 이동시킴. */
   detach() {
-    if (this.detached || this.destroyed || this.active.length === 0) {
+    if (this.destroyed || this.active.length === 0) {
       return;
     }
-    this.detached = true;
-    this.scene.events.on(
-      Phaser.Scenes.Events.UPDATE,
-      this.updateDetached,
-      this,
-    );
+    this.detachLoop.start();
   }
 
   private updateProjectiles(
@@ -147,7 +151,7 @@ export class CelestialProjectileField {
     for (let index = this.active.length - 1; index >= 0; index -= 1) {
       this.release(index);
     }
-    this.stopDetachedUpdates();
+    this.detachLoop.stop();
   }
 
   destroy() {
@@ -155,32 +159,13 @@ export class CelestialProjectileField {
       return;
     }
     this.destroyed = true;
-    this.stopDetachedUpdates();
+    this.detachLoop.stop();
     for (const sprite of this.sprites) {
       sprite.destroy();
     }
     this.active.length = 0;
     this.pooled.length = 0;
     this.sprites.clear();
-  }
-
-  private updateDetached(time: number) {
-    this.updateProjectiles(time, this.target);
-    if (this.active.length === 0) {
-      this.stopDetachedUpdates();
-    }
-  }
-
-  private stopDetachedUpdates() {
-    if (!this.detached) {
-      return;
-    }
-    this.scene.events.off(
-      Phaser.Scenes.Events.UPDATE,
-      this.updateDetached,
-      this,
-    );
-    this.detached = false;
   }
 
   private acquire(x: number, y: number) {
