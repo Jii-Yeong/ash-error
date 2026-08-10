@@ -257,6 +257,9 @@ export class StageTransitionDirector {
   private complete(nextStageIndex: number | null) {
     this.roomConfig = undefined;
     this.pendingNextStageIndex = null;
+    // 강하 컷신 진행 표시를 전환 종료와 함께 해제해, 다음 방/스테이지로 상태가
+    // 남지 않게 한다.
+    this.descentStarted = false;
     this.options.completeStageExit(nextStageIndex);
   }
 }
