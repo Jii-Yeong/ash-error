@@ -77,6 +77,10 @@ describe('stage five bullet formations', () => {
     expect(
       RETURN_ROOM_TWO.enemySpawns.slice(-2).map(({ type }) => type),
     ).toEqual(['celestial-oracle', 'choir-supporter']);
+    expect(
+      RETURN_ROOM_TWO.exitX -
+        Math.max(...RETURN_ROOM_TWO.enemySpawns.slice(-2).map(({ x }) => x)),
+    ).toBeGreaterThanOrEqual(900);
   });
 
   it('keeps warnings readable and supporter health lowest', () => {
