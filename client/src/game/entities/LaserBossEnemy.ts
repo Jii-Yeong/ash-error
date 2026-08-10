@@ -42,6 +42,10 @@ export class LaserBossEnemy extends BossEnemy<LaserCannonPatternConfig> {
   private laserSoundCue: 'single' | 'double-first' | 'double-second' =
     'single';
 
+  override get deathAnimationDuration(): number {
+    return this.sprite ? DEATH_POSE_HOLD_MS + DEATH_FADE_MS : 0;
+  }
+
   constructor(
     scene: Phaser.Scene,
     x: number,

@@ -2,6 +2,9 @@
 
 import { describe, expect, it, vi } from 'vitest';
 import { BossEnemy } from '@/game/entities/BossEnemy';
+import { HoundBossEnemy } from '@/game/entities/HoundBossEnemy';
+import { LaserBossEnemy } from '@/game/entities/LaserBossEnemy';
+import { PurifierBossEnemy } from '@/game/entities/PurifierBossEnemy';
 
 vi.hoisted(() => {
   HTMLCanvasElement.prototype.getContext = (() => ({
@@ -13,6 +16,23 @@ vi.hoisted(() => {
 });
 
 describe('BossEnemy sprite death sequence', () => {
+  it.each([
+    [HoundBossEnemy, 2_200],
+    [LaserBossEnemy, 2_650],
+    [PurifierBossEnemy, 2_200],
+  ])(
+    '%p는 스프라이트 사망 연출이 끝날 때까지 방 클리어를 지연한다',
+    (BossClass, expectedDuration) => {
+      const boss = Object.create(BossClass.prototype) as {
+        sprite?: object;
+        deathAnimationDuration: number;
+      };
+
+      expect(boss.deathAnimationDuration).toBe(0);
+      boss.sprite = {};
+      expect(boss.deathAnimationDuration).toBe(expectedDuration);
+    },
+  );
   it('전용 정리 뒤 사망 포즈와 페이드를 공통 순서로 실행한다', () => {
     let afterHold: (() => void) | undefined;
     const onDefeated = vi.fn();

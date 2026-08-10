@@ -94,6 +94,10 @@ export class PurifierBossEnemy extends BossEnemy<PurifierBossPatternConfig> {
     return Boolean(this.sprite);
   }
 
+  override get deathAnimationDuration(): number {
+    return this.sprite ? DEATH_POSE_HOLD_MS + DEATH_FADE_MS : 0;
+  }
+
   override takeProjectileDamage(
     amount: number,
     hitX: number,
