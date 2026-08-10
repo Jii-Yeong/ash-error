@@ -38,6 +38,25 @@ describe('GameScene run reset', () => {
     expect(advanceToNextStage).toHaveBeenCalledOnce();
   });
 
+  it('4스테이지 화면 파괴 캡처 전까지 직전 무기 자세를 유지한다', () => {
+    const hideWeapon = vi.fn();
+    const gameScene = Object.assign(Object.create(GameScene.prototype), {
+      currentStageIndex: 3,
+      setPhase: vi.fn(),
+      weaponSystem: { cancelHitStop: vi.fn(), hide: hideWeapon },
+      playerController: { stop: vi.fn() },
+      player: { setVelocity: vi.fn() },
+      weaponDropDirector: { clear: vi.fn() },
+      combatUi: { clearGuides: vi.fn() },
+    }) as GameScene;
+
+    (
+      gameScene as unknown as { prepareStageTransition(): void }
+    ).prepareStageTransition();
+
+    expect(hideWeapon).not.toHaveBeenCalled();
+  });
+
   it('clears enemies and descent cutscene state before a restarted run', () => {
     const gameScene = new GameScene();
     const staleEnemy = {} as Enemy;

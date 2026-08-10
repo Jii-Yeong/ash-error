@@ -2,6 +2,8 @@
 
 import type Phaser from 'phaser';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { BOSS_COMBAT_CONFIGS } from '@/game/config/bossConfig';
+import { RAIL_RIFLE_WEAPON_CONFIG } from '@/game/config/weaponConfig';
 import { HoundBossEnemy } from '@/game/entities/HoundBossEnemy';
 import { gameEvents } from '@/game/events/gameEvents';
 
@@ -119,6 +121,28 @@ describe('HoundBossEnemy scan audio', () => {
 });
 
 describe('HoundBossEnemy', () => {
+  it('레일건 피해를 장갑 배율로 줄인다', () => {
+    const config = BOSS_COMBAT_CONFIGS['alley-hunter'];
+    const hound = createHoundBoss({
+      health: config.maxHealth,
+      maxHealth: config.maxHealth,
+      config,
+    });
+
+    hound.takeProjectileDamage(
+      RAIL_RIFLE_WEAPON_CONFIG.damage,
+      0,
+      0,
+      RAIL_RIFLE_WEAPON_CONFIG.id,
+    );
+
+    expect(hound.currentHealth).toBe(
+      config.maxHealth -
+        RAIL_RIFLE_WEAPON_CONFIG.damage *
+          config.pattern.railRifleDamageMultiplier,
+    );
+  });
+
   it('체력 15% 이하에서 에너지포 속도를 1.5배로 올린다', () => {
     const hound = createHoundBoss({
       health: 151,

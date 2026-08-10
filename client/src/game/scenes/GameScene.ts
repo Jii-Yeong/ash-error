@@ -281,10 +281,13 @@ export class GameScene extends Phaser.Scene {
       this.cameras.main,
     ) as Phaser.Math.Vector2;
     this.syncPlayerHalo(aimPoint.x);
+    if (this.phase === 'transitioning') {
+      this.stageTransitionDirector.syncDescentWeaponPose();
+      return;
+    }
     if (
       this.phase === 'dead' ||
-      this.phase === 'ending' ||
-      this.phase === 'transitioning'
+      this.phase === 'ending'
     ) {
       return;
     }
@@ -587,8 +590,11 @@ export class GameScene extends Phaser.Scene {
     this.weaponSystem.cancelHitStop();
     this.playerController.stop();
     this.player.setVelocity(0);
-    // 5스테이지 엔딩은 흰 화면이 방 교체를 가릴 때까지 무기를 든 자세를 유지한다.
-    if (this.stage.endEvent !== 'ascension') {
+    // 화면을 캡처하거나 흰 화면이 방 교체를 가리는 종료 연출은 직전 무기 자세를 유지한다.
+    if (
+      this.stage.endEvent !== 'shatter' &&
+      this.stage.endEvent !== 'ascension'
+    ) {
       this.weaponSystem.hide();
     }
     this.weaponDropDirector.clear();

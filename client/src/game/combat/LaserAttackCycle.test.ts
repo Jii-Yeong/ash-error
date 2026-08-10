@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { LaserAttackCycle } from '@/game/combat/LaserAttackCycle';
 import { BOSS_COMBAT_CONFIGS } from '@/game/config/bossConfig';
+import {
+  getWeaponSustainedDamagePerSecond,
+  SMG_WEAPON_CONFIG,
+} from '@/game/config/weaponConfig';
 
 const pattern = BOSS_COMBAT_CONFIGS['city-warden'].pattern;
 
@@ -56,5 +60,33 @@ describe('LaserAttackCycle', () => {
     expect(cycle.state).toBe('repositioning');
     expect(cycle.isComplete(2249)).toBe(false);
     expect(cycle.isComplete(2250)).toBe(true);
+  });
+
+  it('기본 총으로 계속 공격할 때 레이저를 일곱 번 노출한다', () => {
+    const boss = BOSS_COMBAT_CONFIGS['city-warden'];
+    const damagePerSecond = getWeaponSustainedDamagePerSecond(
+      SMG_WEAPON_CONFIG,
+    );
+    const defeatAt = (boss.maxHealth / damagePerSecond) * 1000;
+    const cycle = new LaserAttackCycle(pattern, 0);
+    let laserCount = 0;
+
+    for (let time = 0; time < defeatAt; time += 10) {
+      if (!cycle.isComplete(time)) {
+        continue;
+      }
+
+      const enraged = time >= defeatAt * pattern.enrageHealthRatio;
+      if (cycle.state === 'repositioning') {
+        cycle.beginVolley(time, enraged);
+      } else if (cycle.state === 'charging') {
+        cycle.beginFiring(time);
+        laserCount += 1;
+      } else {
+        cycle.finishFiring(time, enraged);
+      }
+    }
+
+    expect(laserCount).toBe(7);
   });
 });

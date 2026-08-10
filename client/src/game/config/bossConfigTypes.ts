@@ -33,6 +33,8 @@ export type BeamVisualConfig = {
 /** Stage-2 searchlight detection followed by a dodgeable energy orb. */
 export type HoundBossPatternConfig = {
   type: 'hound';
+  /** 레일건이 장갑에 명중했을 때 적용되는 피해 배율. */
+  railRifleDamageMultiplier: number;
   moveSpeed: number;
   enragedMoveSpeed: number;
   enrageHealthRatio: number;
@@ -61,6 +63,8 @@ export type HoundBossPatternConfig = {
 /** Stage-3 targeted slam and full-arena vacuum patterns. */
 export type PurifierBossPatternConfig = {
   type: 'purifier';
+  /** 레일건의 관통 다단 적중을 장갑으로 줄이는 타격당 피해 배율. */
+  railRifleDamageMultiplier: number;
   moveSpeed: number;
   enragedMoveSpeed: number;
   enrageHealthRatio: number;
@@ -93,6 +97,7 @@ export type PurifierBossPatternConfig = {
 /** Stage-4 ground rupture, charge, and persistent magma-shard patterns. */
 export type InfernalBossPatternConfig = {
   type: 'infernal';
+  railRifleDamageMultiplier: number;
   enrageHealthRatio: number;
   firstAttackDelay: number;
   recoveryDuration: number;
@@ -135,6 +140,8 @@ export type InfernalBossPatternConfig = {
 /** Stage-5 aerial bullet patterns and the final core-exposure sequence. */
 export type ArchitectBossPatternConfig = {
   type: 'architect';
+  /** 레일건이 최종 보스의 장갑에 명중했을 때 적용되는 피해 배율. */
+  railRifleDamageMultiplier: number;
   enrageHealthRatio: number;
   salvationHealthRatio: number;
   firstAttackDelay: number;

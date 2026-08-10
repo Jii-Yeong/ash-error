@@ -8,9 +8,13 @@ import {
   STAGE_THREE_BOSS_SHOCKWAVE,
   STAGE_THREE_BOSS_VACUUM,
 } from '@/game/config/bossAnimationConfig';
+import { getRailArmoredDamage } from '@/game/combat/bossDamage';
 import { getSlamLeapVelocity } from '@/game/combat/slamLeap';
 import { BossEnemy } from '@/game/entities/BossEnemy';
-import type { EnemyProjectileAttack } from '@/game/entities/Enemy';
+import type {
+  EnemyProjectileAttack,
+  ProjectileDamageResult,
+} from '@/game/entities/Enemy';
 import { gameEvents } from '@/game/events/gameEvents';
 import { destroyCollider } from '@/game/systems/arcadePhysicsCleanup';
 import { CleanupRegistry } from '@/game/systems/CleanupRegistry';
@@ -46,6 +50,9 @@ const DEATH_FADE_MS = 600;
  *   running away from the boss to resist the flow.
  */
 export class PurifierBossEnemy extends BossEnemy<PurifierBossPatternConfig> {
+  override readonly usesHitFlash: boolean = true;
+  override readonly hitFlashAlpha: number = 0.72;
+
   private readonly telegraph: Phaser.GameObjects.Graphics;
   private readonly vacuumEffect: Phaser.GameObjects.Sprite;
   private readonly waveCleanups = new CleanupRegistry();
@@ -86,6 +93,23 @@ export class PurifierBossEnemy extends BossEnemy<PurifierBossPatternConfig> {
 
   override get playsOwnDeathAnimation(): boolean {
     return Boolean(this.sprite);
+  }
+
+  override takeProjectileDamage(
+    amount: number,
+    hitX: number,
+    hitY: number,
+    weaponId?: string,
+  ): ProjectileDamageResult {
+    return super.takeProjectileDamage(
+      getRailArmoredDamage(
+        amount,
+        this.pattern.railRifleDamageMultiplier,
+        weaponId,
+      ),
+      hitX,
+      hitY,
+    );
   }
 
   /**
@@ -235,7 +259,6 @@ export class PurifierBossEnemy extends BossEnemy<PurifierBossPatternConfig> {
 
   private updateRecover(time: number, target: Phaser.Physics.Arcade.Sprite) {
     this.telegraph.clear();
-    this.clearTint();
     this.moveToPreferredDistance(time, target);
     this.updateLocomotionAnimation();
 
@@ -464,7 +487,6 @@ export class PurifierBossEnemy extends BossEnemy<PurifierBossPatternConfig> {
         ? this.pattern.enragedRecoveryDuration
         : this.pattern.recoveryDuration);
     this.telegraph.clear();
-    this.clearTint();
   }
 
   private spawnShockwave(direction: number) {

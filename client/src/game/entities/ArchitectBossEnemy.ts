@@ -5,6 +5,9 @@ import {
   getFanAngles,
   getRingAngles,
 } from '@/game/combat/architectPattern';
+import {
+  STAGE_FIVE_BOSS_FLOATING_JUDGMENT_SIGIL,
+} from '@/game/config/bossAnimationConfig';
 import type {
   ArchitectBossSpriteConfig,
   ArchitectBossCombatConfig,
@@ -13,8 +16,12 @@ import type {
 import type { BossArenaBounds } from '@/game/config/bossArena';
 import { GAME_HEIGHT } from '@/game/config/gameDimensions';
 import { ArchitectBossView } from '@/game/entities/ArchitectBossView';
+import { getRailArmoredDamage } from '@/game/combat/bossDamage';
 import { BossEnemy } from '@/game/entities/BossEnemy';
-import type { EnemyProjectileAttack } from '@/game/entities/Enemy';
+import type {
+  EnemyProjectileAttack,
+  ProjectileDamageResult,
+} from '@/game/entities/Enemy';
 import { gameEvents } from '@/game/events/gameEvents';
 import type { BossPhase } from '@/game/state/bossPhase';
 import { BossProjectileField } from '@/game/systems/BossProjectileField';
@@ -137,6 +144,23 @@ export class ArchitectBossEnemy extends BossEnemy<ArchitectBossPatternConfig> {
 
   override get playsOwnDeathAnimation() {
     return Boolean(this.sprite);
+  }
+
+  override takeProjectileDamage(
+    amount: number,
+    hitX: number,
+    hitY: number,
+    weaponId?: string,
+  ): ProjectileDamageResult {
+    return super.takeProjectileDamage(
+      getRailArmoredDamage(
+        amount,
+        this.pattern.railRifleDamageMultiplier,
+        weaponId,
+      ),
+      hitX,
+      hitY,
+    );
   }
 
   override refreshAtlasSprite() {
@@ -451,13 +475,6 @@ export class ArchitectBossEnemy extends BossEnemy<ArchitectBossPatternConfig> {
 
   private updateHaloWarning(time: number) {
     this.setVelocity(0, 0);
-    const progress = this.stateProgress(time);
-    this.view.drawHaloWarning(
-      this.x,
-      this.y,
-      this.haloGapAngle,
-      progress,
-    );
 
     if (time >= this.stateEndsAt) {
       this.attackState = 'halo-firing';
@@ -737,9 +754,9 @@ export class ArchitectBossEnemy extends BossEnemy<ArchitectBossPatternConfig> {
 
   private spawnJudgmentOrb(x: number, y: number) {
     const size = this.pattern.eye.orbRadius * 2;
-    let orb: Phaser.GameObjects.Rectangle | undefined = this.scene.add
-      .rectangle(x, y, size, size, this.pattern.skyColor, 0.24)
-      .setStrokeStyle(4, this.pattern.goldColor, 0.85)
+    let orb: Phaser.GameObjects.Image | undefined = this.scene.add
+      .image(x, y, STAGE_FIVE_BOSS_FLOATING_JUDGMENT_SIGIL.texture)
+      .setDisplaySize(size, size)
       .setDepth(JUDGMENT_ORB_DEPTH);
     let cleaned = false;
     const timer = this.scene.time.delayedCall(

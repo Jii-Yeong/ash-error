@@ -143,6 +143,7 @@ export function App() {
                   maxValue={enemyMaxHealth}
                   variant='enemy'
                   bossPhase={enemyIsBoss ? bossPhase : null}
+                  showValue={!enemyIsBoss}
                 />
               )}
               {bossPhase === 2 && (
