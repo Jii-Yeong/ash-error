@@ -4,7 +4,7 @@ import { gameEvents } from '@/game/events/gameEvents';
 export const CREDITS_COPY = {
   title: 'ASH//ERROR',
   subtitle: 'CREDITS',
-  body: `MADE BY\nSOOT TEAM\n\nDESIGN · PROGRAMMING · ART\nJii-Yeong\n\nMUSIC\nGenerated with Google Lyria via Gemini\ngemini.google.com\n\nSOUND EFFECTS\nKenney — Sci-Fi Sounds · Impact Sounds · Digital Audio\nkenney.nl — CC0 1.0\n\nBUILT WITH\nPhaser · React · Vite`,
+  body: `A GAME BY\n영원\n\nDEVELOPMENT\nJii-Yeong\nGame Design · Programming · Visual Art\n\nAUDIO & LEVEL DESIGN\ndonkeeman\nAudio Design · Level Design · Weapon Presentation\n\nTHIRD-PARTY ASSETS\nMusic generated with Google Lyria via Gemini · gemini.google.com\nSound effects by Kenney · kenney.nl · CC0 1.0`,
   skip: 'PRESS ENTER / ESC / CLICK TO RETURN',
 } as const;
 
@@ -17,6 +17,7 @@ export class CreditsScene extends Phaser.Scene {
   }
 
   create() {
+    this.leaving = false;
     gameEvents.emit('scene-changed', 'credits');
 
     const backdrop = this.add.rectangle(0, 0, 1, 1, 0x060708).setOrigin(0);
@@ -41,6 +42,14 @@ export class CreditsScene extends Phaser.Scene {
       fontStyle: 'bold',
     });
 
+    const returnToTitle = () => {
+      if (this.leaving) {
+        return;
+      }
+
+      this.leaving = true;
+      this.scene.start('title');
+    };
     const layout = () => {
       const { width, height } = this.scale;
       const bodyFontSize = Phaser.Math.Clamp(Math.round(height / 45), 11, 18);
@@ -64,15 +73,6 @@ export class CreditsScene extends Phaser.Scene {
         .setPosition(width / 2, height * 0.91)
         .setOrigin(0.5)
         .setFontSize(Phaser.Math.Clamp(Math.round(height / 54), 10, 14));
-    };
-
-    const returnToTitle = () => {
-      if (this.leaving) {
-        return;
-      }
-
-      this.leaving = true;
-      this.scene.start('title');
     };
 
     layout();

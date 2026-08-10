@@ -13,6 +13,17 @@ vi.hoisted(() => {
 import { CREDITS_COPY } from '@/game/scenes/CreditsScene';
 
 describe('CreditsScene copy', () => {
+  it('영원 팀의 Git 아이디를 표기한다', () => {
+    expect(CREDITS_COPY.body).toContain('영원');
+    expect(CREDITS_COPY.body).toContain('Jii-Yeong');
+    expect(CREDITS_COPY.body).toContain('donkeeman');
+    expect(CREDITS_COPY.body).not.toContain('서지영');
+    expect(CREDITS_COPY.body).not.toContain('이혜원');
+    expect(CREDITS_COPY.body).toContain('DEVELOPMENT');
+    expect(CREDITS_COPY.body).toContain('AUDIO & LEVEL DESIGN');
+    expect(CREDITS_COPY.body).toContain('THIRD-PARTY ASSETS');
+  });
+
   it('외부 음원과 효과음 출처 및 라이선스를 표기한다', () => {
     expect(CREDITS_COPY.body).toContain('Google Lyria via Gemini');
     expect(CREDITS_COPY.body).toContain('Kenney');
