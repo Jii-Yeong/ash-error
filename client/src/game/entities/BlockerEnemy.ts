@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import {
   getExposedFaceBounds,
+  isBlockerShieldSideHit,
   isExposedFaceHit,
 } from '@/game/combat/stageThreeEnemyCombat';
 import { BLOCKER_CONFIG } from '@/game/config/stageThreeEnemyConfig';
@@ -123,20 +124,21 @@ export class BlockerEnemy extends Enemy {
     hitX: number,
     hitY: number,
   ): ProjectileDamageResult {
-    if (
-      !isExposedFaceHit(
-        this.faceBounds,
-        hitX,
-        hitY,
-        BLOCKER_CONFIG.projectileHitTolerance,
-      )
-    ) {
+    const hitsShieldSide = isBlockerShieldSideHit(this.x, this.flipX, hitX);
+    const hitsExposedFace = isExposedFaceHit(
+      this.faceBounds,
+      hitX,
+      hitY,
+      BLOCKER_CONFIG.projectileHitTolerance,
+    );
+
+    // 방패 정면 몸통만 막고, 등 뒤는 전신이 피격된다.
+    if (hitsShieldSide && !hitsExposedFace) {
       this.showProjectileBlockedImpact(hitX, hitY, 'shield');
       return { applied: false, defeated: false };
     }
     return super.takeProjectileDamage(amount, hitX, hitY);
   }
-
   override get playsOwnDeathAnimation() {
     return true;
   }

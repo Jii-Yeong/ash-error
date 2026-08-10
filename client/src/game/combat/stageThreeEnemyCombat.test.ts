@@ -4,6 +4,7 @@ import {
   getCapturePullSpeed,
   getExposedFaceBounds,
   getTetheredVelocityX,
+  isBlockerShieldSideHit,
   isExposedFaceHit,
 } from '@/game/combat/stageThreeEnemyCombat';
 import { BLOCKER_CONFIG } from '@/game/config/stageThreeEnemyConfig';
@@ -42,6 +43,13 @@ describe('stage three enemy combat geometry', () => {
     expect(isExposedFaceHit(bounds, 500, 600)).toBe(false);
     expect(isExposedFaceHit(bounds, 549, 548)).toBe(false);
     expect(isExposedFaceHit(bounds, 549, 548, 8)).toBe(true);
+  });
+
+  it('blocks body shots only on the side facing the shield', () => {
+    expect(isBlockerShieldSideHit(500, true, 540)).toBe(true);
+    expect(isBlockerShieldSideHit(500, true, 460)).toBe(false);
+    expect(isBlockerShieldSideHit(500, false, 460)).toBe(true);
+    expect(isBlockerShieldSideHit(500, false, 540)).toBe(false);
   });
 
   it('ignores projectile damage only while the maintainer is falling', () => {

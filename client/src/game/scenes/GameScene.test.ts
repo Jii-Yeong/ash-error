@@ -193,4 +193,59 @@ describe('GameScene run reset', () => {
     droneTween.onComplete();
     expect(onComplete).toHaveBeenCalledOnce();
   });
+
+  it('plays a screen-fixed clear notification when the final enemy is defeated', () => {
+    const clearProjectiles = vi.fn();
+    const clearEnemyRanges = vi.fn();
+    const showRoomCleared = vi.fn();
+    const setPhase = vi.fn();
+    const accentSecondary = 0xb6ffe4;
+    const scene = Object.assign(Object.create(GameScene.prototype), {
+      roomState: 'locked',
+      setPhase,
+      enemyCombatDirector: { clearProjectiles },
+      combatUi: { clearEnemyRanges, showRoomCleared },
+      stageTransitionDirector: { hasRoomOverride: false },
+      currentRoomIndex: 0,
+    }) as GameScene;
+    Object.defineProperty(scene, 'stage', {
+      value: { palette: { accentSecondary }, rooms: [{ kind: 'combat' }] },
+    });
+
+    (
+      scene as unknown as {
+        handleRoomStateChanged(state: 'cleared'): void;
+      }
+    ).handleRoomStateChanged('cleared');
+
+    expect(setPhase).toHaveBeenCalledWith('room-cleared');
+    expect(clearProjectiles).toHaveBeenCalledOnce();
+    expect(clearEnemyRanges).toHaveBeenCalledOnce();
+    expect(showRoomCleared).toHaveBeenCalledWith(accentSecondary);
+  });
+  it('keeps the clear notification hidden in a boss room', () => {
+    const showRoomCleared = vi.fn();
+    const scene = Object.assign(Object.create(GameScene.prototype), {
+      roomState: 'locked',
+      setPhase: vi.fn(),
+      enemyCombatDirector: { clearProjectiles: vi.fn() },
+      combatUi: { clearEnemyRanges: vi.fn(), showRoomCleared },
+      stageTransitionDirector: { hasRoomOverride: false },
+      currentRoomIndex: 0,
+    }) as GameScene;
+    Object.defineProperty(scene, 'stage', {
+      value: {
+        palette: { accentSecondary: 0xb6ffe4 },
+        rooms: [{ kind: 'boss' }],
+      },
+    });
+
+    (
+      scene as unknown as {
+        handleRoomStateChanged(state: 'cleared'): void;
+      }
+    ).handleRoomStateChanged('cleared');
+
+    expect(showRoomCleared).not.toHaveBeenCalled();
+  });
 });

@@ -965,6 +965,10 @@ export class GameScene extends Phaser.Scene {
       this.setPhase('room-cleared');
       this.enemyCombatDirector.clearProjectiles();
       this.combatUi.clearEnemyRanges();
+      // 보스방은 고유 처치·스테이지 전환 연출을 우선한다.
+      if (this.currentRoomConfig.kind !== 'boss') {
+        this.combatUi.showRoomCleared(this.stage.palette.accentSecondary);
+      }
 
       // 4스테이지: 보스가 사라진 직후 포탈을 거치지 않고 바로 화면 파괴 연출.
       if (

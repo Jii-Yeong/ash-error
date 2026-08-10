@@ -14,6 +14,9 @@ import {
   isProjectileBlocker,
 } from '@/game/systems/TerrainBuilder';
 
+/** 구덩이로 떨어진 적을 정리하는 화면 아래 경계. */
+const ENEMY_PIT_DEATH_Y = GAME_HEIGHT + 96;
+
 type EnemyCombatDirectorOptions = {
   scene: Phaser.Scene;
   player: Phaser.Physics.Arcade.Sprite;
@@ -136,9 +139,9 @@ export class EnemyCombatDirector {
       }
 
       if (this.fallingEnemies.has(enemy)) {
-        if (body.top > GAME_HEIGHT) {
+        if (body.top > ENEMY_PIT_DEATH_Y) {
           this.fallingEnemies.delete(enemy);
-          enemy.defeat();
+          enemy.despawnAfterPitFall();
         }
         continue;
       }

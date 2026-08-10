@@ -41,9 +41,9 @@ export const RETURN_ROOM_TWO = defineRoom({
     { type: 'sanctum-enforcer', x: 1_394, y: 250 },
     { type: 'choir-supporter', x: 1_620, y: 520 },
     { type: 'celestial-oracle', x: 2_300, y: 360 },
-    // 보스 직전에는 조정기가 오라클과 서포터의 동시 패턴을 둘로 제한함.
-    { type: 'celestial-oracle', x: 3_250, y: 360 },
-    { type: 'choir-supporter', x: 3_480, y: 190 },
+    // 마지막 조합 뒤 포탈까지 900px 이상을 비워 보스 전에 방향과 체력을 정비하게 함.
+    { type: 'celestial-oracle', x: 3_000, y: 360 },
+    { type: 'choir-supporter', x: 3_220, y: 190 },
   ],
 });
 

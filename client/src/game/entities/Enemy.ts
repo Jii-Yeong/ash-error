@@ -137,6 +137,16 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
     this.disableBody(true, true);
   }
 
+  /** 구덩이 아래로 사라질 때 죽음 애니메이션 없이 즉시 정리함. */
+  despawnAfterPitFall() {
+    if (!this.active) {
+      return;
+    }
+
+    this.onDefeated();
+    this.disableBody(true, true);
+  }
+
   protected onDefeated() {
     this.setVelocity(0);
   }

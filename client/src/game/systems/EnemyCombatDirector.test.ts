@@ -32,7 +32,7 @@ describe('EnemyCombatDirector', () => {
     const enemy = Object.assign(Object.create(FlyingEnemy.prototype), {
       active: true,
       body,
-      defeat: vi.fn(),
+      despawnAfterPitFall: vi.fn(),
       projectile: { kind: 'flying', muzzleOffset: 18 },
     }) as Enemy;
     const director = Object.assign(
@@ -58,9 +58,9 @@ describe('EnemyCombatDirector', () => {
     expect(clearFrom).toHaveBeenCalledWith(enemy);
     expect(notifyEnemyDefeated).toHaveBeenCalledWith(enemy);
 
-    body.top = GAME_HEIGHT + 1;
+    body.top = GAME_HEIGHT + 97;
     director.handlePitFalls();
-    expect(enemy.defeat).toHaveBeenCalledOnce();
+    expect(enemy.despawnAfterPitFall).toHaveBeenCalledOnce();
   });
 
   it('clears an animated minor enemy from the room immediately', () => {

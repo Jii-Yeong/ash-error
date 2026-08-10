@@ -99,6 +99,49 @@ export class CombatUi {
     });
   }
 
+  /** 포탈이 화면 밖에 있어도 방 클리어를 바로 알 수 있게 알림을 표시한다. */
+  showRoomCleared(accentColor: number) {
+    const labelColor = `#${accentColor.toString(16).padStart(6, '0')}`;
+    const centerX = this.scene.scale.width / 2;
+    const centerY = this.scene.scale.height / 2;
+    const pulse = this.scene.add
+      .circle(centerX, centerY, 22, accentColor, 0)
+      .setStrokeStyle(3, accentColor, 0.9)
+      .setDepth(30)
+      .setScrollFactor(0);
+    const label = this.scene.add
+      .text(centerX, centerY - 72, 'ROOM CLEARED', {
+        color: labelColor,
+        fontFamily: 'Arial, sans-serif',
+        fontSize: '22px',
+        fontStyle: 'bold',
+        stroke: '#070a0b',
+        strokeThickness: 5,
+      })
+      .setOrigin(0.5)
+      .setDepth(31)
+      .setScrollFactor(0)
+      .setAlpha(0);
+
+    this.scene.tweens.add({
+      targets: pulse,
+      scale: 18,
+      alpha: 0,
+      duration: 520,
+      ease: 'Sine.easeOut',
+      onComplete: () => pulse.destroy(),
+    });
+    this.scene.tweens.add({
+      targets: label,
+      alpha: 1,
+      scale: 1.08,
+      duration: 150,
+      ease: 'Back.easeOut',
+      yoyo: true,
+      hold: 620,
+      onComplete: () => label.destroy(),
+    });
+  }
   drawAimGuide(aimPoint: Phaser.Math.Vector2) {
     // 무기 총구가 발사 방향을 보여주므로 플레이어부터 이어지던 선은 그리지 않음.
     this.aimGraphics.clear();

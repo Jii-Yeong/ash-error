@@ -5,9 +5,8 @@ import {
   type StageRooms,
 } from '@/game/config/roomConfig';
 
-// 3스테이지는 피트 위 캣워크와 단단한 바닥 위 엄폐 캣워크를 구분함.
-// 캣워크는 바닥에서 116px 높이라 최대 점프에 여유가 있으며, 짧은 엄폐
-// 구간에서는 아래에서 탄환을 막고 가장자리에서 반격할 수 있음.
+// 3스테이지의 구덩이는 직접 건너는 이동 과제이며, 캣워크는 구덩이 뒤 단단한
+// 바닥에서 천장 위협과 포획선을 피할 사선 전환 선택지로만 사용함.
 const CATWALK_Y = GAME_HEIGHT - 180;
 const HIGH_LEDGE_Y = GAME_HEIGHT - 280;
 
@@ -21,23 +20,28 @@ export const UNDERGROUND_ROOM_ONE = defineRoom({
   worldWidth: 5200,
   intensity: 1.25,
   enemySpawns: [
+    // 방패병의 전면 방어를 다른 위협 없이 먼저 읽는다.
     { type: 'blocker', x: 1000, y: GAME_HEIGHT - 130 },
-    { type: 'captor', x: 1500, y: GAME_HEIGHT - 120 },
-    { type: 'ceiling-maintainer', pipeId: 'u1-west', x: 2150 },
-    { type: 'captor', x: 2600, y: GAME_HEIGHT - 120 },
-    { type: 'blocker', x: 3050, y: GAME_HEIGHT - 130 },
-    { type: 'ceiling-maintainer', pipeId: 'u1-east', x: 3700 },
+    // 포획선은 다음 전투 칸에서 단독으로 만나 끊기·사거리 이탈을 익힌다.
+    { type: 'captor', x: 1750, y: GAME_HEIGHT - 120 },
+    // 배관 바로 아래의 빈 바닥에서 낙하 예고를 관찰하게 한다.
+    { type: 'ceiling-maintainer', pipeId: 'u1-west', x: 2500 },
+    // 후반부터는 전면을 막는 방패병과 위에서 떨어지는 정비병을 함께 대응한다.
+    { type: 'blocker', x: 3100, y: GAME_HEIGHT - 130 },
+    { type: 'ceiling-maintainer', pipeId: 'u1-east', x: 3250 },
+    // 마지막 포획기는 천장 압박과 겹치되 출구 전 정비 구간은 남긴다.
+    { type: 'captor', x: 3900, y: GAME_HEIGHT - 120 },
+    { type: 'ceiling-maintainer', pipeId: 'u1-east', x: 4000 },
   ],
   ceilingPipes: [
     { id: 'u1-west', x: 1500, y: 80, width: 1200 },
     { id: 'u1-east', x: 3200, y: 96, width: 1100 },
   ],
   terrain: [
-    { type: 'platform', x: 1050, y: CATWALK_Y, width: 250, height: 22 },
-    { type: 'platform', x: 1800, y: CATWALK_Y, width: 250, height: 22 },
-    { type: 'platform', x: 2650, y: CATWALK_Y, width: 220, height: 22 },
-    { type: 'platform', x: 3300, y: CATWALK_Y, width: 260, height: 22 },
-    { type: 'platform', x: 4150, y: CATWALK_Y, width: 250, height: 22 },
+    { type: 'platform', x: 1400, y: CATWALK_Y, width: 250, height: 22 },
+    { type: 'platform', x: 2200, y: CATWALK_Y, width: 250, height: 22 },
+    { type: 'platform', x: 3650, y: CATWALK_Y, width: 220, height: 22 },
+    { type: 'platform', x: 4500, y: CATWALK_Y, width: 260, height: 22 },
   ],
   pits: [
     { x: 1100, width: 150 },
@@ -53,12 +57,15 @@ export const UNDERGROUND_ROOM_TWO = defineRoom({
   worldWidth: 5200,
   intensity: 1.35,
   enemySpawns: [
+    // 첫 방에서 익힌 대응을 즉시 한 쌍으로 짧게 복습한다.
     { type: 'blocker', x: 1000, y: GAME_HEIGHT - 130 },
-    { type: 'captor', x: 1500, y: GAME_HEIGHT - 120 },
     { type: 'ceiling-maintainer', pipeId: 'u2-west', x: 1750 },
+    // 포획선이 플레이어를 위협 구역으로 끌어들이는 첫 조합이다.
     { type: 'captor', x: 2400, y: GAME_HEIGHT - 120 },
     { type: 'ceiling-maintainer', pipeId: 'u2-mid', x: 2750 },
     { type: 'blocker', x: 3000, y: GAME_HEIGHT - 130 },
+    // 끝 조합은 상단·정면·포획의 세 방향을 모두 쓰되 출구에는 닿지 않는다.
+    { type: 'captor', x: 3600, y: GAME_HEIGHT - 120 },
     { type: 'ceiling-maintainer', pipeId: 'u2-east', x: 3700 },
   ],
   ceilingPipes: [
@@ -67,13 +74,12 @@ export const UNDERGROUND_ROOM_TWO = defineRoom({
     { id: 'u2-east', x: 3300, y: 100, width: 900 },
   ],
   terrain: [
-    { type: 'platform', x: 1100, y: CATWALK_Y, width: 250, height: 22 },
-    { type: 'platform', x: 1950, y: CATWALK_Y, width: 250, height: 22 },
-    { type: 'platform', x: 2700, y: CATWALK_Y, width: 220, height: 22 },
-    { type: 'platform', x: 3300, y: CATWALK_Y, width: 260, height: 22 },
-    { type: 'platform', x: 4300, y: CATWALK_Y, width: 250, height: 22 },
-    { type: 'platform', x: 1980, y: HIGH_LEDGE_Y, width: 180, height: 22 },
-    { type: 'platform', x: 3330, y: HIGH_LEDGE_Y, width: 200, height: 22 },
+    { type: 'platform', x: 1450, y: CATWALK_Y, width: 250, height: 22 },
+    { type: 'platform', x: 2300, y: CATWALK_Y, width: 250, height: 22 },
+    { type: 'platform', x: 3650, y: CATWALK_Y, width: 220, height: 22 },
+    { type: 'platform', x: 4650, y: CATWALK_Y, width: 250, height: 22 },
+    { type: 'platform', x: 2380, y: HIGH_LEDGE_Y, width: 180, height: 22 },
+    { type: 'platform', x: 3680, y: HIGH_LEDGE_Y, width: 200, height: 22 },
   ],
   pits: [
     { x: 1150, width: 150 },
