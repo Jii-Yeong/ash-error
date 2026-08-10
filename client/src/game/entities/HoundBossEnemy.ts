@@ -10,7 +10,10 @@ import {
 } from '@/game/config/bossAnimationConfig';
 import { isPointInsideCone } from '@/game/combat/coneGeometry';
 import { BossEnemy } from '@/game/entities/BossEnemy';
-import type { EnemyProjectileAttack } from '@/game/entities/Enemy';
+import type {
+  EnemyProjectileAttack,
+  ProjectileDamageResult,
+} from '@/game/entities/Enemy';
 import { gameEvents } from '@/game/events/gameEvents';
 import { destroyCollider } from '@/game/systems/arcadePhysicsCleanup';
 import { CleanupRegistry } from '@/game/systems/CleanupRegistry';
@@ -100,6 +103,21 @@ export class HoundBossEnemy extends BossEnemy<HoundBossPatternConfig> {
 
   override get playsOwnDeathAnimation(): boolean {
     return Boolean(this.sprite);
+  }
+
+  override takeProjectileDamage(
+    amount: number,
+    hitX: number,
+    hitY: number,
+    weaponId?: string,
+  ): ProjectileDamageResult {
+    return super.takeProjectileDamage(
+      weaponId === 'rail-rifle'
+        ? amount * this.pattern.railRifleDamageMultiplier
+        : amount,
+      hitX,
+      hitY,
+    );
   }
 
   /**

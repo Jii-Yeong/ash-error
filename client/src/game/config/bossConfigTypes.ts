@@ -33,6 +33,8 @@ export type BeamVisualConfig = {
 /** Stage-2 searchlight detection followed by a dodgeable energy orb. */
 export type HoundBossPatternConfig = {
   type: 'hound';
+  /** 레일건이 장갑에 명중했을 때 적용되는 피해 배율. */
+  railRifleDamageMultiplier: number;
   moveSpeed: number;
   enragedMoveSpeed: number;
   enrageHealthRatio: number;

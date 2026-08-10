@@ -9,6 +9,55 @@ import {
   STAGE_FOUR_BOSS_TAG_FRAMES,
 } from '@/game/config/bossAnimationConfig';
 import { PLAYER_COMBAT_CONFIG } from '@/game/config/combatConfig';
+import {
+  RAIL_RIFLE_WEAPON_CONFIG,
+  SMG_WEAPON_CONFIG,
+  type WeaponConfig,
+} from '@/game/config/weaponConfig';
+
+function countIdealHoundOrbs(weapon: WeaponConfig) {
+  const boss = BOSS_COMBAT_CONFIGS['alley-hunter'];
+  const { pattern } = boss;
+  const hitsPerShot = weapon.pierce + 1;
+  const damagePerHit =
+    weapon.damage *
+    (weapon.id === 'rail-rifle' ? pattern.railRifleDamageMultiplier : 1);
+  let health = boss.maxHealth;
+  let state: 'recover' | 'locking' = 'recover';
+  let stateEndsAt = pattern.firstAttackDelay;
+  let nextShotAt = 0;
+  let orbCount = 0;
+
+  for (let time = 0; health > 0; time += 10) {
+    if (time >= nextShotAt) {
+      health = Math.max(0, health - damagePerHit * hitsPerShot);
+      nextShotAt += weapon.fireInterval;
+      if (health === 0) {
+        break;
+      }
+    }
+
+    if (time < stateEndsAt) {
+      continue;
+    }
+
+    const enraged = health / boss.maxHealth <= pattern.enrageHealthRatio;
+    if (state === 'recover') {
+      state = 'locking';
+      stateEndsAt =
+        time +
+        (enraged ? pattern.orb.enragedLockDuration : pattern.orb.lockDuration);
+    } else {
+      orbCount += 1;
+      state = 'recover';
+      stateEndsAt =
+        time +
+        (enraged ? pattern.enragedRecoveryDuration : pattern.recoveryDuration);
+    }
+  }
+
+  return orbCount;
+}
 
 describe('boss combat configuration', () => {
   it('gives the city warden a readable laser-cannon pattern', () => {
@@ -40,6 +89,12 @@ describe('boss combat configuration', () => {
       pattern.orb.lockDuration,
     );
     expect(pattern.orb.damage).toBeGreaterThan(0);
+    expect(pattern.railRifleDamageMultiplier).toBeLessThan(1);
+  });
+
+  it('기본 총과 레일건에서 에너지포를 각각 25번과 20번 노출한다', () => {
+    expect(countIdealHoundOrbs(SMG_WEAPON_CONFIG)).toBe(25);
+    expect(countIdealHoundOrbs(RAIL_RIFLE_WEAPON_CONFIG)).toBe(20);
   });
 
   it('gives the underground purifier a capture + crush kit', () => {

@@ -79,7 +79,7 @@ describe('weapon progression', () => {
     );
     const targetClearSeconds = {
       'city-warden': 13,
-      'alley-hunter': 7,
+      'alley-hunter': 30,
       'underground-guardian': 88,
       'infernal-executioner': 11,
       'returning-architect': 13,
