@@ -1833,7 +1833,7 @@ test('shows boss health without enabling the standard enemy health HUD', async (
   );
   await expect(
     page.getByRole('meter', { name: 'Boss health' }),
-  ).toHaveAttribute('aria-valuemax', '500');
+  ).toHaveAttribute('aria-valuemax', '1200');
 
   const [hudLayer, playerHud, bossHud, playerStack, location] =
     await Promise.all(
@@ -1869,7 +1869,7 @@ test('stage four boss uses the infernal sprite atlas', async ({ page }) => {
 
   await expect(
     page.getByRole('meter', { name: 'Boss health' }),
-  ).toHaveAttribute('aria-valuemax', '1000');
+  ).toHaveAttribute('aria-valuemax', '3500');
 
   const sprite = await page.evaluate(() => {
     type RuntimeEnemy = {
