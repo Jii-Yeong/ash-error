@@ -72,7 +72,6 @@ export class HoundBossEnemy extends BossEnemy<HoundBossPatternConfig> {
   private readonly orbCleanups = new CleanupRegistry();
   private activeSpriteAnimation?: string;
   private attackPoseUntil = 0;
-  private dying = false;
   private scanAudioActive = false;
   private pendingFacingRight?: boolean;
   private facingChangeStartedAt = 0;
@@ -283,40 +282,16 @@ export class HoundBossEnemy extends BossEnemy<HoundBossPatternConfig> {
   }
 
   override defeat() {
-    if (!this.active || this.dying) {
-      return;
-    }
-
-    if (!this.sprite) {
-      super.defeat();
-      return;
-    }
-
-    this.dying = true;
-    this.onDefeated();
-    this.clearTint().setAlpha(1);
-    this.setVelocityX(0);
-    this.playSpriteAnimation(this.sprite.animations.death);
-
-    // 전투/충돌을 즉시 멈추되, 페이드아웃 전에 마지막 death 프레임(쓰러진
-    // 모습)을 읽을 수 있을 만큼 보여줌. death 애니메이션이 진행되도록
-    // GameObject는 active로 유지함.
-    const body = this.body as Phaser.Physics.Arcade.Body;
-    body.enable = false;
-    this.scene.time.delayedCall(DEATH_POSE_HOLD_MS, () => {
-      if (!this.scene || !this.visible) {
-        return;
-      }
-
-      this.scene.tweens.add({
-        targets: this,
-        alpha: 0,
-        duration: DEATH_FADE_MS,
-        ease: 'Sine.easeIn',
-        onComplete: () => this.disableBody(true, true),
-      });
+    this.defeatWithSpriteAnimation({
+      hasSprite: Boolean(this.sprite),
+      playDeathAnimation: () =>
+        this.playSpriteAnimation(this.sprite?.animations.death ?? ''),
+      holdDuration: DEATH_POSE_HOLD_MS,
+      fadeDuration: DEATH_FADE_MS,
+      beforePlay: () => this.setVelocityX(0),
     });
   }
+
 
   override destroy(fromScene?: boolean) {
     this.cone.destroy();
