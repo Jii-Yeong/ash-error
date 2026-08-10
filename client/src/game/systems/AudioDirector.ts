@@ -28,7 +28,10 @@ import {
   type SustainedSfxId,
 } from '@/game/config/audioConfig';
 import { STAGES } from '@/game/config/stageConfig';
-import { gameEvents } from '@/game/events/gameEvents';
+import {
+  createGameEventSubscription,
+  type GameEventSubscription,
+} from '@/game/events/gameEvents';
 import type { GamePhase } from '@/game/state/gamePhase';
 import type { GameSceneKey } from '@/game/state/gameSceneKey';
 import type { RoomState } from '@/game/state/roomState';
@@ -93,58 +96,82 @@ export class AudioDirector {
     this.game.sound.on(Phaser.Sound.Events.DECODED, this.handleDecoded);
     this.game.events.on(Phaser.Core.Events.BLUR, this.handleGameBlur);
 
-    gameEvents.on('scene-changed', this.handleSceneChanged);
-    gameEvents.on('stage-changed', this.handleStageChanged);
-    gameEvents.on('stage-shatter-cue', this.handleStageShatterCue);
-    gameEvents.on('phase-changed', this.handlePhaseChanged);
-    gameEvents.on('room-state-changed', this.handleRoomStateChanged);
-    gameEvents.on('audio-mix-changed', this.handleAudioMixChanged);
-    gameEvents.on('weapon-fired', this.handleWeaponFired);
-    gameEvents.on('player-damaged', this.handlePlayerDamaged);
-    gameEvents.on('player-dashed', this.handlePlayerDashed);
-    gameEvents.on('player-stepped', this.handlePlayerStepped);
-    gameEvents.on('enemy-damaged', this.handleEnemyDamaged);
-    gameEvents.on('enemy-projectile-blocked', this.handleProjectileBlocked);
-    gameEvents.on('enemy-defeated', this.handleEnemyDefeated);
-    gameEvents.on('boss-laser-fired', this.handleBossLaserFired);
-    gameEvents.on('boss-scan-cue', this.handleBossScanCue);
-    gameEvents.on('boss-orb-fired', this.handleBossOrbFired);
-    gameEvents.on('boss-purifier-cue', this.handlePurifierCue);
-    gameEvents.on('boss-infernal-cue', this.handleInfernalCue);
-    gameEvents.on('boss-architect-cue', this.handleArchitectCue);
-    gameEvents.on('ending-ascension-cue', this.handleEndingAscensionCue);
-    gameEvents.on('pause-changed', this.handlePauseChanged);
+    this.subscribeGameEvents();
   }
 
   destroy() {
     this.game.events.off(Phaser.Core.Events.BLUR, this.handleGameBlur);
-    gameEvents.off('scene-changed', this.handleSceneChanged);
-    gameEvents.off('stage-changed', this.handleStageChanged);
-    gameEvents.off('stage-shatter-cue', this.handleStageShatterCue);
-    gameEvents.off('phase-changed', this.handlePhaseChanged);
-    gameEvents.off('room-state-changed', this.handleRoomStateChanged);
-    gameEvents.off('audio-mix-changed', this.handleAudioMixChanged);
-    gameEvents.off('weapon-fired', this.handleWeaponFired);
-    gameEvents.off('player-damaged', this.handlePlayerDamaged);
-    gameEvents.off('player-dashed', this.handlePlayerDashed);
-    gameEvents.off('player-stepped', this.handlePlayerStepped);
-    gameEvents.off('enemy-damaged', this.handleEnemyDamaged);
-    gameEvents.off('enemy-projectile-blocked', this.handleProjectileBlocked);
-    gameEvents.off('enemy-defeated', this.handleEnemyDefeated);
-    gameEvents.off('boss-laser-fired', this.handleBossLaserFired);
-    gameEvents.off('boss-scan-cue', this.handleBossScanCue);
-    gameEvents.off('boss-orb-fired', this.handleBossOrbFired);
-    gameEvents.off('boss-purifier-cue', this.handlePurifierCue);
-    gameEvents.off('boss-infernal-cue', this.handleInfernalCue);
-    gameEvents.off('boss-architect-cue', this.handleArchitectCue);
-    gameEvents.off('ending-ascension-cue', this.handleEndingAscensionCue);
-    gameEvents.off('pause-changed', this.handlePauseChanged);
+    this.unsubscribeGameEvents();
     this.game.sound.off(Phaser.Sound.Events.DECODED, this.handleDecoded);
     this.stopAllSustained();
     this.stopMusic();
     this.playedAt.clear();
   }
 
+  private subscribeGameEvents() {
+    for (const subscription of this.gameEventSubscriptions()) {
+      subscription.subscribe();
+    }
+  }
+
+  private unsubscribeGameEvents() {
+    for (const subscription of this.gameEventSubscriptions()) {
+      subscription.unsubscribe();
+    }
+  }
+
+  private gameEventSubscriptions(): GameEventSubscription[] {
+    return [
+      createGameEventSubscription('scene-changed', this.handleSceneChanged),
+      createGameEventSubscription('stage-changed', this.handleStageChanged),
+      createGameEventSubscription(
+        'stage-shatter-cue',
+        this.handleStageShatterCue,
+      ),
+      createGameEventSubscription('phase-changed', this.handlePhaseChanged),
+      createGameEventSubscription(
+        'room-state-changed',
+        this.handleRoomStateChanged,
+      ),
+      createGameEventSubscription(
+        'audio-mix-changed',
+        this.handleAudioMixChanged,
+      ),
+      createGameEventSubscription('weapon-fired', this.handleWeaponFired),
+      createGameEventSubscription('player-damaged', this.handlePlayerDamaged),
+      createGameEventSubscription('player-dashed', this.handlePlayerDashed),
+      createGameEventSubscription('player-stepped', this.handlePlayerStepped),
+      createGameEventSubscription('enemy-damaged', this.handleEnemyDamaged),
+      createGameEventSubscription(
+        'enemy-projectile-blocked',
+        this.handleProjectileBlocked,
+      ),
+      createGameEventSubscription('enemy-defeated', this.handleEnemyDefeated),
+      createGameEventSubscription(
+        'boss-laser-fired',
+        this.handleBossLaserFired,
+      ),
+      createGameEventSubscription('boss-scan-cue', this.handleBossScanCue),
+      createGameEventSubscription('boss-orb-fired', this.handleBossOrbFired),
+      createGameEventSubscription(
+        'boss-purifier-cue',
+        this.handlePurifierCue,
+      ),
+      createGameEventSubscription(
+        'boss-infernal-cue',
+        this.handleInfernalCue,
+      ),
+      createGameEventSubscription(
+        'boss-architect-cue',
+        this.handleArchitectCue,
+      ),
+      createGameEventSubscription(
+        'ending-ascension-cue',
+        this.handleEndingAscensionCue,
+      ),
+      createGameEventSubscription('pause-changed', this.handlePauseChanged),
+    ];
+  }
   /** Built once; the glob behind it is resolved at build time. */
   private assetUrls?: Map<string, string>;
 

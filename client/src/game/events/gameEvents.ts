@@ -20,7 +20,7 @@ export type ProjectileBlockKind = 'shield' | 'boss';
  *
  * These names are a cross-developer contract — rename only by agreement.
  */
-type GameEventMap = {
+export type GameEventMap = {
   'health-changed': [current: number, max: number];
   'enemy-health-changed': [
     current: number,
@@ -76,8 +76,8 @@ type GameEventMap = {
   'nearby-weapon-changed': [id: string | null];
 };
 
-type GameEventName = keyof GameEventMap;
-type GameEventListener<Event extends GameEventName> = (
+export type GameEventName = keyof GameEventMap;
+export type GameEventListener<Event extends GameEventName> = (
   ...args: GameEventMap[Event]
 ) => void;
 
@@ -109,3 +109,19 @@ class GameEventBus {
 }
 
 export const gameEvents = new GameEventBus();
+
+export type GameEventSubscription = {
+  subscribe: () => void;
+  unsubscribe: () => void;
+};
+
+/** 구독과 해제를 같은 이벤트·리스너 쌍으로 묶어 누락을 막는다. */
+export function createGameEventSubscription<Event extends GameEventName>(
+  event: Event,
+  listener: GameEventListener<Event>,
+): GameEventSubscription {
+  return {
+    subscribe: () => gameEvents.on(event, listener),
+    unsubscribe: () => gameEvents.off(event, listener),
+  };
+}
