@@ -320,6 +320,10 @@ export const STAGE_FIVE_BOSS_FLOATING_JUDGMENT_SIGIL = {
   texture: 'stage-5-boss-floating-judgment-sigil',
   png: '/assets/bosses/stage-5-architect-floating-judgment-sigil.png',
 } as const;
+export const STAGE_FIVE_BOSS_WING_FAN_WARNING = {
+  texture: 'stage-5-boss-wing-fan-warning',
+  png: '/assets/bosses/stage-5-architect-wing-fan-warning.png',
+} as const;
 
 export const STAGE_FIVE_BOSS_ANIMATIONS = {
   idle: 'stage-5-boss-idle',

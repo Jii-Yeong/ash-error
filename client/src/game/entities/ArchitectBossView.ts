@@ -1,15 +1,22 @@
 import Phaser from 'phaser';
-import { STAGE_FIVE_BOSS_EYE_LOCK_SIGIL } from '@/game/config/bossAnimationConfig';
+import {
+  STAGE_FIVE_BOSS_EYE_LOCK_SIGIL,
+  STAGE_FIVE_BOSS_WING_FAN_WARNING,
+} from '@/game/config/bossAnimationConfig';
 import type { ArchitectBossPatternConfig } from '@/game/config/bossConfigTypes';
 
 const EFFECT_DEPTH = 7;
 const UI_EFFECT_DEPTH = 24;
+const WING_WARNING_WIDTH = 220;
+const WING_WARNING_HEIGHT = 300;
 
 /** Owns all temporary and persistent visuals for the stage-5 final boss. */
 export class ArchitectBossView {
   private readonly telegraph: Phaser.GameObjects.Graphics;
   private readonly phaseOverlay: Phaser.GameObjects.Graphics;
   private readonly eyeLockSigil: Phaser.GameObjects.Image;
+  private readonly leftWingWarning: Phaser.GameObjects.Image;
+  private readonly rightWingWarning: Phaser.GameObjects.Image;
 
   constructor(
     private readonly scene: Phaser.Scene,
@@ -20,6 +27,17 @@ export class ArchitectBossView {
       .image(0, 0, STAGE_FIVE_BOSS_EYE_LOCK_SIGIL.texture)
       .setDepth(EFFECT_DEPTH + 1)
       .setVisible(false);
+    this.leftWingWarning = scene.add
+      .image(0, 0, STAGE_FIVE_BOSS_WING_FAN_WARNING.texture)
+      .setOrigin(0.75, 0.5)
+      .setDepth(EFFECT_DEPTH)
+      .setVisible(false);
+    this.rightWingWarning = scene.add
+      .image(0, 0, STAGE_FIVE_BOSS_WING_FAN_WARNING.texture)
+      .setOrigin(0.25, 0.5)
+      .setFlipX(true)
+      .setDepth(EFFECT_DEPTH)
+      .setVisible(false);
     this.phaseOverlay = scene.add
       .graphics()
       .setDepth(UI_EFFECT_DEPTH)
@@ -29,6 +47,8 @@ export class ArchitectBossView {
   clearTelegraph() {
     this.telegraph.clear();
     this.eyeLockSigil.setVisible(false);
+    this.leftWingWarning.setVisible(false);
+    this.rightWingWarning.setVisible(false);
   }
 
   drawPhaseTransition(time: number) {
@@ -71,27 +91,20 @@ export class ArchitectBossView {
   }
 
   drawWingWarning(x: number, y: number, time: number, step: number) {
-    const pulse = 0.4 + Math.sin(time * 0.025) * 0.18;
-    this.telegraph.fillStyle(this.pattern.goldColor, pulse);
+    const pulse = 0.55 + Math.sin(time * 0.025) * 0.18;
     if (step === 0 || step === 2) {
-      this.telegraph.fillTriangle(
-        x - 40,
-        y - 20,
-        x - 155,
-        y - 105,
-        x - 125,
-        y + 80,
-      );
+      this.leftWingWarning
+        .setPosition(x - 40, y - 20)
+        .setDisplaySize(WING_WARNING_WIDTH, WING_WARNING_HEIGHT)
+        .setAlpha(pulse)
+        .setVisible(true);
     }
     if (step === 1 || step === 2) {
-      this.telegraph.fillTriangle(
-        x + 40,
-        y - 20,
-        x + 155,
-        y - 105,
-        x + 125,
-        y + 80,
-      );
+      this.rightWingWarning
+        .setPosition(x + 40, y - 20)
+        .setDisplaySize(WING_WARNING_WIDTH, WING_WARNING_HEIGHT)
+        .setAlpha(pulse)
+        .setVisible(true);
     }
   }
 
@@ -200,6 +213,8 @@ export class ArchitectBossView {
   destroy() {
     this.telegraph.destroy();
     this.eyeLockSigil.destroy();
+    this.leftWingWarning.destroy();
+    this.rightWingWarning.destroy();
     this.phaseOverlay.destroy();
   }
 }
