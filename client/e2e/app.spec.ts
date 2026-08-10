@@ -36,6 +36,10 @@ async function enterTitle(page: Page) {
   const startButton = getCanvasPoint(bounds, 640, 402);
   await page.mouse.click(startButton.x, startButton.y);
   await expect(page.locator('main')).toHaveAttribute('data-scene', 'title');
+
+  // 어드민 버튼은 기본적으로 숨겨져 있으므로 백틱으로 노출시켜 둔다. 토글 상태는
+  // 게임 씬으로 이어지므로 이후 테스트에서 어드민 메뉴에 접근할 수 있다.
+  await page.keyboard.press('Backquote');
 }
 
 async function enableEnemyHealth(page: Page) {
@@ -1816,6 +1820,51 @@ test('admin menu scrolls instead of overflowing a short viewport', async ({
   await expect
     .poll(() => adminMenu.evaluate((menu) => menu.scrollTop))
     .toBeGreaterThan(0);
+});
+
+test('hides the admin trigger until the backtick shortcut toggles it', async ({
+  page,
+}) => {
+  await page.goto('/');
+  await expect(page.locator('main')).toHaveAttribute('data-scene', 'start');
+  const bounds = await getCanvasBounds(page);
+  const startButton = getCanvasPoint(bounds, 640, 402);
+  await page.mouse.click(startButton.x, startButton.y);
+  await expect(page.locator('main')).toHaveAttribute('data-scene', 'title');
+  await page.keyboard.press('Enter');
+  await expect(page.locator('main')).toHaveAttribute('data-scene', 'game');
+
+  const admin = page.getByRole('button', { name: 'ADMIN' });
+  const adminMenu = page.getByRole('dialog', { name: 'Admin menu' });
+  await expect(admin).toHaveCount(0);
+
+  // 한글 입력 상태처럼 출력 문자가 달라도 물리 백틱 키로 토글되어야 한다.
+  await page.evaluate(() => {
+    window.dispatchEvent(
+      new KeyboardEvent('keydown', { code: 'Backquote', key: '₩' }),
+    );
+  });
+  await expect(admin).toBeVisible();
+
+  await admin.click();
+  await expect(adminMenu).toBeVisible();
+
+  // 키를 누르고 있을 때 발생하는 반복 이벤트는 상태를 다시 바꾸지 않는다.
+  await page.evaluate(() => {
+    window.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        code: 'Backquote',
+        key: '`',
+        repeat: true,
+      }),
+    );
+  });
+  await expect(admin).toBeVisible();
+  await expect(adminMenu).toBeVisible();
+
+  await page.keyboard.press('Backquote');
+  await expect(admin).toHaveCount(0);
+  await expect(adminMenu).toHaveCount(0);
 });
 
 test('shows boss health without enabling the standard enemy health HUD', async ({
