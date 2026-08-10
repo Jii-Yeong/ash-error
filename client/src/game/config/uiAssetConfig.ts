@@ -7,10 +7,6 @@ export const UI_PANEL_TEXTURES = {
     key: 'ui-panel-frame-danger',
     path: '/assets/ui/panels/panel-frame-danger.png',
   },
-  victory: {
-    key: 'ui-panel-frame-victory',
-    path: '/assets/ui/panels/panel-frame-victory.png',
-  },
 } as const;
 
 export const UI_PANEL_SLICE = 8;

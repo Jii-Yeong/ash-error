@@ -128,13 +128,22 @@ export function App() {
       <div className='game-viewport'>
         <PhaserGame />
         {scene === 'title' && !settingsOpen && (
-          <button
-            type='button'
-            className='title-settings-trigger'
-            onClick={openSettings}
-          >
-            설정
-          </button>
+          <div className='title-menu-actions'>
+            <button
+              type='button'
+              className='title-menu-actions__button'
+              onClick={openSettings}
+            >
+              설정
+            </button>
+            <button
+              type='button'
+              className='title-menu-actions__button'
+              onClick={() => gameEvents.emit('credits-requested')}
+            >
+              크레딧
+            </button>
+          </div>
         )}
         {scene === 'game' && (
           <>

@@ -3,7 +3,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
   STAGE_ENDING_DRONE,
-  STAGE_FIVE_PLAYER_SPRITE,
   STAGE_THREE_PLAYER_SPRITE,
 } from '@/game/config/playerAnimationConfig';
 import type { Enemy } from '@/game/entities/Enemy';
@@ -19,6 +18,18 @@ vi.hoisted(() => {
 });
 
 describe('GameScene run reset', () => {
+  it('첫 클리어 후 크레딧으로 바로 전환한다', () => {
+    const gameScene = Object.assign(Object.create(GameScene.prototype), {
+      combatUi: { clearEnemyRanges: vi.fn() },
+      scene: { start: vi.fn() },
+      setPhase: vi.fn(),
+      weaponSystem: { hide: vi.fn() },
+    }) as GameScene;
+
+    (gameScene as unknown as { handleRunCleared(): void }).handleRunCleared();
+
+    expect(gameScene.scene.start).toHaveBeenCalledWith('credits');
+  });
   it('4스테이지 보스가 사라진 뒤 1초 후 화면 파괴 전환을 시작한다', () => {
     let afterDelay: (() => void) | undefined;
     const advanceToNextStage = vi.fn();
@@ -79,46 +90,6 @@ describe('GameScene run reset', () => {
     expect(resetTransition).toHaveBeenCalledOnce();
   });
 
-  it('drops an airborne player to the floor before showing the landed death frame', () => {
-    const setFrame = vi.fn();
-    const stopAnimation = vi.fn();
-    const addTween = vi.fn();
-    const body = {
-      blocked: { down: false },
-      bottom: 300,
-      enable: true,
-    };
-    const player = {
-      anims: { stop: stopAnimation },
-      body,
-      setFrame,
-      y: 250,
-    };
-    const gameScene = Object.assign(Object.create(GameScene.prototype), {
-      currentStageIndex: 4,
-      player,
-      tweens: { add: addTween },
-    }) as GameScene;
-
-    (
-      gameScene as unknown as { playPlayerDeathAnimation(): void }
-    ).playPlayerDeathAnimation();
-
-    expect(body.enable).toBe(false);
-    expect(stopAnimation).toHaveBeenCalledOnce();
-    expect(setFrame).toHaveBeenCalledWith(
-      STAGE_FIVE_PLAYER_SPRITE.deathFrames?.[0],
-    );
-    const tween = addTween.mock.calls[0]?.[0] as {
-      onComplete: () => void;
-      y: number;
-    };
-    expect(tween.y).toBeGreaterThan(player.y);
-    tween.onComplete();
-    expect(setFrame).toHaveBeenLastCalledWith(
-      STAGE_FIVE_PLAYER_SPRITE.deathFrames?.[1],
-    );
-  });
 
   it('구덩이 피해로 죽으면 가장자리로 옮기지 않고 플레이어를 숨긴다', () => {
     const setPosition = vi.fn();

@@ -5,6 +5,14 @@ import type {
 } from '@/game/config/bossConfigTypes';
 import { Enemy, type ProjectileDamageResult } from '@/game/entities/Enemy';
 
+type SpriteDeathSequence = {
+  hasSprite: boolean;
+  playDeathAnimation: () => void;
+  holdDuration: number;
+  fadeDuration: number;
+  beforePlay?: () => void;
+};
+
 export abstract class BossEnemy<
   Pattern extends BossPatternConfig = BossPatternConfig,
 > extends Enemy {
@@ -13,6 +21,7 @@ export abstract class BossEnemy<
   override readonly usesHitFlash: boolean = false;
 
   private contactDamageReadyAt = 0;
+  protected dying = false;
 
   protected get isInvulnerable() {
     return false;
@@ -63,5 +72,45 @@ export abstract class BossEnemy<
     durationMs = 160,
   ) {
     super.applyKnockback(angle, force * 0.18, time, durationMs * 0.5);
+  }
+  /**
+   * 보스별 전용 효과 정리 뒤 공통 사망 포즈·페이드 순서를 적용한다.
+   * 공격 패턴과 페이즈 전환은 각 하위 클래스가 계속 관리한다.
+   */
+  protected defeatWithSpriteAnimation({
+    hasSprite,
+    playDeathAnimation,
+    holdDuration,
+    fadeDuration,
+    beforePlay,
+  }: SpriteDeathSequence) {
+    if (!this.active || this.dying) {
+      return;
+    }
+
+    if (!hasSprite) {
+      super.defeat();
+      return;
+    }
+
+    this.dying = true;
+    this.onDefeated();
+    this.clearTint().setAlpha(1);
+    beforePlay?.();
+    playDeathAnimation();
+    (this.body as Phaser.Physics.Arcade.Body).enable = false;
+    this.scene.time.delayedCall(holdDuration, () => {
+      if (!this.scene || !this.visible) {
+        return;
+      }
+
+      this.scene.tweens.add({
+        targets: this,
+        alpha: 0,
+        duration: fadeDuration,
+        ease: 'Sine.easeIn',
+        onComplete: () => this.disableBody(true, true),
+      });
+    });
   }
 }

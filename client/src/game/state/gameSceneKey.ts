@@ -1,1 +1,1 @@
-export type GameSceneKey = 'boot' | 'start' | 'title' | 'game';
+export type GameSceneKey = 'boot' | 'start' | 'title' | 'credits' | 'game';

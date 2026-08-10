@@ -101,7 +101,6 @@ export class ArchitectBossEnemy extends BossEnemy<ArchitectBossPatternConfig> {
   private salvationCenterY = 0;
   private salvationGapAngle = 0;
   private activeSpriteAnimation?: string;
-  private dying = false;
 
   constructor(
     scene: Phaser.Scene,
@@ -345,33 +344,16 @@ export class ArchitectBossEnemy extends BossEnemy<ArchitectBossPatternConfig> {
   }
 
   override defeat() {
-    if (!this.active || this.dying) {
-      return;
-    }
-    if (!this.sprite) {
-      super.defeat();
-      return;
-    }
-
-    this.dying = true;
-    this.onDefeated();
-    this.clearTint().setAlpha(1);
-    this.setVelocity(0, 0);
-    this.playSpriteAnimation(this.sprite.animations.death);
-    (this.body as Phaser.Physics.Arcade.Body).enable = false;
-    this.scene.time.delayedCall(DEATH_POSE_HOLD_MS, () => {
-      if (!this.scene || !this.visible) {
-        return;
-      }
-      this.scene.tweens.add({
-        targets: this,
-        alpha: 0,
-        duration: DEATH_FADE_MS,
-        ease: 'Sine.easeIn',
-        onComplete: () => this.disableBody(true, true),
-      });
+    this.defeatWithSpriteAnimation({
+      hasSprite: Boolean(this.sprite),
+      playDeathAnimation: () =>
+        this.playSpriteAnimation(this.sprite?.animations.death ?? ''),
+      holdDuration: DEATH_POSE_HOLD_MS,
+      fadeDuration: DEATH_FADE_MS,
+      beforePlay: () => this.setVelocity(0, 0),
     });
   }
+
 
   override destroy(fromScene?: boolean) {
     this.effectCleanups.clear();

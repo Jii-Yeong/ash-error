@@ -39,9 +39,12 @@ export class LaserBossEnemy extends BossEnemy<LaserCannonPatternConfig> {
   private laserHit = false;
   private activeSpriteAnimation?: string;
   private recoilUntil = 0;
-  private dying = false;
   private laserSoundCue: 'single' | 'double-first' | 'double-second' =
     'single';
+
+  override get deathAnimationDuration(): number {
+    return this.sprite ? DEATH_POSE_HOLD_MS + DEATH_FADE_MS : 0;
+  }
 
   constructor(
     scene: Phaser.Scene,
@@ -140,39 +143,15 @@ export class LaserBossEnemy extends BossEnemy<LaserCannonPatternConfig> {
   }
 
   override defeat() {
-    if (!this.active || this.dying) {
-      return;
-    }
-
-    if (!this.sprite) {
-      super.defeat();
-      return;
-    }
-
-    this.dying = true;
-    this.onDefeated();
-    this.clearTint().setAlpha(1);
-    this.playSpriteAnimation(this.sprite.animations.death);
-
-    // 전투와 충돌을 즉시 중단하되, 페이드아웃 전에 마지막 지정 프레임을
-    // 읽을 수 있을 만큼 충분히 보여줌. 두 프레임짜리 death 애니메이션이
-    // 진행될 수 있도록 GameObject는 active로 유지함.
-    const body = this.body as Phaser.Physics.Arcade.Body;
-    body.enable = false;
-    this.scene.time.delayedCall(DEATH_POSE_HOLD_MS, () => {
-      if (!this.scene || !this.visible) {
-        return;
-      }
-
-      this.scene.tweens.add({
-        targets: this,
-        alpha: 0,
-        duration: DEATH_FADE_MS,
-        ease: 'Sine.easeIn',
-        onComplete: () => this.disableBody(true, true),
-      });
+    this.defeatWithSpriteAnimation({
+      hasSprite: Boolean(this.sprite),
+      playDeathAnimation: () =>
+        this.playSpriteAnimation(this.sprite?.animations.death ?? ''),
+      holdDuration: DEATH_POSE_HOLD_MS,
+      fadeDuration: DEATH_FADE_MS,
     });
   }
+
 
   override destroy(fromScene?: boolean) {
     this.effects.destroy();

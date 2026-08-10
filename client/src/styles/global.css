@@ -79,11 +79,17 @@ input {
   display: block;
 }
 
-.title-settings-trigger {
+.title-menu-actions {
   position: absolute;
-  bottom: clamp(10px, 4%, 28px);
+  bottom: max(clamp(10px, 4%, 28px), env(safe-area-inset-bottom));
   left: 50%;
   z-index: 60;
+  display: flex;
+  gap: 8px;
+  transform: translateX(-50%);
+}
+
+.title-menu-actions__button {
   padding: 4px 16px;
   border: 8px solid transparent;
   border-image: url('/assets/ui/controls/button-frame-neutral.png') 8 fill /
@@ -95,11 +101,10 @@ input {
   letter-spacing: 0.16em;
   cursor: pointer;
   image-rendering: pixelated;
-  transform: translateX(-50%);
 }
 
-.title-settings-trigger:hover,
-.title-settings-trigger:focus-visible {
+.title-menu-actions__button:hover,
+.title-menu-actions__button:focus-visible {
   border-image-source: url('/assets/ui/controls/button-frame-active.png');
   color: #b6ffe4;
   outline: none;

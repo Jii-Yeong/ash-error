@@ -65,20 +65,15 @@ import {
   TerrainBuilder,
 } from '@/game/systems/TerrainBuilder';
 import { WeaponDropDirector } from '@/game/systems/WeaponDropDirector';
+import { PlayerLifeCycle } from '@/game/systems/PlayerLifeCycle';
 import { WeaponSystem } from '@/game/systems/WeaponSystem';
 import { useGameSettingsStore } from '@/stores/gameSettingsStore';
 
 /** 4스테이지 보스가 사라진 뒤 화면 파괴까지 장면을 유지하는 시간. */
 const SHATTER_POST_BOSS_DELAY_MS = 1000;
-const PLAYER_DAMAGE_FLASH_DURATION = 80;
-const PLAYER_DEATH_PROMPT_DELAY = 1000;
-/** 공중 사망 시 1층 바닥으로 떨어지는 속도(px/s). */
-const PLAYER_DEATH_FALL_SPEED = 720;
-
 /**
- * 구덩이 추락 판정 깊이. 발이 이만큼 바닥선 아래로 내려가야 추락으로 친다.
- * 구덩이 바닥(월드 하단)까지 떨어지는 추락 모션을 다 보여준 뒤 부활시키려고
- * 얕게 잡지 않고 바닥 근처까지 크게 잡는다.
+ * 구덩이 추락 판정 깊이. 발이 바닥선 아래로 이만큼 내려가야 추락으로 친다.
+ * 구덩이 바닥까지 떨어지는 연출을 충분히 보여 준 뒤 부활시키기 위해 바닥 근처까지 크게 잡는다.
  */
 const PIT_FALL_TRIGGER_DEPTH = 56;
 const PIT_FALL_DAMAGE = 12;
@@ -126,7 +121,7 @@ export class GameScene extends Phaser.Scene {
   private enemyCombatDirector!: EnemyCombatDirector;
   private backdropDirector!: BackdropDirector;
   private combatUi!: CombatUi;
-  private playerDamageFlashTimer?: Phaser.Time.TimerEvent;
+  private playerLifeCycle!: PlayerLifeCycle;
   private readonly playerHealth = new PlayerHealthState(
     (currentHealth, maxHealth) =>
       gameEvents.emit('health-changed', currentHealth, maxHealth),
@@ -178,6 +173,26 @@ export class GameScene extends Phaser.Scene {
     this.configureCamera();
     this.createCombatSystems();
     this.combatUi = new CombatUi(this);
+    this.playerLifeCycle = new PlayerLifeCycle({
+      scene: this,
+      player: this.player,
+      health: this.playerHealth,
+      playerController: this.playerController,
+      weaponSystem: this.weaponSystem,
+      enemyCombatDirector: this.enemyCombatDirector,
+      weaponDropDirector: this.weaponDropDirector,
+      combatUi: this.combatUi,
+      canReceiveDamage: () =>
+        this.phase === 'playing' &&
+        !this.playerController.isInvulnerable &&
+        !useGameSettingsStore.getState().invincible,
+      setPhase: (phase) => this.setPhase(phase),
+      isDead: () => this.phase === 'dead',
+      playerSprite: () => this.playerSprite,
+      enableRestart: () => {
+        this.restartEnabled = true;
+      },
+    });
     // 씬도 참조를 든다. 늦게 도착한 3스테이지 아틀라스를 이미 세워 둔 포위
     // 대형에 입히려면 전환 연출 밖에서도 이 디렉터에 닿아야 한다.
     this.eventDirector = new StageEndEventDirector(this);
@@ -578,12 +593,8 @@ export class GameScene extends Phaser.Scene {
     this.setPhase('ending');
     this.weaponSystem.hide();
     this.combatUi.clearEnemyRanges();
-    // Beating the final stage ('The Return') is the true victory — wash the
-    // screen to warm light (waking up) before the ending card resolves.
-    this.cameras.main.flash(700, 255, 240, 210);
-    this.combatUi.showVictory();
+    this.scene.start('credits');
   }
-
   /** 전환 연출이 시작되기 전 플레이어와 전투 객체를 공통 정리한다. */
   private prepareStageTransition() {
     this.setPhase('transitioning');
@@ -883,6 +894,7 @@ export class GameScene extends Phaser.Scene {
     // Phaser는 재시작 시 Scene 인스턴스를 재사용하지만 이전 물리 그룹은 파괴한다.
     // createCombatSystems가 필드를 교체하기 전에 buildRoom이 실행되므로, 선택적
     // 정리 과정이 오래된 풀이나 디렉터를 참조하지 않게 비워 둔다.
+    this.playerLifeCycle?.reset();
     this.weaponDropDirector = undefined!;
     this.weaponSystem = undefined!;
     this.roomDirector = undefined!;
@@ -1132,103 +1144,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private applyPlayerDamage(damage: number) {
-    if (
-      this.phase !== 'playing' ||
-      this.playerController.isInvulnerable ||
-      useGameSettingsStore.getState().invincible
-    ) {
-      return false;
-    }
-
-    const playerDefeated = this.playerHealth.takeDamage(damage);
-    gameEvents.emit('player-damaged', this.player.x, this.player.y);
-
-    this.flashPlayerDamage();
-    this.cameras.main.shake(90, 0.004);
-
-    if (playerDefeated) {
-      this.handlePlayerDeath();
-    }
-
-    return playerDefeated;
-  }
-
-  private flashPlayerDamage() {
-    this.playerDamageFlashTimer?.remove(false);
-    this.player.setTint(0xffffff).setTintMode(Phaser.TintModes.FILL);
-    this.playerDamageFlashTimer = this.time.delayedCall(
-      PLAYER_DAMAGE_FLASH_DURATION,
-      () => {
-        this.playerDamageFlashTimer = undefined;
-        if (this.phase !== 'dead') {
-          this.player.clearTint();
-        }
-      },
-    );
-  }
-
-  private cancelPlayerDamageFlash() {
-    if (this.playerDamageFlashTimer) {
-      this.playerDamageFlashTimer.remove(false);
-      this.playerDamageFlashTimer = undefined;
-    }
-  }
-
-  private handlePlayerDeath() {
-    this.cancelPlayerDamageFlash();
-    this.weaponSystem.cancelHitStop();
-    this.playerController.stop();
-    this.enemyCombatDirector.stopEnemies();
-    this.setPhase('dead');
-    this.restartEnabled = false;
-    this.player.setVelocity(0).clearTint().setAlpha(1);
-    this.playPlayerDeathAnimation();
-    this.weaponSystem.hide();
-    this.weaponDropDirector.clear();
-    (this.player.body as Phaser.Physics.Arcade.Body).setAllowGravity(false);
-    this.weaponSystem.clearProjectiles();
-    this.enemyCombatDirector.clearProjectiles();
-    this.combatUi.clearGuides();
-    this.time.delayedCall(PLAYER_DEATH_PROMPT_DELAY, () => {
-      if (this.phase !== 'dead') {
-        return;
-      }
-      this.restartEnabled = true;
-      this.combatUi.showDeath();
-    });
-    this.cameras.main.shake(180, 0.008);
-  }
-
-  /** 공중에서는 첫 death 자세로 1층까지 추락한 뒤 두 번째 자세로 전환한다. */
-  private playPlayerDeathAnimation() {
-    const body = this.player.body as Phaser.Physics.Arcade.Body;
-    const [fallFrame, landFrame] = this.playerSprite.deathFrames ?? [];
-    const fallDistance = Math.max(0, FLOOR_SURFACE_Y - body.bottom);
-
-    if (!body.blocked.down && fallDistance > 1 && fallFrame && landFrame) {
-      body.enable = false;
-      this.player.anims.stop();
-      this.player.setFrame(fallFrame);
-      this.tweens.add({
-        targets: this.player,
-        y: this.player.y + fallDistance,
-        duration: Phaser.Math.Clamp(
-          (fallDistance / PLAYER_DEATH_FALL_SPEED) * 1000,
-          120,
-          900,
-        ),
-        ease: 'Quad.easeIn',
-        onComplete: () => this.player.setFrame(landFrame),
-      });
-      return;
-    }
-
-    const deathAnimation = this.playerSprite.animations.death;
-    if (this.anims.exists(deathAnimation)) {
-      this.player.play(deathAnimation, true);
-    } else {
-      this.player.anims.stop();
-    }
+    return this.playerLifeCycle.applyDamage(damage);
   }
 
 }
