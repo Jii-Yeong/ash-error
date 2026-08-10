@@ -7,6 +7,8 @@ import {
 import {
   BOSS_ANIMATION_ATLASES,
   STAGE_FIVE_BOSS_ATLAS_KEY,
+  STAGE_FIVE_BOSS_EYE_LOCK_SIGIL,
+  STAGE_FIVE_BOSS_FLOATING_JUDGMENT_SIGIL,
   STAGE_FOUR_MAGMA_RUPTURE_FIRE_PILLAR,
   STAGE_FOUR_MAGMA_RUPTURE_WARNING,
   STAGE_FOUR_MAGMA_SHARD,
@@ -147,6 +149,14 @@ export class BootScene extends Phaser.Scene {
     );
     this.load.image(JUDGMENT_EYE_RETICLE.texture, JUDGMENT_EYE_RETICLE.png);
     this.load.image(JUDGMENT_EYE_ORB.texture, JUDGMENT_EYE_ORB.png);
+    this.load.image(
+      STAGE_FIVE_BOSS_EYE_LOCK_SIGIL.texture,
+      STAGE_FIVE_BOSS_EYE_LOCK_SIGIL.png,
+    );
+    this.load.image(
+      STAGE_FIVE_BOSS_FLOATING_JUDGMENT_SIGIL.texture,
+      STAGE_FIVE_BOSS_FLOATING_JUDGMENT_SIGIL.png,
+    );
     for (const asset of Object.values(STAGE_ONE_BOSS_LASER_ASSETS)) {
       this.load.image(asset.key, asset.url);
     }

@@ -79,6 +79,16 @@
       "asset_id": "792a1438-a4b1-4603-b3e0-d61193babd8e",
       "sha12": "36368c5e2396",
       "label": "Soot Stage 3 Trend Suction Vortex Animation"
+    },
+    {
+      "asset_id": "d5e2fbe8-4d84-4017-9e76-2aeab8274152",
+      "sha12": "220a5f22834e",
+      "label": "Soot Stage 5 Architect Player Lock Sigil Transparent"
+    },
+    {
+      "asset_id": "41bbf8b7-9eba-4710-96df-4751bc0b82f1",
+      "sha12": "3f71867483c8",
+      "label": "Soot Stage 5 Architect Floating Judgment Sigil"
     }
   ]
 }

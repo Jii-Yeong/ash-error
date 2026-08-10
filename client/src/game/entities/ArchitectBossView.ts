@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { STAGE_FIVE_BOSS_EYE_LOCK_SIGIL } from '@/game/config/bossAnimationConfig';
 import type { ArchitectBossPatternConfig } from '@/game/config/bossConfigTypes';
 
 const EFFECT_DEPTH = 7;
@@ -8,12 +9,17 @@ const UI_EFFECT_DEPTH = 24;
 export class ArchitectBossView {
   private readonly telegraph: Phaser.GameObjects.Graphics;
   private readonly phaseOverlay: Phaser.GameObjects.Graphics;
+  private readonly eyeLockSigil: Phaser.GameObjects.Image;
 
   constructor(
     private readonly scene: Phaser.Scene,
     private readonly pattern: ArchitectBossPatternConfig,
   ) {
     this.telegraph = scene.add.graphics().setDepth(EFFECT_DEPTH);
+    this.eyeLockSigil = scene.add
+      .image(0, 0, STAGE_FIVE_BOSS_EYE_LOCK_SIGIL.texture)
+      .setDepth(EFFECT_DEPTH + 1)
+      .setVisible(false);
     this.phaseOverlay = scene.add
       .graphics()
       .setDepth(UI_EFFECT_DEPTH)
@@ -22,6 +28,7 @@ export class ArchitectBossView {
 
   clearTelegraph() {
     this.telegraph.clear();
+    this.eyeLockSigil.setVisible(false);
   }
 
   drawPhaseTransition(time: number) {
@@ -98,12 +105,12 @@ export class ArchitectBossView {
   ) {
     const pulse = 0.55 + Math.sin(time * 0.03) * 0.2;
     const radius = 46 - progress * 18;
+    this.eyeLockSigil
+      .setPosition(targetX, targetY)
+      .setDisplaySize(radius * 2, radius * 2)
+      .setAlpha(pulse)
+      .setVisible(true);
     this.telegraph
-      .lineStyle(3, this.pattern.skyColor, pulse)
-      .lineBetween(targetX, targetY - radius, targetX + radius, targetY)
-      .lineBetween(targetX + radius, targetY, targetX, targetY + radius)
-      .lineBetween(targetX, targetY + radius, targetX - radius, targetY)
-      .lineBetween(targetX - radius, targetY, targetX, targetY - radius)
       .lineStyle(1, 0xffffff, 0.65)
       .lineBetween(sourceX, sourceY, targetX, targetY);
   }
@@ -111,11 +118,11 @@ export class ArchitectBossView {
   drawEyeLocked(targetX: number, targetY: number, time: number) {
     const pulse = 0.65 + Math.sin(time * 0.045) * 0.25;
     const radius = this.pattern.eye.orbRadius;
-    this.telegraph
-      .fillStyle(this.pattern.goldColor, 0.12)
-      .fillRect(targetX - radius, targetY - radius, radius * 2, radius * 2)
-      .lineStyle(4, this.pattern.goldColor, pulse)
-      .strokeRect(targetX - radius, targetY - radius, radius * 2, radius * 2);
+    this.eyeLockSigil
+      .setPosition(targetX, targetY)
+      .setDisplaySize(radius * 2, radius * 2)
+      .setAlpha(pulse)
+      .setVisible(true);
   }
 
   beginSalvation() {
@@ -192,6 +199,7 @@ export class ArchitectBossView {
 
   destroy() {
     this.telegraph.destroy();
+    this.eyeLockSigil.destroy();
     this.phaseOverlay.destroy();
   }
 }

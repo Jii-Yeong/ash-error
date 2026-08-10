@@ -5,6 +5,9 @@ import {
   getFanAngles,
   getRingAngles,
 } from '@/game/combat/architectPattern';
+import {
+  STAGE_FIVE_BOSS_FLOATING_JUDGMENT_SIGIL,
+} from '@/game/config/bossAnimationConfig';
 import type {
   ArchitectBossSpriteConfig,
   ArchitectBossCombatConfig,
@@ -755,9 +758,9 @@ export class ArchitectBossEnemy extends BossEnemy<ArchitectBossPatternConfig> {
 
   private spawnJudgmentOrb(x: number, y: number) {
     const size = this.pattern.eye.orbRadius * 2;
-    let orb: Phaser.GameObjects.Rectangle | undefined = this.scene.add
-      .rectangle(x, y, size, size, this.pattern.skyColor, 0.24)
-      .setStrokeStyle(4, this.pattern.goldColor, 0.85)
+    let orb: Phaser.GameObjects.Image | undefined = this.scene.add
+      .image(x, y, STAGE_FIVE_BOSS_FLOATING_JUDGMENT_SIGIL.texture)
+      .setDisplaySize(size, size)
       .setDepth(JUDGMENT_ORB_DEPTH);
     let cleaned = false;
     const timer = this.scene.time.delayedCall(

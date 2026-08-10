@@ -312,6 +312,14 @@ export const STAGE_FOUR_BOSS_LOOPING_TAGS = new Set<StageFourBossTag>([
 export const STAGE_FIVE_BOSS_ATLAS_KEY = 'stage-5-boss';
 export const STAGE_FIVE_BOSS_ATLAS_PNG = '/assets/bosses/stage-5-boss.png';
 export const STAGE_FIVE_BOSS_ATLAS_JSON = '/assets/bosses/stage-5-boss.json';
+export const STAGE_FIVE_BOSS_EYE_LOCK_SIGIL = {
+  texture: 'stage-5-boss-eye-lock-sigil',
+  png: '/assets/bosses/stage-5-architect-player-lock-sigil.png',
+} as const;
+export const STAGE_FIVE_BOSS_FLOATING_JUDGMENT_SIGIL = {
+  texture: 'stage-5-boss-floating-judgment-sigil',
+  png: '/assets/bosses/stage-5-architect-floating-judgment-sigil.png',
+} as const;
 
 export const STAGE_FIVE_BOSS_ANIMATIONS = {
   idle: 'stage-5-boss-idle',
