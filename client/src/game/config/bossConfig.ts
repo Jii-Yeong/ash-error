@@ -114,7 +114,7 @@ export const BOSS_COMBAT_CONFIGS = {
       bodyColor: 0x3f5c28,
       accentColor: 0xc5ec72,
     },
-    maxHealth: 8500,
+    maxHealth: 4250,
     aggroRadius: 2600,
     aggroIndicatorColor: 0xa8d65c,
     contactDamage: 25,
@@ -212,8 +212,8 @@ export const BOSS_COMBAT_CONFIGS = {
       bodyColor: 0x46306f,
       accentColor: 0xf0c8ff,
     },
-    // 마지막 10% 코어의 2배 피해까지 포함한 유효 체력은 약 15,000임.
-    maxHealth: 15_790,
+    // 마지막 10% 코어의 2배 피해까지 포함한 유효 체력은 약 7,500임.
+    maxHealth: 7895,
     aggroRadius: 1900,
     aggroIndicatorColor: 0xd89cff,
     contactDamage: 32,

@@ -52,15 +52,15 @@ function countIdealSlams(weapon: WeaponConfig, damageMultiplier = 1) {
 }
 
 describe('PurifierBossEnemy pacing', () => {
-  it('기본 총과 레일건에서 내려찍기를 각각 12번과 10번 노출한다', () => {
+  it('기본 총과 레일건에서 내려찍기를 각각 6번과 5번 노출한다', () => {
     const { pattern } = BOSS_COMBAT_CONFIGS['underground-guardian'];
 
-    expect(countIdealSlams(SMG_WEAPON_CONFIG)).toBe(12);
+    expect(countIdealSlams(SMG_WEAPON_CONFIG)).toBe(6);
     expect(
       countIdealSlams(
         RAIL_RIFLE_WEAPON_CONFIG,
         pattern.railRifleDamageMultiplier,
       ),
-    ).toBe(10);
+    ).toBe(5);
   });
 });
