@@ -20,7 +20,7 @@ export class StartScene extends Phaser.Scene {
       .text(
         viewportWidth / 2,
         viewportHeight / 2,
-        'CLICK OR PRESS ANY KEY TO START',
+        'CLICK OR PRESS ANY KEY TO CONTINUE',
         {
         color: '#b6ffe4',
         fontFamily: 'Arial, sans-serif',

@@ -60,30 +60,19 @@ export class TitleScene extends Phaser.Scene {
       .setDepth(-1);
     player.setScale((viewportHeight * 0.8) / player.height);
 
-    // 로고는 원본 비율을 유지하며 플레이어와 겹치지 않는 빈 영역에 배치한다.
-    // 자동으로 사라지지 않고 로고를 직접 클릭했을 때만 페이드아웃한다.
+    // 로고는 원본 비율을 유지하고 플레이어와 겹치지 않는 빈 영역에 배치한다.
     const title = this.add
       .image(viewportWidth * 0.42, viewportHeight / 2 - 32, 'title-logo')
-      .setOrigin(0.5)
-      .setInteractive({ useHandCursor: true });
+      .setOrigin(0.5);
     title.setScale(
       Math.min(
         (viewportWidth * 0.58) / title.width,
         (viewportHeight * 0.14) / title.height,
       ),
     );
-    title.once('pointerdown', () => {
-      title.disableInteractive();
-      this.tweens.add({
-        targets: title,
-        alpha: 0,
-        duration: 600,
-        onComplete: () => title.destroy(),
-      });
-    });
 
     const prompt = this.add
-      .text(viewportWidth / 2, viewportHeight / 2 + 68, 'PRESS ENTER', {
+      .text(viewportWidth / 2, viewportHeight / 2 + 68, 'PRESS ENTER / SPACE OR CLICK', {
         color: '#b6ffe4',
         fontFamily: 'Arial, sans-serif',
         fontSize: '18px',
@@ -103,7 +92,13 @@ export class TitleScene extends Phaser.Scene {
       this.load.start();
     }
 
-    this.input.keyboard?.once('keydown-ENTER', () => {
+    let isStarting = false;
+    const startGame = () => {
+      if (isStarting) {
+        return;
+      }
+
+      isStarting = true;
       if (this.load.isLoading()) {
         prompt.setText('LOADING...');
         this.load.once('complete', () => this.scene.start('game'));
@@ -111,6 +106,10 @@ export class TitleScene extends Phaser.Scene {
       }
 
       this.scene.start('game');
-    });
+    };
+
+    this.input.once('pointerdown', startGame);
+    this.input.keyboard?.once('keydown-ENTER', startGame);
+    this.input.keyboard?.once('keydown-SPACE', startGame);
   }
 }

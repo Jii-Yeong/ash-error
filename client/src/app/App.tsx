@@ -209,17 +209,19 @@ export function App() {
               >
                 ?
               </button>
-              <button
-                type='button'
-                className='admin-controls__trigger'
-                aria-expanded={adminOpen}
-                aria-controls='admin-menu'
-                onClick={() => setAdminOpen((open) => !open)}
-              >
-                ADMIN
-              </button>
+              {import.meta.env.DEV && (
+                <button
+                  type='button'
+                  className='admin-controls__trigger'
+                  aria-expanded={adminOpen}
+                  aria-controls='admin-menu'
+                  onClick={() => setAdminOpen((open) => !open)}
+                >
+                  ADMIN
+                </button>
+              )}
 
-              {adminOpen && (
+              {import.meta.env.DEV && adminOpen && (
                 <div
                   id='admin-menu'
                   className='admin-controls__menu'
