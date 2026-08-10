@@ -14,15 +14,14 @@ vi.hoisted(() => {
 
 describe('CombatUi', () => {
   it('recentres fixed UI after the viewport resizes', () => {
-    const overlays = Array.from({ length: 3 }, () => ({
+    const overlays = Array.from({ length: 2 }, () => ({
       setPosition: vi.fn(),
     }));
     const weaponEquippedText = { setPosition: vi.fn() };
     const combatUi = Object.assign(Object.create(CombatUi.prototype), {
       scene: { scale: { width: 1600, height: 900 } },
       deathOverlay: overlays[0],
-      victoryOverlay: overlays[1],
-      stageEndOverlay: overlays[2],
+      stageEndOverlay: overlays[1],
       weaponEquippedText,
     }) as CombatUi;
 

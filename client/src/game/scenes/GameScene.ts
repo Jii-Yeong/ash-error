@@ -71,8 +71,6 @@ import { useGameSettingsStore } from '@/stores/gameSettingsStore';
 
 /** 4스테이지 보스가 사라진 뒤 화면 파괴까지 장면을 유지하는 시간. */
 const SHATTER_POST_BOSS_DELAY_MS = 1000;
-/** 승리 문구를 읽은 뒤 크레딧으로 전환하는 시간. */
-const VICTORY_CREDITS_DELAY_MS = 1600;
 /**
  * 구덩이 추락 판정 깊이. 발이 바닥선 아래로 이만큼 내려가야 추락으로 친다.
  * 구덩이 바닥까지 떨어지는 연출을 충분히 보여 준 뒤 부활시키기 위해 바닥 근처까지 크게 잡는다.
@@ -595,15 +593,8 @@ export class GameScene extends Phaser.Scene {
     this.setPhase('ending');
     this.weaponSystem.hide();
     this.combatUi.clearEnemyRanges();
-    // Beating the final stage ('The Return') is the true victory — wash the
-    // screen to warm light (waking up) before the ending card resolves.
-    this.cameras.main.flash(700, 255, 240, 210);
-    this.combatUi.showVictory();
-    this.time.delayedCall(VICTORY_CREDITS_DELAY_MS, () =>
-      this.scene.start('credits'),
-    );
+    this.scene.start('credits');
   }
-
   /** 전환 연출이 시작되기 전 플레이어와 전투 객체를 공통 정리한다. */
   private prepareStageTransition() {
     this.setPhase('transitioning');

@@ -11,7 +11,6 @@ export class CombatUi {
   private readonly aimGraphics: Phaser.GameObjects.Graphics;
   private readonly enemyRangeGraphics: Phaser.GameObjects.Graphics;
   private readonly deathOverlay: Phaser.GameObjects.Container;
-  private readonly victoryOverlay: Phaser.GameObjects.Container;
   private readonly stageEndOverlay: Phaser.GameObjects.Container;
   private readonly weaponEquippedText: Phaser.GameObjects.Text;
 
@@ -23,12 +22,6 @@ export class CombatUi {
       '#ff7180',
       'SYSTEM FAILURE',
       'PRESS R OR ENTER TO RESTART',
-    );
-    this.victoryOverlay = this.createOverlay(
-      UI_PANEL_TEXTURES.victory.key,
-      '#ffe9c4',
-      'This Is Not the End.',
-      'YOU\'RE AWAKE  //  CREDITS FOLLOW',
     );
     this.stageEndOverlay = this.createOverlay(
       UI_PANEL_TEXTURES.danger.key,
@@ -73,10 +66,6 @@ export class CombatUi {
 
   showDeath() {
     this.deathOverlay.setVisible(true);
-  }
-
-  showVictory() {
-    this.victoryOverlay.setVisible(true);
   }
 
   showStageEnd() {
@@ -178,7 +167,6 @@ export class CombatUi {
     const centerX = this.scene.scale.width / 2;
     const centerY = this.scene.scale.height / 2;
     this.deathOverlay.setPosition(centerX, centerY);
-    this.victoryOverlay.setPosition(centerX, centerY);
     this.stageEndOverlay.setPosition(centerX, centerY);
     this.weaponEquippedText.setPosition(
       centerX,
