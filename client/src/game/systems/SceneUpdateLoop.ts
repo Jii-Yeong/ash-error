@@ -1,4 +1,8 @@
-import Phaser from 'phaser';
+import type Phaser from 'phaser';
+
+/** `Phaser.Scenes.Events.UPDATE`. 이 헬퍼가 런타임에 Phaser를 끌어오지 않도록
+ * 리터럴로 둔다(그래야 순수 유닛 테스트가 jsdom 없이 돈다). */
+const SCENE_UPDATE_EVENT = 'update';
 
 /**
  * 씬 UPDATE 이벤트 구독을 대칭적으로 켜고 끄는 작은 도우미.
@@ -27,14 +31,14 @@ export class SceneUpdateLoop {
       return;
     }
     this.running = true;
-    this.scene.events.on(Phaser.Scenes.Events.UPDATE, this.tick);
+    this.scene.events.on(SCENE_UPDATE_EVENT, this.tick);
   }
 
   stop() {
     if (!this.running) {
       return;
     }
-    this.scene.events.off(Phaser.Scenes.Events.UPDATE, this.tick);
+    this.scene.events.off(SCENE_UPDATE_EVENT, this.tick);
     this.running = false;
   }
 }
