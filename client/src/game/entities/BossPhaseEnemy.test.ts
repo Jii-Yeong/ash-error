@@ -2,6 +2,7 @@
 
 import type Phaser from 'phaser';
 import { describe, expect, it, vi } from 'vitest';
+import { BOSS_COMBAT_CONFIGS } from '@/game/config/bossConfig';
 import {
   RAIL_RIFLE_WEAPON_CONFIG,
   SMG_WEAPON_CONFIG,
@@ -81,6 +82,30 @@ describe('phase boss introductions', () => {
     infernal.setChargeHitbox(false);
     expect(setSize).toHaveBeenLastCalledWith(150, 200);
     expect(setOffset).toHaveBeenLastCalledWith(53, 49);
+  });
+
+  it('연옥 보스 장갑은 레일건 피해만 감소시킨다', () => {
+    const config = BOSS_COMBAT_CONFIGS['infernal-executioner'];
+    const infernal = createInfernalBoss({
+      health: config.maxHealth,
+      maxHealth: config.maxHealth,
+      config,
+    });
+
+    infernal.takeProjectileDamage(
+      SMG_WEAPON_CONFIG.damage,
+      0,
+      0,
+      SMG_WEAPON_CONFIG.id,
+    );
+    infernal.takeProjectileDamage(
+      RAIL_RIFLE_WEAPON_CONFIG.damage,
+      0,
+      0,
+      RAIL_RIFLE_WEAPON_CONFIG.id,
+    );
+
+    expect(infernal.currentHealth).toBe(config.maxHealth - 11 - 37);
   });
 
   it('prevents burst damage from skipping phase two', () => {

@@ -152,6 +152,7 @@ describe('boss combat configuration', () => {
     }
 
     expect(pattern.enrageHealthRatio).toBe(0.5);
+    expect(pattern.railRifleDamageMultiplier).toBe(0.49);
     expect(pattern.firstAttackDelay).toBeGreaterThanOrEqual(1800);
     expect(pattern.rupture.count).toBe(3);
     expect(pattern.rupture.warnDuration).toBe(700);

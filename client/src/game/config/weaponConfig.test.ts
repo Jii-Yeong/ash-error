@@ -81,7 +81,7 @@ describe('weapon progression', () => {
       'city-warden': 13,
       'alley-hunter': 30,
       'underground-guardian': 88,
-      'infernal-executioner': 11,
+      'infernal-executioner': 37,
       'returning-architect': 164,
     } satisfies Record<BossVariant, number>;
 

@@ -2,7 +2,11 @@ import Phaser from 'phaser';
 import { damageBeforeThreshold } from '@/game/combat/architectPattern';
 import {
   getInfernalBossDamage,
+  getInfernalProjectileDamage,
   getShardPatternLayout,
+  INFERNAL_PHASE_ONE_SEQUENCE,
+  INFERNAL_PHASE_TWO_SEQUENCE,
+  type InfernalAttack,
 } from '@/game/combat/infernalPattern';
 import type {
   InfernalBossCombatConfig,
@@ -17,7 +21,10 @@ import {
   STAGE_FOUR_MAGMA_SHARD_IMPACT,
 } from '@/game/config/bossAnimationConfig';
 import { BossEnemy } from '@/game/entities/BossEnemy';
-import type { EnemyProjectileAttack } from '@/game/entities/Enemy';
+import type {
+  EnemyProjectileAttack,
+  ProjectileDamageResult,
+} from '@/game/entities/Enemy';
 import { gameEvents } from '@/game/events/gameEvents';
 import type { BossPhase } from '@/game/state/bossPhase';
 import { destroyCollider } from '@/game/systems/arcadePhysicsCleanup';
@@ -33,7 +40,6 @@ type InfernalState =
   | 'charge-stagger'
   | 'shards';
 
-type InfernalAttack = 'rupture' | 'charge' | 'shards';
 type PlayerDamageHandler = (damage: number) => void;
 type PhaseChangeHandler = (phase: BossPhase) => void;
 
@@ -42,14 +48,6 @@ const DEATH_POSE_HOLD_MS = 1600;
 const DEATH_FADE_MS = 600;
 /** 돌진 중 점프로 넘을 수 있는 낮은 타격 높이. */
 const CHARGE_BODY_HEIGHT = 110;
-const PHASE_TWO_SEQUENCE: readonly InfernalAttack[] = [
-  'shards',
-  'rupture',
-  'charge',
-  'rupture',
-  'shards',
-  'charge',
-];
 
 /**
  * Stage-4 boss: sequential ground eruptions and a locked horizontal charge
@@ -223,6 +221,23 @@ export class InfernalBossEnemy extends BossEnemy<InfernalBossPatternConfig> {
     return allowedDamage > 0 ? super.takeDamage(allowedDamage) : false;
   }
 
+  override takeProjectileDamage(
+    amount: number,
+    hitX: number,
+    hitY: number,
+    weaponId?: string,
+  ): ProjectileDamageResult {
+    return super.takeProjectileDamage(
+      getInfernalProjectileDamage(
+        amount,
+        this.pattern.railRifleDamageMultiplier,
+        weaponId,
+      ),
+      hitX,
+      hitY,
+    );
+  }
+
   protected override get isInvulnerable() {
     return (
       (!this.phaseTwo && this.isEnraged) ||
@@ -317,16 +332,18 @@ export class InfernalBossEnemy extends BossEnemy<InfernalBossPatternConfig> {
 
     if (this.phaseTwo) {
       const attack =
-        PHASE_TWO_SEQUENCE[
-          this.phaseTwoAttackIndex % PHASE_TWO_SEQUENCE.length
+        INFERNAL_PHASE_TWO_SEQUENCE[
+          this.phaseTwoAttackIndex % INFERNAL_PHASE_TWO_SEQUENCE.length
         ];
       this.phaseTwoAttackIndex += 1;
       this.beginAttack(attack, time, target);
       return;
     }
 
-    const attack: InfernalAttack =
-      this.phaseOneAttackIndex % 2 === 0 ? 'rupture' : 'charge';
+    const attack =
+      INFERNAL_PHASE_ONE_SEQUENCE[
+        this.phaseOneAttackIndex % INFERNAL_PHASE_ONE_SEQUENCE.length
+      ];
     this.phaseOneAttackIndex += 1;
     this.beginAttack(attack, time, target);
   }

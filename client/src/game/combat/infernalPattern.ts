@@ -3,6 +3,34 @@ export type ShardPatternLayout = {
   hazardXPositions: number[];
 };
 
+export type InfernalAttack = 'rupture' | 'charge' | 'shards';
+
+/** 1페이즈에서 반복하는 공격 순서. */
+export const INFERNAL_PHASE_ONE_SEQUENCE: readonly InfernalAttack[] = [
+  'rupture',
+  'charge',
+];
+
+/** 전환 직후 강제 파편부터 시작하는 2페이즈 공격 순서. */
+export const INFERNAL_PHASE_TWO_SEQUENCE: readonly InfernalAttack[] = [
+  'shards',
+  'rupture',
+  'charge',
+  'rupture',
+  'shards',
+  'charge',
+];
+
+/** 레일건에만 보스 장갑 배율을 적용함. */
+export const getInfernalProjectileDamage = (
+  baseDamage: number,
+  railRifleDamageMultiplier: number,
+  weaponId?: string,
+) =>
+  weaponId === 'rail-rifle'
+    ? baseDamage * railRifleDamageMultiplier
+    : baseDamage;
+
 type ShardPatternOptions = {
   arenaLeft: number;
   arenaRight: number;

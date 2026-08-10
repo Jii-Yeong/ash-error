@@ -97,6 +97,7 @@ export type PurifierBossPatternConfig = {
 /** Stage-4 ground rupture, charge, and persistent magma-shard patterns. */
 export type InfernalBossPatternConfig = {
   type: 'infernal';
+  railRifleDamageMultiplier: number;
   enrageHealthRatio: number;
   firstAttackDelay: number;
   recoveryDuration: number;
