@@ -1,0 +1,1285 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light" />
+    <meta
+      name="source-sha256"
+      content="414be1e18e06915a2183a8a7cb5de252f2d64139e413df619569492f0346bf00"
+    />
+    <title>AI 활용 내역</title>
+    <style>
+      :root {
+        --ink: #20262d;
+        --muted: #64707c;
+        --line: #d9e0e5;
+        --soft: #f4f7f8;
+        --accent: #315f74;
+        --accent-dark: #173d4f;
+        --accent-soft: #e7f0f3;
+        --paper: #fff;
+        --canvas: #e8edf0;
+      }
+
+      @page {
+        size: A4 portrait;
+        margin: 15mm 15mm 17mm;
+
+        @bottom-left {
+          color: #7a848e;
+          content: "ASH//ERROR · AI 활용 내역";
+          font-family: "Noto Sans KR", "Malgun Gothic", sans-serif;
+          font-size: 7.5pt;
+        }
+
+        @bottom-right {
+          color: #7a848e;
+          content: counter(page) " / " counter(pages);
+          font-family: "Noto Sans KR", "Malgun Gothic", sans-serif;
+          font-size: 7.5pt;
+        }
+      }
+
+      @page cover {
+        size: A4 portrait;
+        margin: 15mm;
+
+        @bottom-left {
+          content: none;
+        }
+
+        @bottom-right {
+          content: none;
+        }
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        background: var(--canvas);
+        color: var(--ink);
+        font-size: 16px;
+        print-color-adjust: exact;
+        -webkit-print-color-adjust: exact;
+      }
+
+      body {
+        margin: 0;
+        font-family: Pretendard, "Noto Sans KR", "Apple SD Gothic Neo",
+          "Malgun Gothic", sans-serif;
+        line-height: 1.54;
+        word-break: keep-all;
+        overflow-wrap: anywhere;
+      }
+
+      .report {
+        width: min(calc(100% - 32px), 210mm);
+        margin: 32px auto;
+        padding: 15mm;
+        background: var(--paper);
+        box-shadow: 0 12px 36px rgb(36 46 56 / 14%);
+      }
+
+      .cover {
+        min-height: 267mm;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        page: cover;
+        break-after: page;
+      }
+
+      .cover__eyebrow {
+        margin: 0 0 8mm;
+        color: var(--accent);
+        font-size: 9.5pt;
+        font-weight: 700;
+        letter-spacing: 0.16em;
+      }
+
+      .cover h1 {
+        margin: 0;
+        color: #14222a;
+        font-size: 30pt;
+        line-height: 1.15;
+        letter-spacing: -0.045em;
+      }
+
+      .cover__rule {
+        width: 28mm;
+        height: 1mm;
+        margin: 10mm 0;
+        border: 0;
+        background: var(--accent);
+      }
+
+      .cover__subtitle {
+        max-width: 130mm;
+        margin: 0;
+        color: #48555f;
+        font-size: 13pt;
+        line-height: 1.65;
+      }
+
+      .cover__meta {
+        display: grid;
+        grid-template-columns: 22mm 1fr;
+        gap: 2mm 5mm;
+        margin: 24mm 0 0;
+        font-size: 9pt;
+      }
+
+      .cover__meta dt {
+        color: var(--muted);
+        font-weight: 600;
+      }
+
+      .cover__meta dd {
+        margin: 0;
+        font-weight: 700;
+      }
+
+      .toc {
+        break-after: page;
+      }
+
+      .toc h2 {
+        margin-top: 0;
+      }
+
+      .toc ol {
+        margin: 7mm 0 0;
+        padding: 0;
+        list-style: none;
+        counter-reset: toc;
+      }
+
+      .toc li {
+        display: flex;
+        gap: 4mm;
+        padding: 2.4mm 0;
+        border-bottom: 0.2mm solid var(--line);
+        counter-increment: toc;
+      }
+
+      .toc li::before {
+        min-width: 8mm;
+        color: var(--accent);
+        content: counter(toc, decimal-leading-zero);
+        font-size: 8.5pt;
+        font-weight: 800;
+      }
+
+      .toc a {
+        color: inherit;
+        font-size: 10pt;
+        font-weight: 650;
+        text-decoration: none;
+      }
+
+      h1,
+      h2,
+      h3,
+      h4 {
+        color: #172129;
+        line-height: 1.3;
+        break-after: avoid-page;
+      }
+
+      h2 {
+        margin: 10mm 0 4mm;
+        padding-bottom: 2.2mm;
+        border-bottom: 0.35mm solid var(--line);
+        font-size: 17pt;
+      }
+
+      h3 {
+        margin: 6.5mm 0 2.5mm;
+        color: var(--accent-dark);
+        font-size: 12pt;
+      }
+
+      h4 {
+        margin: 4.5mm 0 1.5mm;
+        font-size: 10pt;
+      }
+
+      p,
+      li,
+      td,
+      th,
+      dt,
+      dd {
+        font-size: 9.4pt;
+        orphans: 3;
+        widows: 3;
+      }
+
+      p {
+        margin: 0 0 3mm;
+      }
+
+      ul,
+      ol {
+        margin: 1.5mm 0 3.5mm;
+        padding-left: 6mm;
+      }
+
+      li + li {
+        margin-top: 1mm;
+      }
+
+      strong {
+        color: #162b36;
+      }
+
+      code {
+        padding: 0.15em 0.35em;
+        border-radius: 0.7mm;
+        background: #eef2f4;
+        font-family: "SFMono-Regular", Consolas, monospace;
+        font-size: 0.9em;
+      }
+
+      blockquote {
+        margin: 4mm 0;
+        padding: 3.5mm 4.5mm;
+        border-left: 1.2mm solid var(--accent);
+        background: var(--accent-soft);
+        break-inside: auto;
+      }
+
+      blockquote p:last-child {
+        margin-bottom: 0;
+      }
+
+      table {
+        width: 100%;
+        margin: 3.5mm 0 5mm;
+        border-collapse: collapse;
+      }
+
+      thead {
+        display: table-header-group;
+      }
+
+      tr {
+        break-inside: avoid-page;
+      }
+
+      th,
+      td {
+        padding: 1.7mm 2mm;
+        border: 0.25mm solid var(--line);
+        text-align: left;
+        vertical-align: top;
+      }
+
+      th {
+        background: var(--accent-soft);
+        color: #173a4b;
+        font-weight: 750;
+      }
+
+      tbody tr:nth-child(even) td {
+        background: #fafbfc;
+      }
+
+      .compact th,
+      .compact td {
+        padding: 1.35mm 1.7mm;
+        font-size: 8.3pt;
+        line-height: 1.42;
+      }
+
+      .lead {
+        margin: 0 0 5mm;
+        color: #33434d;
+        font-size: 10.5pt;
+        line-height: 1.62;
+      }
+
+      .summary-grid,
+      .case-grid,
+      .principle-grid {
+        display: grid;
+        gap: 3mm;
+        margin: 4mm 0 5mm;
+      }
+
+      .summary-grid {
+        grid-template-columns: repeat(4, 1fr);
+      }
+
+      .case-grid,
+      .principle-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .card {
+        padding: 3.5mm;
+        border: 0.25mm solid var(--line);
+        border-radius: 1.5mm;
+        background: #fbfcfd;
+        break-inside: avoid-page;
+      }
+
+      .card__label {
+        display: block;
+        margin-bottom: 1.2mm;
+        color: var(--accent);
+        font-size: 7.5pt;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .card strong {
+        display: block;
+        margin-bottom: 1.5mm;
+        font-size: 10pt;
+      }
+
+      .card p,
+      .card li {
+        font-size: 8.6pt;
+        line-height: 1.46;
+      }
+
+      .card p:last-child,
+      .card ul:last-child {
+        margin-bottom: 0;
+      }
+
+      .flow {
+        margin: 4mm 0 5mm;
+        padding: 3.5mm 4mm;
+        border: 0.3mm solid #b9ccd5;
+        border-radius: 1.5mm;
+        background: var(--soft);
+        color: #173847;
+        font-size: 9.3pt;
+        font-weight: 750;
+        text-align: center;
+        break-inside: avoid-page;
+      }
+
+      .prompt {
+        margin: 3mm 0 4mm;
+        padding: 3.5mm 4.5mm;
+        border: 0.25mm solid var(--line);
+        border-radius: 1.2mm;
+        background: #f8fafb;
+        font-family: "SFMono-Regular", Consolas, monospace;
+        break-inside: avoid-page;
+      }
+
+      .prompt p {
+        margin: 0;
+        font-size: 8.5pt;
+        line-height: 1.52;
+      }
+
+      .prompt p + p {
+        margin-top: 1.3mm;
+      }
+
+      .prompt--fields p {
+        display: grid;
+        grid-template-columns: 13mm 1fr;
+        gap: 2mm;
+      }
+
+      .prompt--fields strong {
+        color: var(--accent-dark);
+        font-family: Pretendard, "Noto Sans KR", "Apple SD Gothic Neo",
+          "Malgun Gothic", sans-serif;
+      }
+
+      .prompt--quote {
+        padding-right: 5mm;
+        padding-left: 5mm;
+      }
+
+      .callout {
+        margin: 4mm 0;
+        padding: 3.5mm 4mm;
+        border: 0.3mm solid #8cb1c1;
+        border-radius: 1.5mm;
+        background: #eef6f8;
+        break-inside: avoid-page;
+      }
+
+      .callout strong {
+        color: var(--accent-dark);
+      }
+
+      .callout p:last-child {
+        margin-bottom: 0;
+      }
+
+      .chapter-start {
+        break-before: page;
+      }
+
+      .keep-together {
+        break-inside: avoid-page;
+      }
+
+      .muted {
+        color: var(--muted);
+      }
+
+      .closing {
+        margin-top: 8mm;
+        padding: 7mm;
+        border: 0.5mm solid var(--accent);
+        background: var(--accent-soft);
+        font-size: 11pt;
+        line-height: 1.65;
+        break-inside: avoid-page;
+      }
+
+      @media screen and (max-width: 760px) {
+        .report {
+          width: 100%;
+          margin: 0;
+          padding: 24px 20px 48px;
+          box-shadow: none;
+        }
+
+        .cover {
+          min-height: 80vh;
+        }
+
+        .summary-grid,
+        .case-grid,
+        .principle-grid {
+          grid-template-columns: 1fr;
+        }
+
+        table {
+          display: block;
+          overflow-x: auto;
+        }
+      }
+
+      @media print {
+        html,
+        body {
+          background: var(--paper);
+        }
+
+        .report {
+          width: auto;
+          margin: 0;
+          padding: 0;
+          box-shadow: none;
+        }
+
+        a {
+          color: inherit;
+          text-decoration: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="report">
+      <header class="cover">
+        <p class="cover__eyebrow">SOOT PROJECT · DEVELOPMENT REPORT</p>
+        <h1>AI 활용 내역</h1>
+        <hr class="cover__rule" />
+        <p class="cover__subtitle">
+          게임 기획과 구현, 레벨 디자인, 코드 검증, 에셋과 오디오 제작에 생성형
+          AI를 적용하고 사람이 최종 판단한 과정을 정리했습니다.
+        </p>
+        <dl class="cover__meta">
+          <dt>프로젝트</dt>
+          <dd>ASH//ERROR</dd>
+          <dt>문서</dt>
+          <dd>AI 활용 보고서</dd>
+        </dl>
+      </header>
+
+      <nav class="toc" aria-labelledby="toc-title">
+        <h2 id="toc-title">목차</h2>
+        <ol>
+          <li><a href="#overview">활용 개요</a></li>
+          <li><a href="#tools">도구와 역할</a></li>
+          <li><a href="#development">게임 개발과 검증</a></li>
+          <li><a href="#assets">에셋 생성과 실제 리소스화</a></li>
+          <li><a href="#skills">반복 작업을 위한 커스텀 Skill</a></li>
+          <li><a href="#audio">생성형 오디오 운용</a></li>
+          <li><a href="#workflow">에이전트 운용과 Human-in-the-loop</a></li>
+          <li><a href="#limits">한계와 대응</a></li>
+          <li><a href="#licenses">결과물과 외부 에셋의 구분</a></li>
+          <li><a href="#conclusion">활용 효과와 최종 정리</a></li>
+        </ol>
+        <div class="callout">
+          <p>
+            본 프로젝트에서 AI 결과는 모두 초안 또는 작업 보조 자료로
+            취급했습니다. PR 승인·병합, 코드 채택, 도트 최종 정리, 음원 선택,
+            실제 플레이 검수는 팀원이 수행했습니다.
+          </p>
+        </div>
+      </nav>
+
+      <article id="report-content" data-source="ai-usage-report.md">
+        <section aria-labelledby="overview">
+          <h2 id="overview">1. 활용 개요</h2>
+          <p class="lead">
+            Codex와 Claude Code는 저장소를 읽고 수정하는 개발 에이전트로,
+            ChatGPT와 이미지 생성 기능은 기획·아트 초안 제작에, SpriteCook은
+            전투 효과 제작에, Gemini Lyria는 BGM 후보 생성에 활용했습니다.
+            반복되는 판단은 저장소 규약과 커스텀 Skill, 검증 스크립트로
+            고정했습니다.
+          </p>
+
+          <div class="summary-grid">
+            <div class="card">
+              <span class="card__label">Development</span>
+              <strong>코드·레벨</strong>
+              <p>호출 경로 탐색, 구현 보조, 레벨 QA, 회귀 테스트 작성</p>
+            </div>
+            <div class="card">
+              <span class="card__label">Asset</span>
+              <strong>아트·UI</strong>
+              <p>전투 로직에서 필요한 상태를 도출하고 에셋 초안 생성</p>
+            </div>
+            <div class="card">
+              <span class="card__label">Audio</span>
+              <strong>음악·효과음</strong>
+              <p>BGM 후보 생성과 비교, 루프 편집, 상태별 효과음 연결</p>
+            </div>
+            <div class="card">
+              <span class="card__label">Control</span>
+              <strong>사람의 결정</strong>
+              <p>실제 플레이와 청취, 시각 검수 후 최종 결과만 반영</p>
+            </div>
+          </div>
+
+          <table class="compact">
+            <thead>
+              <tr>
+                <th>영역</th>
+                <th>AI 입력·활용 방식</th>
+                <th>적용 결과</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>기획·설계</td>
+                <td>
+                  기획서와 현재 코드를 대조하고 플레이 의도를 기능으로 분해
+                </td>
+                <td>5스테이지의 지상전에서 공중전으로 이어지는 흐름 구체화</td>
+              </tr>
+              <tr>
+                <td>구현·QA</td>
+                <td>이동, 충돌, 포탈, 적 상태와 투사체의 호출 경로 추적</td>
+                <td>비행 진입, 피트 경계, 방 전환과 사망 처리 회귀 보강</td>
+              </tr>
+              <tr>
+                <td>레벨 디자인</td>
+                <td>이동 성능을 실측하고 스테이지 1~5를 같은 기준으로 비교</td>
+                <td>점프 불가능 구간, 과도한 벽, 사격을 가리는 발판 수정</td>
+              </tr>
+              <tr>
+                <td>에셋</td>
+                <td>역할, 패턴, 애니메이션 상태, 프레임 제약을 구조화</td>
+                <td>캐릭터, 배경, 플랫폼, 전투 효과와 UI 초안 제작</td>
+              </tr>
+              <tr>
+                <td>오디오</td>
+                <td>정서를 조성·악기·BPM·구조로 구체화하고 후보를 비교</td>
+                <td>BGM 선별·루프 편집과 <code>AudioDirector</code> 연결</td>
+              </tr>
+              <tr>
+                <td>문서화</td>
+                <td>구현 코드, 커밋 범위, 브랜치 diff를 근거로 재구성</td>
+                <td>패턴 문서, PR 본문, 변경 목록과 AI 활용 내역 작성</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h3>핵심 사례</h3>
+          <div class="case-grid">
+            <div class="card">
+              <span class="card__label">Review</span>
+              <strong>사망 연출 중 방 조기 클리어 발견</strong>
+              <p>
+                다중 에이전트 리뷰가 공중 적의 사망 애니메이션이 끝나기 전에
+                처치로 집계되는 문제를 발견했습니다. 공통 사망 로직과 회귀
+                테스트로 수정했습니다.
+              </p>
+            </div>
+            <div class="card">
+              <span class="card__label">Decision</span>
+              <strong>AI가 탈락시킨 후보도 사람이 재검토</strong>
+              <p>
+                BGM 심사 도구의 기본값을 전체 후보로 두었습니다. 측정값은 참고만
+                하고 최종 채택은 두 사람의 청취로 결정했습니다.
+              </p>
+            </div>
+            <div class="card">
+              <span class="card__label">Constraint</span>
+              <strong>게임 규칙에 맞춰 아트를 되돌림</strong>
+              <p>
+                총구가 캐릭터 어깨를 넘어가는 문제를 위치 보정으로 숨기지 않고
+                총기의 구조 자체를 불펍형으로 교체했습니다.
+              </p>
+            </div>
+            <div class="card">
+              <span class="card__label">Pipeline</span>
+              <strong>AI 추론과 결정적 처리를 분리</strong>
+              <p>
+                투명화에서는 AI가 마스크 후보만 만들고 원본 RGB 보존은
+                스크립트가 검사하도록 해 재창조와 색상 테두리를 막았습니다.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section aria-labelledby="tools">
+          <h2 id="tools">2. 도구와 역할</h2>
+          <table class="compact">
+            <thead>
+              <tr>
+                <th>도구</th>
+                <th>주요 활용</th>
+                <th>결과의 검증</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Codex</td>
+                <td>
+                  레벨 배치, 설정 UI, 코드 구현, 브라우저 기반 실제 화면 확인
+                </td>
+                <td>Vitest, E2E, 타입 검사, lint, build, 플레이 화면</td>
+              </tr>
+              <tr>
+                <td>Claude Code</td>
+                <td>
+                  다중 관점 코드 리뷰, 무기 정렬, 오디오 측정·가공, 문서화
+                </td>
+                <td>독립 세션의 반증 검토와 회귀 테스트</td>
+              </tr>
+              <tr>
+                <td>ChatGPT</td>
+                <td>
+                  보스·적 패턴, 애니메이션 상태, 프롬프트와 아트 문제 분석
+                </td>
+                <td>기획·코드 대조와 팀원의 시각 검수</td>
+              </tr>
+              <tr>
+                <td>이미지 생성·SpriteCook</td>
+                <td>캐릭터, 배경, 플랫폼, 전투 효과의 초안과 비교 시안</td>
+                <td>Aseprite 보정, 좌표·레이어 확인, 실제 게임 적용 검수</td>
+              </tr>
+              <tr>
+                <td>Gemini Lyria</td>
+                <td>스테이지별 BGM 후보 생성</td>
+                <td>버전·테이크 기록, 측정, 루프 렌더, 사람의 청취</td>
+              </tr>
+              <tr>
+                <td>커스텀 Skill</td>
+                <td>
+                  <code>transparent-character-png</code>,
+                  <code>soot-ui-pixel-art</code>
+                </td>
+                <td>원본 픽셀 검사와 프로젝트별 UI 기준 반복 적용</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <p>
+            Codex와 Claude Code는 역할을 완전히 겹치지 않게 운용했습니다. 같은
+            문제를 두 도구에 교차로 검토시키고, 한 도구의 리뷰를 다른 도구가
+            코드에서 재현한 뒤 수정했습니다. Chrome DevTools MCP와 브라우저
+            자동화는 정적 분석만으로 판단하기 어려운 레벨 배치와 오디오 생성
+            화면을 직접 확인하는 데 사용했습니다.
+          </p>
+        </section>
+
+        <section aria-labelledby="development">
+          <h2 id="development">3. 게임 개발과 검증</h2>
+          <p class="lead">
+            AI에게 기능 구현만 요청하지 않고, 플레이 제보와 기획 의도를 실제
+            코드 경로와 테스트 조건으로 바꾸도록 했습니다. 화면에서 판단할 수
+            있는 항목은 코드의 추정보다 실제 렌더 결과를 우선했습니다.
+          </p>
+
+          <h3>3.1 게임플레이와 레벨 디자인</h3>
+          <p>
+            이동 성능, 점프 높이, 발판 간격, 피트와 적의 관계를 실측해 전역
+            규칙으로 정리했습니다. 그 위에서 스테이지 1~5를 같은 기준으로
+            검토하고, 3스테이지의 사격을 가리는 공중 발판, 불필요한 세로 벽,
+            점프로 연결되지 않는 구간을 찾았습니다. 러프 배치는 스테이지별
+            에이전트가 같은 기준으로 작성하고, 도달성 테스트와 실제 플레이로
+            최종 확인했습니다.
+          </p>
+
+          <h3>3.2 코드 리뷰를 탐색과 반증으로 분리</h3>
+          <div class="flow">
+            관점별 탐색 → 파일·라인 단위 후보 수집 → 독립 검증 에이전트의 반증 →
+            검증된 항목만 보고 → 테스트와 플레이 확인
+          </div>
+          <p>
+            PR #11에서는 공중 적 3종의 <code>deathAnimationDuration</code>이 0인
+            채로 남아, 추락·착지·페이드 도중 방이 클리어되는 문제가
+            발견되었습니다. 사망 로직을 <code>CoordinatedAerialEnemy</code>로
+            통합하고 전체 연출 시간을 처치 지연에 반영했으며, 마지막 적의 사망
+            중 방이 조기 클리어되지 않는 회귀 테스트를 추가했습니다.
+          </p>
+
+          <h3>3.3 자연어 플레이 제보를 회귀 테스트로 변환</h3>
+          <table class="compact">
+            <thead>
+              <tr>
+                <th>플레이에서 발견한 현상</th>
+                <th>추적한 원인과 수정</th>
+                <th>검증</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>
+                  구덩이에 걸친 적과 정상 지형 끝의 적이 같은 방식으로 추락
+                </td>
+                <td>구덩이 진입과 가장자리 장벽 충돌을 분리</td>
+                <td>구덩이 제거·가장자리 충돌 테스트</td>
+              </tr>
+              <tr>
+                <td>보스 레이저가 캐논 발사구와 어긋남</td>
+                <td>발사 시작점을 방향별 캐논 좌표에 고정하고 각도만 계산</td>
+                <td>좌우 발사구 좌표와 플레이 화면</td>
+              </tr>
+              <tr>
+                <td>방 전환 후 플레이어가 공중에서 멈춤</td>
+                <td>
+                  그랩이 끈 중력을 공통 <code>PlayerController.stop()</code>에서
+                  복원
+                </td>
+                <td>헤드리스 상태 덤프와 강하 화면</td>
+              </tr>
+              <tr>
+                <td>적 처치 시 이미 발사된 탄막까지 사라짐</td>
+                <td>적과 투사체의 수명을 분리하고 씬 갱신 루프로 인계</td>
+                <td>분리 갱신과 구독 해제 단위 테스트</td>
+              </tr>
+              <tr>
+                <td>화면 파괴 순간 총과 팔이 사라짐</td>
+                <td>스냅샷 전에 무기 리그를 숨기던 이벤트 순서 수정</td>
+                <td>전환 회귀 테스트와 실제 연출</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h3>3.4 상태와 연출의 시간축 검증</h3>
+          <p>
+            4스테이지 보스 처치 후 흐름은
+            <strong
+              >보스 처치 → 쓰러짐·소멸 → 1초 유지 → 화면 파괴 → 완료 후
+              5스테이지 BGM 시작</strong
+            >으로 고정했습니다. 서로 다른 시스템에 흩어진 보상, 소멸 콜백, 화면
+            전환, 음악 이벤트를 순서대로 연결하고 지연 시간과 음악 시작 시점을
+            테스트했습니다.
+          </p>
+        </section>
+
+        <section aria-labelledby="assets">
+          <h2 id="assets">4. 에셋 생성과 실제 리소스화</h2>
+          <p class="lead">
+            아트의 외형부터 요청하지 않고 코드에서 동작할 전투 패턴을 먼저
+            정의했습니다. 필요한 자세와 효과를 상태 단위로 역산한 뒤 생성하고,
+            프레임 일관성과 게임 좌표계를 검증했습니다.
+          </p>
+
+          <div class="flow">
+            역할·전투 패턴 → 애니메이션 상태 → 생성 제약 → 이미지 초안 → 오류
+            검토 → 재생성·Aseprite 보정 → 게임 화면 검수
+          </div>
+
+          <h3>4.1 게임 로직에서 애니메이션 상태 도출</h3>
+          <p>
+            3스테이지 보스는 플레이어를 끌어당기는 ‘불순물 수거’와 점프 후
+            지면을 내려찍는 ‘폐기물 압축’을 먼저 정의했습니다. 이후 idle, walk,
+            도약 준비, 상승, 공중 체공, 하강, 내려찍기, 흡입, 피격, 사망으로
+            스프라이트 상태를 나눴습니다. 최종 보스도
+            <code>halo-charge</code>, <code>halo-fire</code>,
+            <code>wings-left</code>, <code>eye-track</code>,
+            <code>phase-transition</code>처럼 코드와 같은 상태명을 사용했습니다.
+          </p>
+
+          <div class="prompt prompt--fields">
+            <p>
+              <strong>역할</strong>
+              <span
+                >보스의 끌어당기기 패턴을 미리 학습시키는 구속형
+                안드로이드</span
+              >
+            </p>
+            <p>
+              <strong>행동</strong>
+              <span>케이블 발사 → 플레이어 끌어오기 → 근거리 전기 충격</span>
+            </p>
+            <p>
+              <strong>출력</strong>
+              <span
+                >idle 1장 / walk 2장 / attack 2장 / hit 1장 / death 1장</span
+              >
+            </p>
+            <p>
+              <strong>제약</strong>
+              <span>크기·중심점·장비 위치·팔다리 굵기·좌우 방향 유지</span>
+            </p>
+            <p>
+              <strong>검증</strong>
+              <span
+                >걷기 프레임의 다리 교차, 외곽 잘림, 소품 개수 변화 확인</span
+              >
+            </p>
+          </div>
+
+          <h3>4.2 프레임 일관성과 플레이 공간을 함께 지정</h3>
+          <div class="principle-grid">
+            <div class="card">
+              <strong>애니메이션 조건</strong>
+              <ul>
+                <li>프레임별 크기와 중심점 고정</li>
+                <li>장비 개수와 팔다리 굵기 유지</li>
+                <li>이전·다음 프레임의 자세 연결</li>
+                <li>잘림 방지를 위한 외곽 여백 확보</li>
+              </ul>
+            </div>
+            <div class="card">
+              <strong>게임플레이 조건</strong>
+              <ul>
+                <li>적 이동 경로와 배경 레이어 고려</li>
+                <li>1280×720 화면에서 캐릭터 배치 공간 확보</li>
+                <li>공격 판정과 효과 스프라이트 기준점 일치</li>
+                <li>플레이어보다 앞·뒤에 그려질 순서 지정</li>
+              </ul>
+            </div>
+          </div>
+
+          <p>
+            천장 파이프는 매달린 적의 이동을 가리지 않도록 연결부와 아래쪽
+            실루엣을 낮췄습니다. 배경은 분위기만 지정하지 않고 다음 연출에서
+            캐릭터가 들어갈 중앙 공간을 비우도록 요청했습니다. 3스테이지 보스의
+            흡입 효과는 보스의 흡입구를 기준으로 높이와 길이를 계산하고,
+            플레이어가 효과보다 앞에 보이도록 레이어를 조정했습니다.
+          </p>
+
+          <h3>4.3 생성 결과를 최종 리소스로 만드는 과정</h3>
+          <ol>
+            <li>관절, 손·다리, 장비, 프레임 비율 오류 확인</li>
+            <li>문제를 포즈 스케치나 픽셀 단위 지시로 구체화해 재생성</li>
+            <li>
+              Aseprite에서 축소, 도트·실루엣 정리, 중심점과 투명 영역 보정
+            </li>
+            <li>실제 게임에서 애니메이션, 좌표, 레이어와 공격 판정 확인</li>
+            <li>통과한 결과만 게임 리소스와 상태 머신에 연결</li>
+          </ol>
+
+          <h3>4.4 무기 합성 실패를 런타임 구조로 해결</h3>
+          <p>
+            손과 총을 이미지 생성으로 합치자 양쪽 원본 픽셀이 다시 그려졌습니다.
+            이를 앞팔·손, 총, 뒷팔의 세 조각으로 나누고 런타임에서 같은 각도로
+            회전시키는 구조로 변경했습니다. 네 총기의 손잡이는 공통 손 위치에
+            픽셀 단위로 맞추고 캐릭터·배경 합성 미리보기로 검수했습니다. 위치만
+            바꿔 해결할 수 없던 버스트 라이플은 짧은 불펍형으로 다시 제작해 게임
+            규칙에 아트를 맞췄습니다.
+          </p>
+        </section>
+
+        <section aria-labelledby="skills">
+          <h2 id="skills">5. 반복 작업을 위한 커스텀 Skill</h2>
+          <p class="lead">
+            같은 문제를 매번 긴 프롬프트로 설명하지 않도록 프로젝트 전용 Skill을
+            제작해 Codex에 등록했습니다. AI의 시각 추론과 스크립트의 결정적
+            처리를 분리해 결과의 재현성과 안전성을 높였습니다.
+          </p>
+
+          <h3>5.1 <code>transparent-character-png</code></h3>
+          <p>
+            ChatGPT로 생성한 픽셀아트에 투명 배경이 없을 때 사용합니다. 이미지
+            편집 생성으로 배경을 지우면 캐릭터가 재창조되고, 초록색·마젠타색
+            크로마 제거만 사용하면 테두리 잔색이나 내부 색상 손실이 생겼습니다.
+            Skill은 AI 결과를 최종 이미지가 아닌
+            <strong>후보 알파 마스크</strong>로만 사용하도록 제한합니다.
+          </p>
+
+          <div class="callout">
+            <p>
+              <strong>핵심 불변 조건:</strong> 최종 PNG의 RGB는 원본과 픽셀
+              단위로 같아야 하며, 변경할 수 있는 것은 알파 채널뿐입니다.
+            </p>
+          </div>
+
+          <p>
+            <code>scripts/apply_alpha_to_original.py</code>는 원본과 후보의
+            크기, 저장 전후 RGB 일치, 전체 불투명·전체 투명 여부, 캔버스
+            테두리의 실제 투명 영역을 검사합니다. 기존 알파는 새 알파와
+            결합하고, 원본과 후보 파일의 덮어쓰기를 막습니다. 검정·흰색·체크무늬
+            배경 미리보기와 알파 마스크로 테두리와 내부 구멍도 확인합니다.
+          </p>
+
+          <table class="compact">
+            <thead>
+              <tr>
+                <th>발견한 실패</th>
+                <th>최종 반영을 막은 기준</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>검은 배경 제거가 캐릭터의 검은 갑옷까지 삭제</td>
+                <td>
+                  캔버스 경계와 연결된 배경만 우선 제거하고 내부 영역 복원
+                </td>
+              </tr>
+              <tr>
+                <td>흰 배경과 비슷한 장갑이 반투명해짐</td>
+                <td>외부 배경은 유지하되 닫힌 내부 영역의 알파만 교정</td>
+              </tr>
+              <tr>
+                <td>AI 프록시가 원본보다 1px 작거나 외곽선이 이동</td>
+                <td>리사이즈·자동 정렬하지 않고 결과 폐기 후 원본 기반 추출</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h3>5.2 <code>soot-ui-pixel-art</code></h3>
+          <p>
+            기존 <code>hatch-pet</code> Skill에서 픽셀 그리드, 투명도, 상태 간
+            일관성, 실제 크기와 확대 미리보기 검증 원칙만 추출했습니다. 여기에
+            Soot의 어두운 산업형 팔레트, HUD·패널·버튼 유형, 상태별 에셋,
+            나인슬라이스, React·CSS·Phaser의 책임 분리, 1280×720과 모바일 구간의
+            접근성 검증을 추가했습니다.
+          </p>
+
+          <table class="compact">
+            <thead>
+              <tr>
+                <th>실제 적용</th>
+                <th>Skill을 이용한 판단과 수정</th>
+                <th>검증</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>조작 가이드</td>
+                <td>상시 문구를 <code>?</code> 버튼과 3×3 모달로 분리</td>
+                <td>Playwright로 배치·닫기 경로·텍스트 넘침 확인</td>
+              </tr>
+              <tr>
+                <td>픽셀 UI 상태</td>
+                <td>27×27 원형 버튼의 기본·호버 외곽선을 별도 제작</td>
+                <td>실제 크기와 확대 화면 비교</td>
+              </tr>
+              <tr>
+                <td>보스 HUD</td>
+                <td>
+                  체력 숫자는 숨기고 접근성용 <code>meter</code> 속성은 유지
+                </td>
+                <td>SSR 결과와 E2E 위치 검사</td>
+              </tr>
+              <tr>
+                <td>2스테이지 포탈</td>
+                <td>
+                  새 이미지 대신 선택적 <code>portalTint</code>로 대비만 개선
+                </td>
+                <td>브라우저, 설정 테스트, 타입·lint·build</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <p>
+            두 Skill은 단순한 프롬프트 모음이 아닙니다. 반복 실패를 분석해
+            <strong
+              >AI 추론 → 결정적 스크립트 처리 → 시각 검수 → 게임 적용</strong
+            >
+            순서와 통과 조건을 도구화한 결과입니다.
+          </p>
+        </section>
+
+        <section class="chapter-start" aria-labelledby="audio">
+          <h2 id="audio">6. 생성형 오디오 운용</h2>
+          <p class="lead">
+            Lyria로 음악을 만드는 것보다 후보를 추적하고 사람이 비교·선택할 수
+            있게 만드는 데 더 많은 자동화를 적용했습니다.
+          </p>
+
+          <h3>6.1 프롬프트와 테이크 추적</h3>
+          <p>
+            스테이지 정서를 조성, 악기, 음색, BPM, 반복 구조로 작성하고 큐별
+            프롬프트 버전과 전체 테이크 번호를 함께 관리했습니다. 5스테이지는
+            프롬프트 A23, 전체 69번 테이크까지 진행했습니다. 각 후보의 프롬프트,
+            측정값, 반려 이유는 <code>docs/audio-assets.md</code>에
+            기록했습니다.
+          </p>
+
+          <div class="prompt prompt--quote">
+            <p lang="en">
+              dark orchestral, low unsteady cello and viola, distorted electric
+              guitar arpeggio, detuned and grinding, sparse slow drum kit,
+              familiar but wrong, purely instrumental, loopable background bed,
+              88 BPM, D minor
+            </p>
+          </div>
+
+          <h3>6.2 측정은 비교 자료, 채택은 청취</h3>
+          <p>
+            <code>tools/audio-check.html</code>은 전체 후보를 한 화면에서 A/B
+            재생할 수 있게 만들었습니다. “추천”은 측정 기준을 통과했다는 의미일
+            뿐이며, 기본 화면은 “전체”입니다. 대역 목표가 사람의 평가를 예측하지
+            못한 뒤에는 프롬프트를 고정하고 테이크 수를 늘려 두 사람이 직접 듣고
+            선택했습니다.
+          </p>
+
+          <table class="compact">
+            <thead>
+              <tr>
+                <th>자동화</th>
+                <th>역할</th>
+                <th>사람이 유지한 판단</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>measure-track.mjs</code></td>
+                <td>페이드, 대역, BPM, 이음매 측정</td>
+                <td>측정값이 정서와 곡의 완성도를 대신하지 않음</td>
+              </tr>
+              <tr>
+                <td><code>audio-check.html</code></td>
+                <td>후보 전체 비교와 A/B 청취</td>
+                <td>자동 탈락 후보도 다시 듣고 채택 가능</td>
+              </tr>
+              <tr>
+                <td><code>make-loop.mjs</code></td>
+                <td>페이드·크로스페이드와 루프 렌더</td>
+                <td>실제 이음매를 듣고 구간과 곡선 확정</td>
+              </tr>
+              <tr>
+                <td><code>make-gunshot.mjs</code></td>
+                <td>총성 효과음 결정적 합성</td>
+                <td>게임에서의 음량과 타격감 검수</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <p>
+            예상과 측정이 틀린 사례도 기록했습니다. 밝은 도시의 기준을 지하도시
+            큐에 적용하자 모든 후보가 탈락했고, 총소리와 충돌한다고 가정한
+            1~4kHz도 실제 총성의 중심 대역과 달랐습니다. 두 항목은 합격 판정에서
+            제거하고 정보로만 표시했습니다. 5스테이지 루프에서는 등파워
+            크로스페이드가 이음매를 1.6dB 키워 실제 렌더 청취 후 리니어 곡선을
+            선택했습니다.
+          </p>
+
+          <h3>6.3 게임 상태와 효과음의 시간축 연결</h3>
+          <p>
+            2스테이지 보스의 스캔은 시작음, 반복음, 타깃 고정음, 종료음으로
+            나누고 취소·씬 전환 시 반복음을 정리했습니다. 3스테이지 보스의
+            내려찍기는 예고, 도약·충돌, 착지 잔향을 각 상태 전이에 맞췄습니다.
+            발소리는 스테이지 재질별로 변주하되 공중전인 5스테이지에서는 끄고,
+            방패·무적 판정은 일반 피격음과 다른 이벤트로 구분했습니다.
+          </p>
+        </section>
+
+        <section class="chapter-start" aria-labelledby="workflow">
+          <h2 id="workflow">7. 에이전트 운용과 Human-in-the-loop</h2>
+          <h3>7.1 작업 기준을 도구 바깥에 고정</h3>
+          <p>
+            AI를 저장소에 접근하는 작업자로 사용했기 때문에 작업 범위와 문체,
+            안전 규칙을 <code>AGENTS.md</code>에 기록했습니다. 코드 주석은
+            한국어, 식별자와 로그는 영어로 유지하고, 새 코드는 주변 코드
+            스타일을 따르게 했습니다. 승인·병합처럼 되돌리기 어려운 동작은
+            사람의 요청 없이 수행하지 않도록 고정했습니다.
+          </p>
+
+          <h3>7.2 작업 분리와 실제 실행</h3>
+          <p>
+            오디오, 레벨, 무기, 문서 작업은 워크트리로 분리했습니다. 서로
+            독립적인 스테이지 러프 배치는 같은 <code>level-design</code> 기준을
+            받은 서브 에이전트에 나누고 결과를 사람이 비교했습니다. 정적
+            설정만으로 판단하기 어려운 배치는 에이전트가 개발 서버를 열고 어드민
+            이동과 무적 모드로 직접 확인했습니다.
+          </p>
+
+          <h3>7.3 공통 작업 흐름</h3>
+          <ol>
+            <li>요구와 기획 의도를 기능 단위로 분해</li>
+            <li>관련 코드, 설정, 커밋에서 실제 동작 경로 확인</li>
+            <li>대안, 위험 요소, 테스트 항목을 AI와 검토</li>
+            <li>코드·에셋·오디오를 수정하고 자동 검사 실행</li>
+            <li>팀원이 실제 플레이, 화면, 청취로 최종 검수</li>
+            <li>통과한 내용만 커밋과 문서에 반영</li>
+          </ol>
+
+          <div class="principle-grid">
+            <div class="card">
+              <span class="card__label">AI</span>
+              <strong>탐색과 반복을 가속</strong>
+              <p>
+                호출 경로 탐색, 대안 제시, 초안 생성, 수치 계산, 반복 처리,
+                테스트 항목 도출을 맡았습니다.
+              </p>
+            </div>
+            <div class="card">
+              <span class="card__label">Human</span>
+              <strong>맥락과 최종 책임 유지</strong>
+              <p>
+                기획 목표, 시각·청각 품질, 승인·병합, 최종 리소스 채택을 직접
+                결정했습니다.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section aria-labelledby="limits">
+          <h2 id="limits">8. 한계와 대응</h2>
+          <table class="compact">
+            <thead>
+              <tr>
+                <th>확인된 한계</th>
+                <th>대응 원칙</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>모호한 지시를 임의로 해석해 무관한 브랜치를 병합</td>
+                <td>되돌리기 어려운 동작은 해석이 갈리면 실행 전에 질문</td>
+              </tr>
+              <tr>
+                <td>요청하지 않은 PR 승인과 게시 코멘트 수정</td>
+                <td>승인·병합·외부 게시물 수정은 사람의 명시적 권한 유지</td>
+              </tr>
+              <tr>
+                <td>코드상 같은 값이라는 이유로 실제 화면 차이를 부정</td>
+                <td>
+                  화면에서 확인 가능한 항목은 플레이 캡처와 육안 검수 우선
+                </td>
+              </tr>
+              <tr>
+                <td>이미지 생성이 원본 픽셀과 장식을 재창조</td>
+                <td>AI는 마스크·초안만 생성하고 원본 보존은 스크립트로 검증</td>
+              </tr>
+              <tr>
+                <td>한 번의 코드 리뷰가 총구·발사음 문제를 놓침</td>
+                <td>관점별 탐색과 독립 반증 단계로 리뷰 구조 변경</td>
+              </tr>
+              <tr>
+                <td>측정값이 음악에 대한 사람의 선호를 예측하지 못함</td>
+                <td>측정은 비교 정보로만 사용하고 전체 후보를 사람이 청취</td>
+              </tr>
+              <tr>
+                <td>같은 오디오 측정을 브라우저와 스크립트에 중복 구현</td>
+                <td>측정 구현을 한 모듈로 통합하고 UI는 결과만 표시</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section class="chapter-start" aria-labelledby="licenses">
+          <h2 id="licenses">9. 결과물과 외부 에셋의 구분</h2>
+          <table class="compact">
+            <thead>
+              <tr>
+                <th>구분</th>
+                <th>출처와 처리</th>
+                <th>최종 사용 기준</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>이미지</td>
+                <td>
+                  ChatGPT 이미지 생성·SpriteCook 초안을 Aseprite와 전용 Skill로
+                  가공
+                </td>
+                <td>크기, 프레임, 좌표, 레이어, 투명도 검수 후 적용</td>
+              </tr>
+              <tr>
+                <td>BGM</td>
+                <td>Gemini 앱의 Lyria 후보를 루프 편집하고 Ogg/Opus로 변환</td>
+                <td>프롬프트·테이크를 기록하고 사람이 청취해 채택</td>
+              </tr>
+              <tr>
+                <td>효과음</td>
+                <td>Kenney CC0 에셋 또는 저장소 스크립트로 자체 합성</td>
+                <td>큐별 출처를 <code>docs/audio-assets.md</code>에 기록</td>
+              </tr>
+              <tr>
+                <td>오픈소스</td>
+                <td>
+                  Phaser, React, Zustand, Vite, TypeScript, Vitest, Playwright
+                  등
+                </td>
+                <td>설치된 패키지의 버전과 MIT·Apache-2.0 라이선스 확인</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <p>
+            Kenney 효과음 팩 3종은 <code>License.txt</code>에서 CC0 1.0을
+            확인했고, 표기 의무는 없지만 크레딧을 남깁니다. Lyria는 소비자용
+            Gemini 앱에서 생성했으며, 특정 아티스트나 곡을 모방하는 이름은
+            프롬프트에 넣지 않았습니다. 생성 트랙의 SynthID 워터마크는 제거하지
+            않았습니다. 이미지 생성물과 외부 에셋의 이용 범위는 제출 전 해커톤
+            규정과 각 서비스 약관을 다시 확인합니다.
+          </p>
+        </section>
+
+        <section aria-labelledby="conclusion">
+          <h2 id="conclusion">10. 활용 효과와 최종 정리</h2>
+          <div class="case-grid">
+            <div class="card">
+              <strong>탐색 비용 절감</strong>
+              <p>
+                스테이지, 적, 보스, 배경과 오디오의 여러 방향을 빠르게
+                비교했습니다.
+              </p>
+            </div>
+            <div class="card">
+              <strong>구현 근거 명확화</strong>
+              <p>
+                기획 문장을 상태, 이벤트, 좌표, 테스트 조건으로 변환했습니다.
+              </p>
+            </div>
+            <div class="card">
+              <strong>반복 절차 표준화</strong>
+              <p>
+                투명화, UI 제작, 리뷰와 오디오 측정을 Skill·스크립트로
+                고정했습니다.
+              </p>
+            </div>
+            <div class="card">
+              <strong>검증 가능성 확보</strong>
+              <p>
+                코드·커밋·에셋 해시·테이크 기록과 자동 테스트를 근거로
+                남겼습니다.
+              </p>
+            </div>
+          </div>
+
+          <p class="closing">
+            본 프로젝트에서 AI는 게임을 자동으로 완성하는 도구가 아니라,
+            개발자가 정한 게임 규칙을 빠르게 구체화하고 반복 검증하는 제작 보조
+            도구였습니다. 판단 기준은 저장소 규약과 Skill에 고정했고, 생성
+            결과는 결정적 스크립트와 자동 테스트로 검사했습니다. 최종 코드,
+            도트, 음악과 플레이 경험은 팀원이 실제 게임에서 확인한 뒤
+            채택했습니다.
+          </p>
+        </section>
+      </article>
+    </main>
+  </body>
+</html>
