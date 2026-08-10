@@ -59,6 +59,25 @@ function countIdealHoundOrbs(weapon: WeaponConfig) {
   return orbCount;
 }
 
+function getIdealArchitectDefeatSeconds(weapon: WeaponConfig) {
+  const boss = BOSS_COMBAT_CONFIGS['returning-architect'];
+  const { pattern } = boss;
+  const hitsPerShot = weapon.pierce + 1;
+  const damagePerHit =
+    weapon.damage *
+    (weapon.id === 'rail-rifle' ? pattern.railRifleDamageMultiplier : 1);
+  // 마지막 코어 구간은 피해가 2배이므로 같은 체력을 절반의 사격량으로 깎음.
+  const effectiveHealth =
+    boss.maxHealth *
+    (1 -
+      pattern.salvationHealthRatio +
+      pattern.salvationHealthRatio / pattern.salvation.coreDamageMultiplier);
+  const sustainedDamagePerSecond =
+    (damagePerHit * hitsPerShot * 1000) / weapon.fireInterval;
+
+  return effectiveHealth / sustainedDamagePerSecond;
+}
+
 describe('boss combat configuration', () => {
   it('gives the city warden a readable laser-cannon pattern', () => {
     const { pattern } = BOSS_COMBAT_CONFIGS['city-warden'];
@@ -173,7 +192,8 @@ describe('boss combat configuration', () => {
   });
 
   it('gives the returning architect a three-pattern final phase', () => {
-    const { pattern } = BOSS_COMBAT_CONFIGS['returning-architect'];
+    const boss = BOSS_COMBAT_CONFIGS['returning-architect'];
+    const { pattern } = boss;
 
     expect(pattern.type).toBe('architect');
     if (pattern.type !== 'architect') {
@@ -186,6 +206,7 @@ describe('boss combat configuration', () => {
     expect(pattern.wings.bulletCount).toBeGreaterThanOrEqual(7);
     expect(pattern.eye.splitBulletCount).toBe(8);
     expect(pattern.salvation.coreDamageMultiplier).toBeGreaterThan(1);
+    expect(pattern.railRifleDamageMultiplier).toBeLessThan(1);
     expect(BOSS_COMBAT_CONFIGS['returning-architect'].texture).toBe(
       'stage-5-boss',
     );
@@ -213,5 +234,15 @@ describe('boss combat configuration', () => {
       coreExposed: [{ frame: '9' }],
       death: [{ frame: '12' }],
     });
+  });
+
+  it('기본 총과 레일건의 최종 보스 지속 명중 시간을 150초와 120초로 맞춘다', () => {
+    expect(getIdealArchitectDefeatSeconds(SMG_WEAPON_CONFIG)).toBeCloseTo(
+      150,
+      1,
+    );
+    expect(
+      getIdealArchitectDefeatSeconds(RAIL_RIFLE_WEAPON_CONFIG),
+    ).toBeCloseTo(120, 1);
   });
 });

@@ -211,13 +211,16 @@ export const BOSS_COMBAT_CONFIGS = {
       bodyColor: 0x46306f,
       accentColor: 0xf0c8ff,
     },
-    maxHealth: 1200,
+    // 마지막 10% 코어의 2배 피해까지 포함한 유효 체력은 약 15,000임.
+    maxHealth: 15_790,
     aggroRadius: 1900,
     aggroIndicatorColor: 0xd89cff,
     contactDamage: 32,
     contactDamageCooldown: 520,
     pattern: {
       type: 'architect',
+      // 관통 3회 적중을 합쳐도 한 발의 총 피해가 95가 되도록 방어함.
+      railRifleDamageMultiplier: 19 / 45,
       enrageHealthRatio: 0.5,
       salvationHealthRatio: 0.1,
       firstAttackDelay: 1000,

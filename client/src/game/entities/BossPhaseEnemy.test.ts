@@ -2,6 +2,10 @@
 
 import type Phaser from 'phaser';
 import { describe, expect, it, vi } from 'vitest';
+import {
+  RAIL_RIFLE_WEAPON_CONFIG,
+  SMG_WEAPON_CONFIG,
+} from '@/game/config/weaponConfig';
 import { ArchitectBossEnemy } from '@/game/entities/ArchitectBossEnemy';
 import { InfernalBossEnemy } from '@/game/entities/InfernalBossEnemy';
 
@@ -43,6 +47,7 @@ function createArchitectBoss(overrides: Record<string, unknown> = {}) {
     maxHealth: 1_200,
     config: {
       pattern: {
+        railRifleDamageMultiplier: 19 / 45,
         enrageHealthRatio: 0.5,
         salvationHealthRatio: 0.1,
         salvation: { coreDamageMultiplier: 2 },
@@ -89,6 +94,31 @@ describe('phase boss introductions', () => {
     expect(architect.takeDamage(1_000)).toBe(false);
     expect(architect.currentHealth).toBe(600);
     expect(architect.takeProjectileDamage(100, 0, 0).applied).toBe(false);
+  });
+
+  it('최종 보스 장갑은 레일건 피해만 감소시킨다', () => {
+    const smgTarget = createArchitectBoss();
+    const railTarget = createArchitectBoss();
+
+    smgTarget.takeProjectileDamage(
+      SMG_WEAPON_CONFIG.damage,
+      0,
+      0,
+      SMG_WEAPON_CONFIG.id,
+    );
+    railTarget.takeProjectileDamage(
+      RAIL_RIFLE_WEAPON_CONFIG.damage,
+      0,
+      0,
+      RAIL_RIFLE_WEAPON_CONFIG.id,
+    );
+
+    expect(smgTarget.currentHealth).toBe(
+      smgTarget.maxHealth - SMG_WEAPON_CONFIG.damage,
+    );
+    expect(railTarget.currentHealth).toBeCloseTo(
+      railTarget.maxHealth - RAIL_RIFLE_WEAPON_CONFIG.damage * (19 / 45),
+    );
   });
 
   it('forces each phase-two pattern after the transition', () => {

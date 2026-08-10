@@ -139,6 +139,8 @@ export type InfernalBossPatternConfig = {
 /** Stage-5 aerial bullet patterns and the final core-exposure sequence. */
 export type ArchitectBossPatternConfig = {
   type: 'architect';
+  /** 레일건이 최종 보스의 장갑에 명중했을 때 적용되는 피해 배율. */
+  railRifleDamageMultiplier: number;
   enrageHealthRatio: number;
   salvationHealthRatio: number;
   firstAttackDelay: number;

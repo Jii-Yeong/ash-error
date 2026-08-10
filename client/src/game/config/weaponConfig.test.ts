@@ -82,7 +82,7 @@ describe('weapon progression', () => {
       'alley-hunter': 30,
       'underground-guardian': 88,
       'infernal-executioner': 11,
-      'returning-architect': 13,
+      'returning-architect': 164,
     } satisfies Record<BossVariant, number>;
 
     Object.entries(BOSS_COMBAT_CONFIGS).forEach(([variant, boss]) => {

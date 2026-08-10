@@ -14,7 +14,10 @@ import type { BossArenaBounds } from '@/game/config/bossArena';
 import { GAME_HEIGHT } from '@/game/config/gameDimensions';
 import { ArchitectBossView } from '@/game/entities/ArchitectBossView';
 import { BossEnemy } from '@/game/entities/BossEnemy';
-import type { EnemyProjectileAttack } from '@/game/entities/Enemy';
+import type {
+  EnemyProjectileAttack,
+  ProjectileDamageResult,
+} from '@/game/entities/Enemy';
 import { gameEvents } from '@/game/events/gameEvents';
 import type { BossPhase } from '@/game/state/bossPhase';
 import { BossProjectileField } from '@/game/systems/BossProjectileField';
@@ -137,6 +140,21 @@ export class ArchitectBossEnemy extends BossEnemy<ArchitectBossPatternConfig> {
 
   override get playsOwnDeathAnimation() {
     return Boolean(this.sprite);
+  }
+
+  override takeProjectileDamage(
+    amount: number,
+    hitX: number,
+    hitY: number,
+    weaponId?: string,
+  ): ProjectileDamageResult {
+    return super.takeProjectileDamage(
+      weaponId === 'rail-rifle'
+        ? amount * this.pattern.railRifleDamageMultiplier
+        : amount,
+      hitX,
+      hitY,
+    );
   }
 
   override refreshAtlasSprite() {
