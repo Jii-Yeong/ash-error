@@ -49,6 +49,9 @@ const DEATH_FADE_MS = 600;
  *   running away from the boss to resist the flow.
  */
 export class PurifierBossEnemy extends BossEnemy<PurifierBossPatternConfig> {
+  override readonly usesHitFlash: boolean = true;
+  override readonly hitFlashAlpha: number = 0.72;
+
   private readonly telegraph: Phaser.GameObjects.Graphics;
   private readonly vacuumEffect: Phaser.GameObjects.Sprite;
   private readonly waveCleanups = new CleanupRegistry();
@@ -253,7 +256,6 @@ export class PurifierBossEnemy extends BossEnemy<PurifierBossPatternConfig> {
 
   private updateRecover(time: number, target: Phaser.Physics.Arcade.Sprite) {
     this.telegraph.clear();
-    this.clearTint();
     this.moveToPreferredDistance(time, target);
     this.updateLocomotionAnimation();
 
@@ -482,7 +484,6 @@ export class PurifierBossEnemy extends BossEnemy<PurifierBossPatternConfig> {
         ? this.pattern.enragedRecoveryDuration
         : this.pattern.recoveryDuration);
     this.telegraph.clear();
-    this.clearTint();
   }
 
   private spawnShockwave(direction: number) {
