@@ -4,7 +4,7 @@ import { gameEvents } from '@/game/events/gameEvents';
 export const CREDITS_COPY = {
   title: 'ASH//ERROR',
   subtitle: 'CREDITS',
-  body: `A GAME BY\n영원\n\nDEVELOPMENT\nJii-Yeong\nGame Design · Programming · Visual Art\n\nAUDIO & LEVEL DESIGN\ndonkeeman\nAudio Design · Level Design · Weapon Presentation\n\nTHIRD-PARTY ASSETS\nMusic generated with Google Lyria via Gemini · gemini.google.com\nSound effects by Kenney · kenney.nl · CC0 1.0`,
+  body: `A GAME BY\n영원\n\nDEVELOPMENT\nJii-Yeong\nGame Design, Programming, Visual Art\n\nAUDIO & LEVEL DESIGN\ndonkeeman\nAudio Design, Level Design, Weapon Presentation\n\nTHIRD-PARTY ASSETS\nMusic generated with Google Lyria via Gemini\ngemini.google.com\nSound effects by Kenney\nkenney.nl, CC0 1.0`,
   skip: 'PRESS ENTER / ESC / CLICK TO RETURN',
 } as const;
 
