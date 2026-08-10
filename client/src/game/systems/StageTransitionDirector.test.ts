@@ -88,4 +88,23 @@ describe('StageTransitionDirector', () => {
     expect(player.setPosition).toHaveBeenCalledWith(2_560, 680);
     expect(centerOnX).toHaveBeenCalledWith(2_560);
   });
+
+  it('강하 중 직전 무기 자세를 플레이어 위치에 유지한다', () => {
+    const aimWeapon = vi.fn();
+    const director = Object.assign(
+      Object.create(StageTransitionDirector.prototype),
+      {
+        descentStarted: true,
+        options: {
+          player: { x: 640, y: 360, flipX: true },
+          aimWeapon,
+        },
+      },
+    ) as StageTransitionDirector;
+
+    director.syncDescentWeaponPose();
+
+    expect(aimWeapon).toHaveBeenCalledOnce();
+    expect(aimWeapon.mock.calls[0]?.[0]).toMatchObject({ x: 520, y: 360 });
+  });
 });

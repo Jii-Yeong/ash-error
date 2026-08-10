@@ -281,10 +281,13 @@ export class GameScene extends Phaser.Scene {
       this.cameras.main,
     ) as Phaser.Math.Vector2;
     this.syncPlayerHalo(aimPoint.x);
+    if (this.phase === 'transitioning') {
+      this.stageTransitionDirector.syncDescentWeaponPose();
+      return;
+    }
     if (
       this.phase === 'dead' ||
-      this.phase === 'ending' ||
-      this.phase === 'transitioning'
+      this.phase === 'ending'
     ) {
       return;
     }

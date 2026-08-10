@@ -91,6 +91,7 @@ export class StageTransitionDirector {
     const body = this.options.player.body as Phaser.Physics.Arcade.Body;
     const fallVelocity = body.velocity.y;
     this.options.prepare();
+    this.syncDescentWeaponPose();
 
     body.checkCollision.none = true;
     body.setCollideWorldBounds(false);
@@ -200,15 +201,7 @@ export class StageTransitionDirector {
 
   private playDescentLookAround() {
     this.options.player.setVelocity(0, 0);
-    const holdWeaponFacing = (faceLeft: boolean) => {
-      this.options.aimWeapon(
-        new Phaser.Math.Vector2(
-          this.options.player.x + (faceLeft ? -120 : 120),
-          this.options.player.y,
-        ),
-      );
-    };
-    holdWeaponFacing(this.options.player.flipX);
+    this.syncDescentWeaponPose();
 
     const facings = [true, false, true, false];
     facings.forEach((faceLeft, index) => {
@@ -216,7 +209,7 @@ export class StageTransitionDirector {
         DESCENT_LOOK_INTERVAL * (index + 1),
         () => {
           this.options.player.setFlipX(faceLeft);
-          holdWeaponFacing(faceLeft);
+          this.syncDescentWeaponPose();
         },
       );
     });
@@ -229,6 +222,21 @@ export class StageTransitionDirector {
           this.complete(this.pendingNextStageIndex),
         );
       },
+    );
+  }
+
+  /** 강하 중 직전 장착 무기와 양팔을 플레이어 위치에 계속 붙여 둠. */
+  syncDescentWeaponPose() {
+    if (!this.descentStarted) {
+      return;
+    }
+
+    const faceLeft = this.options.player.flipX;
+    this.options.aimWeapon(
+      new Phaser.Math.Vector2(
+        this.options.player.x + (faceLeft ? -120 : 120),
+        this.options.player.y,
+      ),
     );
   }
 
