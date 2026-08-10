@@ -237,13 +237,13 @@ describe('boss combat configuration', () => {
     });
   });
 
-  it('기본 총과 레일건의 최종 보스 지속 명중 시간을 150초와 120초로 맞춘다', () => {
+  it('기본 총과 레일건의 최종 보스 지속 명중 시간을 75초와 60초로 맞춘다', () => {
     expect(getIdealArchitectDefeatSeconds(SMG_WEAPON_CONFIG)).toBeCloseTo(
-      150,
+      75,
       1,
     );
     expect(
       getIdealArchitectDefeatSeconds(RAIL_RIFLE_WEAPON_CONFIG),
-    ).toBeCloseTo(120, 1);
+    ).toBeCloseTo(60, 1);
   });
 });

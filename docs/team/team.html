@@ -1,0 +1,798 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light" />
+    <title>영원 | ASH//ERROR 팀 소개 및 담당 영역</title>
+    <style>
+      :root {
+        --ink: #1d252b;
+        --muted: #637079;
+        --line: #d7dfe3;
+        --paper: #ffffff;
+        --canvas: #e9eef0;
+        --accent: #2f766d;
+        --accent-dark: #164c47;
+        --accent-soft: #e7f2ef;
+        --surface: #f6f8f9;
+      }
+
+      @page {
+        size: A4 portrait;
+        margin: 14mm 15mm 17mm;
+
+        @bottom-left {
+          color: #78838a;
+          content: "ASH//ERROR | 팀 소개 및 담당 영역";
+          font-family: "Noto Sans KR", "Malgun Gothic", sans-serif;
+          font-size: 7.5pt;
+        }
+
+        @bottom-right {
+          color: #78838a;
+          content: counter(page) " / " counter(pages);
+          font-family: "Noto Sans KR", "Malgun Gothic", sans-serif;
+          font-size: 7.5pt;
+        }
+      }
+
+      @page cover {
+        size: A4 portrait;
+        margin: 14mm 15mm 17mm;
+
+        @bottom-left, @bottom-right {
+          content: none;
+        }
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        background: var(--canvas);
+        color: var(--ink);
+        font-size: 16px;
+        print-color-adjust: exact;
+        -webkit-print-color-adjust: exact;
+      }
+
+      body {
+        margin: 0;
+        font-family: Pretendard, "Noto Sans KR", "Apple SD Gothic Neo",
+          "Malgun Gothic", sans-serif;
+        line-height: 1.58;
+        word-break: keep-all;
+        overflow-wrap: anywhere;
+      }
+
+      .document {
+        width: min(calc(100% - 32px), 210mm);
+        margin: 32px auto;
+        padding: 15mm;
+        background: var(--paper);
+        box-shadow: 0 12px 36px rgb(30 44 50 / 14%);
+      }
+
+      .cover {
+        min-height: 260mm;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        page: cover;
+        break-after: page;
+      }
+
+      .eyebrow {
+        margin: 0 0 7mm;
+        color: var(--accent);
+        font-size: 9pt;
+        font-weight: 800;
+        letter-spacing: 0.16em;
+      }
+
+      .cover h1 {
+        max-width: 150mm;
+        margin: 0;
+        color: #142229;
+        font-size: 29pt;
+        line-height: 1.18;
+        letter-spacing: -0.045em;
+      }
+
+      .cover__rule {
+        width: 30mm;
+        height: 1mm;
+        margin: 9mm 0;
+        border: 0;
+        background: var(--accent);
+      }
+
+      .cover__summary {
+        max-width: 145mm;
+        margin: 0;
+        color: #46535b;
+        font-size: 12pt;
+        line-height: 1.72;
+      }
+
+      .cover__meta {
+        display: grid;
+        grid-template-columns: 24mm 1fr;
+        gap: 2mm 5mm;
+        margin: 23mm 0 0;
+        font-size: 9pt;
+      }
+
+      .cover__meta dt {
+        color: var(--muted);
+        font-weight: 650;
+      }
+
+      .cover__meta dd {
+        margin: 0;
+        font-weight: 750;
+      }
+
+      h1,
+      h2,
+      h3 {
+        break-after: avoid-page;
+        color: #17252b;
+        line-height: 1.3;
+      }
+
+      h2 {
+        margin: 10mm 0 4mm;
+        padding-bottom: 2mm;
+        border-bottom: 0.35mm solid var(--line);
+        font-size: 17pt;
+      }
+
+      h3 {
+        margin: 6mm 0 2.5mm;
+        color: var(--accent-dark);
+        font-size: 11.5pt;
+      }
+
+      p,
+      li,
+      td,
+      th,
+      dt,
+      dd {
+        font-size: 9.2pt;
+        orphans: 3;
+        widows: 3;
+      }
+
+      p {
+        margin: 0 0 3mm;
+      }
+
+      ul {
+        margin: 1.4mm 0 3.5mm;
+        padding-left: 5.5mm;
+      }
+
+      li + li {
+        margin-top: 1mm;
+      }
+
+      code {
+        padding: 0.14em 0.34em;
+        border-radius: 0.7mm;
+        background: #eef2f3;
+        font-family: "SFMono-Regular", Consolas, monospace;
+        font-size: 0.88em;
+      }
+
+      table {
+        width: 100%;
+        margin: 3mm 0 5mm;
+        border-collapse: collapse;
+      }
+
+      thead {
+        display: table-header-group;
+      }
+
+      tr {
+        break-inside: avoid-page;
+      }
+
+      th,
+      td {
+        padding: 1.8mm 2mm;
+        border: 0.25mm solid var(--line);
+        text-align: left;
+        vertical-align: top;
+      }
+
+      th {
+        background: var(--accent-soft);
+        color: var(--accent-dark);
+        font-weight: 750;
+      }
+
+      tbody tr:nth-child(even) td {
+        background: #fafbfc;
+      }
+
+      .lead {
+        max-width: 172mm;
+        margin-bottom: 6mm;
+        color: #3f4e56;
+        font-size: 10.4pt;
+        line-height: 1.68;
+      }
+
+      .summary-cards {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 4mm;
+        margin: 5mm 0 7mm;
+      }
+
+      .summary-card {
+        padding: 5mm;
+        border: 0.3mm solid var(--line);
+        border-radius: 1.5mm;
+        background: var(--surface);
+        break-inside: avoid-page;
+      }
+
+      .summary-card__number {
+        display: block;
+        margin-bottom: 1.5mm;
+        color: var(--accent);
+        font-family: "SFMono-Regular", Consolas, monospace;
+        font-size: 8pt;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+      }
+
+      .summary-card h3 {
+        margin: 0 0 2mm;
+        color: #18312f;
+        font-size: 14pt;
+      }
+
+      .summary-card p {
+        margin-bottom: 0;
+        color: #48555d;
+        font-size: 8.8pt;
+      }
+
+      .team-table th:first-child,
+      .team-table td:first-child {
+        width: 15%;
+        white-space: nowrap;
+      }
+
+      .member-section {
+        break-before: page;
+      }
+
+      .member-header {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 6mm;
+        align-items: end;
+        margin-bottom: 7mm;
+        padding-bottom: 4mm;
+        border-bottom: 0.7mm solid var(--accent);
+      }
+
+      .member-header h2 {
+        margin: 0;
+        padding: 0;
+        border: 0;
+        font-size: 22pt;
+      }
+
+      .member-header p {
+        max-width: 90mm;
+        margin: 0;
+        color: var(--muted);
+        font-size: 9.2pt;
+        text-align: right;
+      }
+
+      .role-columns {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 4mm;
+        align-items: stretch;
+      }
+
+      .role-block {
+        display: flex;
+        flex-direction: column;
+        margin: 0;
+        padding: 3.5mm 4mm;
+        border: 0.25mm solid var(--line);
+        border-radius: 1.2mm;
+        background: #fff;
+        break-inside: avoid;
+      }
+
+      .role-block h3 {
+        margin-top: 0;
+      }
+
+      .role-block ul {
+        margin-bottom: 2.5mm;
+      }
+
+      .collaboration {
+        break-before: page;
+      }
+
+      .collaboration-table {
+        table-layout: fixed;
+      }
+
+      .collaboration-table th:nth-child(1) {
+        width: 32%;
+      }
+
+      .collaboration-table th:nth-child(2) {
+        width: 15%;
+      }
+
+      @media screen and (max-width: 760px) {
+        .document {
+          width: 100%;
+          margin: 0;
+          padding: 24px 20px 48px;
+          box-shadow: none;
+        }
+
+        .cover {
+          min-height: 82vh;
+        }
+
+        .summary-cards {
+          grid-template-columns: 1fr;
+        }
+
+        .member-header {
+          grid-template-columns: 1fr;
+        }
+
+        .member-header p {
+          text-align: left;
+        }
+
+        .role-columns {
+          grid-template-columns: 1fr;
+        }
+
+        table {
+          display: block;
+          overflow-x: auto;
+        }
+      }
+
+      @media print {
+        html,
+        body {
+          background: var(--paper);
+        }
+
+        .document {
+          width: auto;
+          margin: 0;
+          padding: 0;
+          box-shadow: none;
+        }
+
+        a {
+          color: inherit;
+          text-decoration: none;
+        }
+
+        .role-block li {
+          font-size: 8.3pt;
+          line-height: 1.48;
+        }
+
+        .role-block h3 {
+          font-size: 10.5pt;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="document">
+      <header class="cover">
+        <p class="eyebrow">ASH//ERROR</p>
+        <h1>팀 소개 및 담당 영역</h1>
+        <hr class="cover__rule" />
+        <p class="cover__summary">
+          영원은 서지영과 이혜원으로 구성된 2인 팀입니다. 두 팀원이 맡은 역할과
+          담당 영역, 협업 방식을 정리했습니다.
+        </p>
+        <dl class="cover__meta">
+          <dt>프로젝트</dt>
+          <dd>ASH//ERROR</dd>
+          <dt>팀명</dt>
+          <dd>영원</dd>
+          <dt>팀 구성</dt>
+          <dd>서지영, 이혜원</dd>
+        </dl>
+      </header>
+
+      <section id="overview">
+        <h2>팀 구성</h2>
+        <p class="lead">
+          영원은 서지영과 이혜원으로 구성된 2인 개발팀입니다. 서지영은 게임의
+          핵심 플레이 시스템과 전투 콘텐츠, 비주얼 적용을 중심으로 구현했고,
+          이혜원은 오디오 제작 및 기술 파이프라인, 레벨 디자인과 무기 연출을
+          중심으로 완성도를 높였습니다.
+        </p>
+
+        <div class="summary-cards">
+          <article class="summary-card">
+            <span class="summary-card__number">TEAM MEMBER 01</span>
+            <h3>서지영</h3>
+            <p>
+              게임플레이 시스템, 적과 보스 전투, 스테이지 진행과 컷신,
+              스프라이트와 UI 적용, 게임플레이 회귀 검증을 담당했습니다.
+            </p>
+          </article>
+          <article class="summary-card">
+            <span class="summary-card__number">TEAM MEMBER 02</span>
+            <h3>이혜원</h3>
+            <p>
+              오디오 시스템과 에셋 제작, 레벨과 클리어 흐름 설계, 무기와 팔
+              리그, 설정 UI와 CI 기반 품질 검증을 담당했습니다.
+            </p>
+          </article>
+        </div>
+
+        <table class="team-table" aria-label="팀원별 핵심 역할">
+          <thead>
+            <tr>
+              <th>이름</th>
+              <th>핵심 역할</th>
+              <th>주요 담당 영역</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>서지영</strong></td>
+              <td>게임플레이 시스템, 전투 콘텐츠, 비주얼 구현</td>
+              <td>
+                플레이어, 무기 로직, 적과 보스, 스테이지 진행, 컷신과 엔딩,
+                스프라이트와 UI 적용, 게임플레이 테스트
+              </td>
+            </tr>
+            <tr>
+              <td><strong>이혜원</strong></td>
+              <td>오디오 엔지니어링, 레벨 디자인, 전투 연출</td>
+              <td>
+                BGM과 SFX, 오디오 런타임과 제작 도구, 전투방과 클리어 흐름 설계,
+                무기와 팔 리그, 설정 UI, CI와 품질 검증
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="seo-ji-young" class="member-section">
+        <header class="member-header">
+          <h2>서지영</h2>
+          <p>게임플레이 시스템, 전투 콘텐츠, 비주얼 구현</p>
+        </header>
+
+        <div class="role-columns">
+          <article class="role-block">
+            <h3>핵심 게임 시스템</h3>
+            <ul>
+              <li>
+                Phaser 기반 게임의 초기 구조와 플레이어 이동, 점프, 대시, 피격,
+                사망과 재시작 흐름 구현
+              </li>
+              <li>
+                방 잠금, 적 생성과 처치 집계, 클리어, 포탈 진입, 다중 방과 다중
+                스테이지 진행 구조 설계
+              </li>
+              <li>
+                씬에 집중된 책임을 적 생성, 방 진행, 전투, 스테이지 전환, 에셋
+                로딩 등의 전용 시스템으로 분리
+              </li>
+              <li>
+                관리자 이동과 무적 모드, HUD 상태 연동, 콜드 로드와 와이드 화면
+                대응
+              </li>
+            </ul>
+          </article>
+
+          <article class="role-block">
+            <h3>플레이어, 무기, 전투</h3>
+            <ul>
+              <li>
+                플레이어의 지상과 공중 이동, 스테이지별 모습, 사망과 착지
+                애니메이션 연결
+              </li>
+              <li>
+                총기 4종의 피해, 연사, 산탄, 관통, 반동, 투사체 풀과 무기 획득,
+                드롭, 인벤토리 규칙 구현
+              </li>
+              <li>
+                근접형, 원거리형, 비행형 적의 추적, 공격, 지형 충돌, 구덩이
+                추락, 사망 연출 구현
+              </li>
+              <li>
+                피격 플래시, 공격 예고, 접근 범위, 탄막 명암과 같은 전투 피드백
+                조정
+              </li>
+            </ul>
+          </article>
+
+          <article class="role-block">
+            <h3>적과 보스 콘텐츠</h3>
+            <ul>
+              <li>
+                스테이지 1~5의 일반 적 구성과 스테이지별 전용 적 패턴 구현
+              </li>
+              <li>
+                1스테이지 레이저, 2스테이지 감시와 에너지포, 3스테이지 흡입과
+                내려찍기, 4스테이지 다단계 지옥 보스, 5스테이지 공중 탄막 보스
+                구현
+              </li>
+              <li>
+                보스 페이즈 전환, 무적 구간, 체력 UI, 공격 예고와 사운드 이벤트
+                연결
+              </li>
+              <li>
+                무기별 지속 피해와 보스 상태 시간을 계산해 핵심 패턴 노출 횟수와
+                목표 전투 시간을 회귀 테스트로 고정
+              </li>
+            </ul>
+          </article>
+
+          <article class="role-block">
+            <h3>스테이지 연출과 비주얼 적용</h3>
+            <ul>
+              <li>
+                스크롤 맵, 패럴랙스 배경, 지형, 바닥, 발판 스킨과 스테이지별
+                에셋 선행 로딩 구현
+              </li>
+              <li>
+                플레이어, 일반 적, 보스 아틀라스와 애니메이션 상태를 게임 로직에
+                연결
+              </li>
+              <li>
+                3스테이지 강하와 포위, 4스테이지 화면 파괴, 5스테이지 귀환과
+                회복 엔딩 연출 구현
+              </li>
+              <li>
+                포탈, 타이틀, HUD, 조작 가이드와 SpriteCook 공격 효과의 크기,
+                레이어, 좌표 보정
+              </li>
+            </ul>
+          </article>
+
+          <article class="role-block">
+            <h3>안정화와 검증</h3>
+            <ul>
+              <li>
+                전투, 스테이지, 에셋 로딩 회귀 테스트와 Playwright E2E 시나리오
+                유지
+              </li>
+              <li>
+                배경 선행 로딩, 투사체 풀, 지연 로드로 초기 로딩과 런타임 성능
+                개선
+              </li>
+              <li>
+                실제 플레이에서 발견된 충돌, 사망 연출, 방 조기 클리어, 카메라와
+                화면비 문제 수정
+              </li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      <section id="lee-hye-won" class="member-section">
+        <header class="member-header">
+          <h2>이혜원</h2>
+          <p>오디오 엔지니어링, 레벨 디자인, 전투 연출</p>
+        </header>
+
+        <div class="role-columns">
+          <article class="role-block">
+            <h3>오디오 시스템과 런타임</h3>
+            <ul>
+              <li>
+                게임 이벤트와 오디오 재생을 분리한 <code>AudioDirector</code> 및
+                오디오 이벤트 계약 설계
+              </li>
+              <li>
+                부팅 에셋과 지연 로딩 에셋을 분리하고 현재와 다음 스테이지
+                음악만 준비하는 로딩 전략 구현
+              </li>
+              <li>BGM 루프, 페이드, 볼륨, 재생 상태와 화면 전환 타이밍 연결</li>
+              <li>
+                Ogg/Opus 포맷 통일과 지연 로드 실패 시 폴백 등 배포 환경 안정화
+              </li>
+            </ul>
+          </article>
+
+          <article class="role-block">
+            <h3>BGM과 SFX 제작 및 오디오 QA</h3>
+            <ul>
+              <li>
+                스테이지 정서에 맞춘 생성형 BGM 프롬프트 설계, 후보 생성, 청취와
+                최종 선별
+              </li>
+              <li>
+                루프 구간 편집, 포맷 변환, 라우드니스, 주파수, 이음매 측정과
+                후보 비교 도구 제작
+              </li>
+              <li>
+                CC0 효과음 선별과 라이선스 기록, 총기, 피격, 보스 패턴 효과음
+                자체 합성
+              </li>
+              <li>프롬프트 버전, 테이크 번호, 측정 결과와 채택 근거 문서화</li>
+            </ul>
+          </article>
+
+          <article class="role-block">
+            <h3>레벨 디자인과 전투 동선</h3>
+            <ul>
+              <li>
+                플레이어 점프와 대시 거리, 적 추적 범위를 기준으로 스테이지
+                1~5의 방 배치 재구성
+              </li>
+              <li>
+                발판, 벽, 구덩이, 엄폐와 적 배치를 이용해 학습 구간과 조합
+                전투의 순서 설계
+              </li>
+              <li>
+                3스테이지와 4스테이지의 구덩이와 발판 역할, 방패 적 약점과 추락
+                처리를 공간 설계에 맞춰 보정
+              </li>
+              <li>
+                일반 전투방의 <code>ROOM CLEARED</code> 피드백과 보스 전환
+                연출을 구분
+              </li>
+              <li>
+                5스테이지 마지막 편대와 포탈 사이에 900px 이상의 보스전 정비
+                구간 확보
+              </li>
+            </ul>
+          </article>
+
+          <article class="role-block">
+            <h3>무기 비주얼과 플레이어 팔 리그</h3>
+            <ul>
+              <li>
+                무기 스프라이트 4종의 도트 확정과 총기별 탄알, 총구, 반동 표현
+                제작
+              </li>
+              <li>
+                몸에서 팔을 분리하고 조준 방향, 좌우 반전, 플레이어 프레임에
+                맞춰 결합하는 리그 구현
+              </li>
+              <li>
+                앞팔과 뒷팔 앵커, 총구 위치, 버스트와 산탄 발사점, 무기 교체 시
+                반동 상태 보정
+              </li>
+              <li>무기 외형과 손 위치를 실제 게임 화면에서 픽셀 단위로 조정</li>
+            </ul>
+          </article>
+
+          <article class="role-block">
+            <h3>개발 기반과 품질 보조</h3>
+            <ul>
+              <li>
+                타입 검사, lint, 단위 테스트, E2E, 빌드를 묶은 CI 검증 워크플로
+                구축
+              </li>
+              <li>E2E 단일 워커와 재시도 설정, 레벨 배치 픽스처 유지</li>
+              <li>사운드와 그래픽 설정 화면, 화면비별 UI 정렬 구현</li>
+              <li>
+                병행 개발된 보스 패턴과 레벨 디자인 변경을 통합하고 전투
+                디렉터와 클리어 UI 회귀 정리
+              </li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      <section id="collaboration" class="collaboration">
+        <h2>영역별 담당 내용</h2>
+        <p class="lead">
+          각 영역에서 두 팀원이 맡은 구현과 검증 내용을 개인별로 나누어
+          정리했습니다.
+        </p>
+
+        <table class="collaboration-table" aria-label="영역별 담당 내용">
+          <thead>
+            <tr>
+              <th>영역</th>
+              <th>담당자</th>
+              <th>담당 내용</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>핵심 게임플레이와 전투 로직 (1)</td>
+              <td>서지영</td>
+              <td>플레이어와 전투의 핵심 로직 및 진행 흐름 구현</td>
+            </tr>
+            <tr>
+              <td>핵심 게임플레이와 전투 로직 (2)</td>
+              <td>이혜원</td>
+              <td>플레이와 리뷰에서 발견한 판정 및 흐름 문제 재현과 보정</td>
+            </tr>
+            <tr>
+              <td>적과 보스 패턴, 스테이지 연출 (1)</td>
+              <td>서지영</td>
+              <td>적과 보스 패턴 및 스테이지 연출 구현</td>
+            </tr>
+            <tr>
+              <td>적과 보스 패턴, 스테이지 연출 (2)</td>
+              <td>이혜원</td>
+              <td>레벨 동선과 오디오 큐를 전투 패턴에 연결</td>
+            </tr>
+            <tr>
+              <td>레벨 디자인과 전투 공간 (1)</td>
+              <td>서지영</td>
+              <td>적 행동, 지형 충돌, 스테이지 시스템 구현</td>
+            </tr>
+            <tr>
+              <td>레벨 디자인과 전투 공간 (2)</td>
+              <td>이혜원</td>
+              <td>레벨 동선과 전투 공간 설계</td>
+            </tr>
+            <tr>
+              <td>BGM과 SFX, 오디오 파이프라인 (1)</td>
+              <td>서지영</td>
+              <td>보스 상태와 게임 이벤트에 재생 신호 연결 및 플레이 확인</td>
+            </tr>
+            <tr>
+              <td>BGM과 SFX, 오디오 파이프라인 (2)</td>
+              <td>이혜원</td>
+              <td>오디오 에셋 제작, 편집, 측정과 런타임 파이프라인 구축</td>
+            </tr>
+            <tr>
+              <td>무기 (1)</td>
+              <td>서지영</td>
+              <td>획득, 인벤토리, 피해, 투사체 로직 구현</td>
+            </tr>
+            <tr>
+              <td>무기 (2)</td>
+              <td>이혜원</td>
+              <td>스프라이트, 팔 리그, 총구, 반동 연출 구현</td>
+            </tr>
+            <tr>
+              <td>UI와 접근성 (1)</td>
+              <td>서지영</td>
+              <td>HUD와 게임 상태 연동</td>
+            </tr>
+            <tr>
+              <td>UI와 접근성 (2)</td>
+              <td>이혜원</td>
+              <td>설정 화면, 화면비 정렬, 방 클리어 피드백과 사용성 보정</td>
+            </tr>
+            <tr>
+              <td>테스트와 QA (1)</td>
+              <td>서지영</td>
+              <td>게임플레이 회귀 테스트와 E2E 시나리오 유지</td>
+            </tr>
+            <tr>
+              <td>테스트와 QA (2)</td>
+              <td>이혜원</td>
+              <td>CI, 오디오 측정, 레벨 도달성 검증과 교차 리뷰</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+    </main>
+  </body>
+</html>

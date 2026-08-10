@@ -1,0 +1,638 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light" />
+    <meta
+      name="source-sha256"
+      content="b6e77ae97fbdc49ecffe96c7197b4292f2ddfe04f2e4b1c021571976a0e4c028"
+    />
+    <title>ASH//ERROR 게임 소개 및 플레이 가이드</title>
+    <style>
+      :root {
+        --ink: #20262d;
+        --muted: #64707c;
+        --line: #d9e0e5;
+        --soft: #f4f7f8;
+        --accent: #315f74;
+        --accent-dark: #173d4f;
+        --accent-soft: #e7f0f3;
+        --paper: #fff;
+        --canvas: #e8edf0;
+      }
+
+      @page {
+        size: A4 portrait;
+        margin: 15mm 15mm 17mm;
+
+        @bottom-left {
+          color: #7a848e;
+          content: "ASH//ERROR | 게임 소개 및 플레이 가이드";
+          font-family: "Noto Sans KR", "Malgun Gothic", sans-serif;
+          font-size: 7.5pt;
+        }
+
+        @bottom-right {
+          color: #7a848e;
+          content: counter(page) " / " counter(pages);
+          font-family: "Noto Sans KR", "Malgun Gothic", sans-serif;
+          font-size: 7.5pt;
+        }
+      }
+
+      @page cover {
+        size: A4 portrait;
+        margin: 15mm;
+
+        @bottom-left {
+          content: none;
+        }
+
+        @bottom-right {
+          content: none;
+        }
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        background: var(--canvas);
+        color: var(--ink);
+        font-size: 16px;
+        print-color-adjust: exact;
+        -webkit-print-color-adjust: exact;
+      }
+
+      body {
+        margin: 0;
+        font-family: Pretendard, "Noto Sans KR", "Apple SD Gothic Neo",
+          "Malgun Gothic", sans-serif;
+        line-height: 1.56;
+        word-break: keep-all;
+        overflow-wrap: anywhere;
+      }
+
+      .report {
+        width: min(calc(100% - 32px), 210mm);
+        margin: 32px auto;
+        padding: 15mm;
+        background: var(--paper);
+        box-shadow: 0 12px 36px rgb(36 46 56 / 14%);
+      }
+
+      .cover {
+        min-height: 267mm;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        page: cover;
+        break-after: page;
+      }
+
+      .cover__eyebrow {
+        margin: 0 0 8mm;
+        color: var(--accent);
+        font-size: 9.5pt;
+        font-weight: 700;
+        letter-spacing: 0.16em;
+      }
+
+      .cover h1 {
+        max-width: 155mm;
+        margin: 0;
+        color: #14222a;
+        font-size: 28pt;
+        line-height: 1.2;
+        letter-spacing: -0.045em;
+      }
+
+      .cover__rule {
+        width: 28mm;
+        height: 1mm;
+        margin: 10mm 0;
+        border: 0;
+        background: var(--accent);
+      }
+
+      .cover__subtitle {
+        max-width: 135mm;
+        margin: 0;
+        color: #48555f;
+        font-size: 13pt;
+        line-height: 1.65;
+      }
+
+      .cover__meta {
+        display: grid;
+        grid-template-columns: 22mm 1fr;
+        gap: 2mm 5mm;
+        margin: 24mm 0 0;
+        font-size: 9pt;
+      }
+
+      .cover__meta dt {
+        color: var(--muted);
+        font-weight: 600;
+      }
+
+      .cover__meta dd {
+        margin: 0;
+        font-weight: 700;
+      }
+
+      h2,
+      h3 {
+        color: #172129;
+        line-height: 1.3;
+        break-after: avoid-page;
+      }
+
+      h2 {
+        margin: 10mm 0 4mm;
+        padding-bottom: 2.2mm;
+        border-bottom: 0.35mm solid var(--line);
+        font-size: 17pt;
+      }
+
+      h3 {
+        margin: 6mm 0 2.5mm;
+        color: var(--accent-dark);
+        font-size: 12pt;
+      }
+
+      p,
+      li,
+      td,
+      th,
+      dt,
+      dd {
+        font-size: 9.5pt;
+        orphans: 3;
+        widows: 3;
+      }
+
+      p {
+        margin: 0 0 3mm;
+      }
+
+      ul,
+      ol {
+        margin: 1.5mm 0 3.5mm;
+        padding-left: 6mm;
+      }
+
+      li + li {
+        margin-top: 1mm;
+      }
+
+      strong {
+        color: #162b36;
+      }
+
+      code {
+        padding: 0.15em 0.35em;
+        border-radius: 0.7mm;
+        background: #eef2f4;
+        font-family: "SFMono-Regular", Consolas, monospace;
+        font-size: 0.9em;
+      }
+
+      table {
+        width: 100%;
+        margin: 3.5mm 0 5mm;
+        border-collapse: collapse;
+      }
+
+      thead {
+        display: table-header-group;
+      }
+
+      tr {
+        break-inside: avoid-page;
+      }
+
+      th,
+      td {
+        padding: 1.7mm 2mm;
+        border: 0.25mm solid var(--line);
+        text-align: left;
+        vertical-align: top;
+      }
+
+      th {
+        background: var(--accent-soft);
+        color: #173a4b;
+        font-weight: 750;
+      }
+
+      tbody tr:nth-child(even) td {
+        background: #fafbfc;
+      }
+
+      .compact th,
+      .compact td {
+        padding: 1.35mm 1.7mm;
+        font-size: 8.5pt;
+        line-height: 1.42;
+      }
+
+      .lead {
+        margin: 0 0 5mm;
+        color: #33434d;
+        font-size: 10.5pt;
+        line-height: 1.62;
+      }
+
+      .feature-grid,
+      .command-grid {
+        display: grid;
+        gap: 3mm;
+        margin: 4mm 0 5mm;
+      }
+
+      .feature-grid {
+        grid-template-columns: repeat(5, 1fr);
+      }
+
+      .command-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .card {
+        padding: 3.2mm;
+        border: 0.25mm solid var(--line);
+        border-radius: 1.5mm;
+        background: #fbfcfd;
+        break-inside: avoid-page;
+      }
+
+      .card__label {
+        display: block;
+        margin-bottom: 1.2mm;
+        color: var(--accent);
+        font-size: 7.3pt;
+        font-weight: 800;
+        letter-spacing: 0.07em;
+        text-transform: uppercase;
+      }
+
+      .card strong {
+        display: block;
+        margin-bottom: 1mm;
+        font-size: 9.3pt;
+      }
+
+      .card p {
+        margin: 0;
+        font-size: 8.1pt;
+        line-height: 1.45;
+      }
+
+      .steps {
+        margin: 3.5mm 0 5mm;
+        padding: 0;
+        list-style: none;
+        counter-reset: steps;
+      }
+
+      .steps li {
+        display: grid;
+        grid-template-columns: 8mm 1fr;
+        gap: 2mm;
+        align-items: start;
+        margin: 0;
+        padding: 2mm 0;
+        border-bottom: 0.2mm solid var(--line);
+        counter-increment: steps;
+      }
+
+      .steps li::before {
+        display: grid;
+        width: 6mm;
+        height: 6mm;
+        place-items: center;
+        border-radius: 50%;
+        background: var(--accent);
+        color: #fff;
+        content: counter(steps);
+        font-size: 7.5pt;
+        font-weight: 800;
+      }
+
+      .steps li > span {
+        min-width: 0;
+      }
+
+      pre {
+        margin: 3mm 0 4mm;
+        padding: 3.5mm 4.5mm;
+        border: 0.25mm solid var(--line);
+        border-radius: 1.2mm;
+        background: #f8fafb;
+        font-family: "SFMono-Regular", Consolas, monospace;
+        font-size: 8.5pt;
+        line-height: 1.5;
+        white-space: pre-wrap;
+        break-inside: avoid-page;
+      }
+
+      @media screen and (max-width: 760px) {
+        .report {
+          width: 100%;
+          margin: 0;
+          padding: 24px 20px 48px;
+          box-shadow: none;
+        }
+
+        .cover {
+          min-height: 80vh;
+        }
+
+        .feature-grid,
+        .command-grid {
+          grid-template-columns: 1fr;
+        }
+
+        table {
+          display: block;
+          overflow-x: auto;
+        }
+      }
+
+      @media print {
+        html,
+        body {
+          background: var(--paper);
+        }
+
+        .report {
+          width: auto;
+          margin: 0;
+          padding: 0;
+          box-shadow: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="report">
+      <header class="cover">
+        <p class="cover__eyebrow">ASH//ERROR | GAME GUIDE</p>
+        <h1>게임 소개 및 플레이 가이드</h1>
+        <hr class="cover__rule" />
+        <p class="cover__subtitle">
+          무기를 교체하며 다섯 개 스테이지를 돌파하는 2D 액션 슈팅 플랫폼 게임의
+          핵심 경험과 조작, 실행 방법을 정리했습니다.
+        </p>
+        <dl class="cover__meta">
+          <dt>프로젝트</dt>
+          <dd>ASH//ERROR</dd>
+          <dt>장르</dt>
+          <dd>2D 액션 슈팅 플랫폼</dd>
+          <dt>엔진</dt>
+          <dd>Phaser</dd>
+        </dl>
+      </header>
+
+      <article data-source="game-guide.md">
+        <section aria-labelledby="overview">
+          <h2 id="overview">1. 게임 개요</h2>
+          <p class="lead">
+            <strong>ASH//ERROR</strong>는 한 화면 안에서 이동, 점프, 대시하며
+            적을 처치하고, 잠긴 전투 방을 해제한 뒤 포탈을 통해 전진하는 Phaser
+            기반 게임입니다. 각 스테이지의 마지막 방에는 고유한 보스전이
+            배치됩니다.
+          </p>
+
+          <div class="feature-grid">
+            <div class="card">
+              <span class="card__label">Combat</span>
+              <strong>혼합 전투</strong>
+              <p>원거리, 근접, 비행 적의 조합</p>
+            </div>
+            <div class="card">
+              <span class="card__label">Movement</span>
+              <strong>이동</strong>
+              <p>점프, 구덩이, 대시, 비행</p>
+            </div>
+            <div class="card">
+              <span class="card__label">Growth</span>
+              <strong>무기 성장</strong>
+              <p>전투 중 네 종류의 무기 획득</p>
+            </div>
+            <div class="card">
+              <span class="card__label">Progress</span>
+              <strong>스테이지</strong>
+              <p>지형, 음악, 보스 패턴 변화</p>
+            </div>
+            <div class="card">
+              <span class="card__label">Mood</span>
+              <strong>분위기</strong>
+              <p>픽셀아트와 어두운 SF 연출</p>
+            </div>
+          </div>
+
+          <h3>다섯 개 스테이지</h3>
+          <table class="compact">
+            <thead>
+              <tr>
+                <th>순서</th>
+                <th>이름</th>
+                <th>이동</th>
+                <th>핵심 특징</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>1</td>
+                <td>THE CITY</td>
+                <td>지상</td>
+                <td>기본 조작과 전투를 익히는 시작 구간</td>
+              </tr>
+              <tr>
+                <td>2</td>
+                <td>THE BACK ALLEYS</td>
+                <td>지상</td>
+                <td>발판, 구덩이, 네온 분위기와 강화된 적 배치</td>
+              </tr>
+              <tr>
+                <td>3</td>
+                <td>THE UNDERGROUND</td>
+                <td>지상</td>
+                <td>방패, 포획, 천장 위협과 siege 이벤트</td>
+              </tr>
+              <tr>
+                <td>4</td>
+                <td>HELL</td>
+                <td>지상</td>
+                <td>돌진, 낙하, 방사 패턴과 전용 보스전</td>
+              </tr>
+              <tr>
+                <td>5</td>
+                <td>THE RETURN</td>
+                <td>비행</td>
+                <td>공중 편대, 최종 보스와 엔딩</td>
+              </tr>
+            </tbody>
+          </table>
+          <p>
+            각 스테이지는 일반 전투 방과 보스 방으로 구성됩니다. 3스테이지는
+            방패, 포획, 천장 위협, 4스테이지는 돌진, 낙하, 방사 패턴,
+            5스테이지는 비행 편대와 최종 보스전을 중심으로 전투 흐름을
+            구성합니다.
+          </p>
+        </section>
+
+        <section aria-labelledby="play">
+          <h2 id="play">2. 플레이 방법</h2>
+          <ol class="steps">
+            <li>
+              <span>
+                타이틀 화면에서 <code>ENTER</code>를 눌러 게임을 시작합니다.
+              </span>
+            </li>
+            <li>
+              <span
+                >캐릭터를 이동시키며 적을 조준하고 마우스로 공격합니다.</span
+              >
+            </li>
+            <li>
+              <span>
+                떨어진 무기는 가까이에서 <code>E</code>로 획득해 4칸 인벤토리에
+                담고 숫자키로 바꿔 씁니다.
+              </span>
+            </li>
+            <li>
+              <span>방 안의 모든 적을 처치하면 방과 포탈이 해제됩니다.</span>
+            </li>
+            <li>
+              <span>
+                포탈 근처에서 <code>W</code> 또는 <code>↑</code>를 눌러 다음
+                방으로 진입합니다.
+              </span>
+            </li>
+            <li>
+              <span>
+                일반 방을 통과하고 보스를 처치해 다음 스테이지로 진행합니다.
+              </span>
+            </li>
+            <li>
+              <span>
+                사망하면 <code>R</code> 또는 <code>ENTER</code>를 눌러 다시
+                시작합니다.
+              </span>
+            </li>
+          </ol>
+          <p>
+            <code>ESC</code> 또는 화면 우상단의 일시정지 버튼으로 전투를
+            멈추거나 다시 진행할 수 있습니다.
+          </p>
+
+          <h3>조작법</h3>
+          <table class="compact">
+            <thead>
+              <tr>
+                <th>입력</th>
+                <th>기능</th>
+                <th>입력</th>
+                <th>기능</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>
+                  <code>A</code> / <code>D</code>, <code>←</code> /
+                  <code>→</code>
+                </td>
+                <td>좌우 이동</td>
+                <td><code>W</code>, <code>↑</code>, <code>SPACE</code></td>
+                <td>점프</td>
+              </tr>
+              <tr>
+                <td><code>S</code>, <code>↓</code></td>
+                <td>빠르게 낙하</td>
+                <td><code>SHIFT</code></td>
+                <td>대시</td>
+              </tr>
+              <tr>
+                <td>마우스 이동</td>
+                <td>조준</td>
+                <td>마우스 버튼</td>
+                <td>사격</td>
+              </tr>
+              <tr>
+                <td><code>E</code></td>
+                <td>무기 획득, 장착</td>
+                <td><code>1</code>~<code>4</code></td>
+                <td>무기 슬롯 전환</td>
+              </tr>
+              <tr>
+                <td><code>W</code> / <code>↑</code></td>
+                <td>클리어 포탈 진입</td>
+                <td><code>R</code> / <code>ENTER</code></td>
+                <td>재시작, 다시 플레이</td>
+              </tr>
+              <tr>
+                <td><code>ESC</code> / 우상단 일시정지 버튼</td>
+                <td>일시정지, 재개</td>
+                <td></td>
+                <td></td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h3>네 종류의 무기</h3>
+          <p>
+            기본 무기는 <code>SMG</code>이며, <code>SHOTGUN</code>,
+            <code>BURST RIFLE</code>, <code>RAIL RIFLE</code>을 포함한 4종
+            무기가 있습니다. 무기마다 발사 속도, 탄 수, 산탄도, 관통력, 반동과
+            피격 피드백이 다릅니다. 전투 중 획득한 무기를 4칸 인벤토리에 담고
+            숫자키로 즉시 교체해 상황에 맞게 대응합니다.
+          </p>
+        </section>
+
+        <section aria-labelledby="run">
+          <h2 id="run">3. 실행 방법</h2>
+          <div class="command-grid">
+            <div class="card">
+              <span class="card__label">Runtime</span>
+              <strong>요구 환경</strong>
+              <p>Node.js <code>22.x</code><br />pnpm <code>10.34.5</code></p>
+            </div>
+            <div class="card">
+              <span class="card__label">Client</span>
+              <strong>개발 환경</strong>
+              <p>Vite 개발 서버<br />작업 디렉터리 <code>client</code></p>
+            </div>
+          </div>
+
+          <h3>설치 및 개발 서버 실행</h3>
+          <pre>
+pnpm install
+pnpm dev</pre
+          >
+          <p>
+            브라우저에서 터미널에 표시된 로컬 주소를 엽니다. 클라이언트 작업
+            디렉터리는 <code>client</code>입니다.
+          </p>
+
+          <h3>빌드 및 검증</h3>
+          <pre>
+pnpm build
+pnpm lint
+pnpm test
+pnpm test:e2e</pre
+          >
+          <p>
+            Vercel 배포 시 Root Directory는 <code>client</code>, Framework
+            Preset은 <code>Vite</code>, Node.js 버전은 <code>22.x</code>로
+            설정합니다.
+          </p>
+        </section>
+      </article>
+    </main>
+  </body>
+</html>
