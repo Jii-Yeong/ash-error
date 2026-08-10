@@ -41,4 +41,26 @@ describe('GameScene enemy defeat cleanup', () => {
 
     expect(clearFrom).toHaveBeenCalledWith(enemy);
   });
+
+  it('plays a screen-fixed clear notification when the final enemy is defeated', () => {
+    const playRoomClearedFeedback = vi.fn();
+    const setPhase = vi.fn();
+    const scene = Object.assign(Object.create(GameScene.prototype), {
+      roomState: 'locked',
+      setPhase,
+      enemyProjectiles: { clear: vi.fn() },
+      flyingEnemyProjectiles: { clear: vi.fn() },
+      enemyRangeGraphics: { clear: vi.fn() },
+      playRoomClearedFeedback,
+    }) as GameScene;
+
+    (
+      scene as unknown as {
+        handleRoomStateChanged(state: 'cleared'): void;
+      }
+    ).handleRoomStateChanged('cleared');
+
+    expect(setPhase).toHaveBeenCalledWith('room-cleared');
+    expect(playRoomClearedFeedback).toHaveBeenCalledOnce();
+  });
 });

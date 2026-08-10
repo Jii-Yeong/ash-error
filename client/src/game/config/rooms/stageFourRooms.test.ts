@@ -31,7 +31,7 @@ describe('stage four terrain', () => {
 
   it('breaks the repeated low-platform cadence in both rooms', () => {
     const expectedCounts = new Map([
-      [INFERNO_ROOM_ONE.id, 4],
+      [INFERNO_ROOM_ONE.id, 3],
       [INFERNO_ROOM_TWO.id, 4],
     ]);
 
@@ -55,7 +55,7 @@ describe('stage four terrain', () => {
   it('separates room 01 cover islands from room 02 vertical fracture', () => {
     expect(
       highPlatformsOf(INFERNO_ROOM_ONE).filter(({ y }) => y === MID_LEDGE_Y),
-    ).toHaveLength(2);
+    ).toHaveLength(0);
     expect(
       highPlatformsOf(INFERNO_ROOM_TWO).filter(({ y }) => y === MID_LEDGE_Y),
     ).toHaveLength(4);
@@ -65,6 +65,26 @@ describe('stage four terrain', () => {
     expect(JSON.stringify(INFERNO_ROOM_ONE.terrain)).not.toBe(
       JSON.stringify(INFERNO_ROOM_TWO.terrain),
     );
+  });
+
+  it('uses fractured bridges instead of floor-only platforms', () => {
+    expect(lowPlatformsOf(INFERNO_ROOM_ONE).map(({ x }) => x)).toEqual([
+      1550,
+      3050,
+      4100,
+    ]);
+
+    for (const room of infernoRooms) {
+      for (const platform of room.terrain ?? []) {
+        expect(
+          (room.pits ?? []).some(
+            (pit) =>
+              platform.x < pit.x + pit.width && platform.x + platform.width > pit.x,
+          ),
+          `${room.id} platform x=${platform.x} does not cross a pit`,
+        ).toBe(true);
+      }
+    }
   });
 
   it('places readable short platforms around the mixed aerial attacks', () => {

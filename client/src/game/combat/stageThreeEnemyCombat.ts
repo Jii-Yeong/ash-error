@@ -56,6 +56,15 @@ export function isExposedFaceHit(
   );
 }
 
+/** 방패가 향한 쪽에서 들어온 탄환인지 판정함. */
+export function isBlockerShieldSideHit(
+  enemyX: number,
+  shieldFacesRight: boolean,
+  hitX: number,
+) {
+  return shieldFacesRight ? hitX >= enemyX : hitX <= enemyX;
+}
+
 export function canDamageCeilingMaintainer(
   state: CeilingMaintainerState,
 ) {

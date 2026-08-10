@@ -71,6 +71,8 @@ const PLAYER_DAMAGE_FLASH_DURATION = 80;
 /** How far the feet must sink past the floor surface to count as a pit fall. */
 const PIT_FALL_TRIGGER_DEPTH = 22;
 const PIT_FALL_DAMAGE = 12;
+/** 구덩이로 떨어진 적을 즉시 제거하는 화면 아래 경계. */
+const ENEMY_PIT_DEATH_Y = GAME_HEIGHT + 96;
 /** Height above the floor the player is placed at after climbing out of a pit. */
 const PIT_RESPAWN_LIFT = 60;
 const PLAYER_START_Y = GAME_HEIGHT - 120;
@@ -893,7 +895,51 @@ export class GameScene extends Phaser.Scene {
       this.enemyProjectiles.clear();
       this.flyingEnemyProjectiles.clear();
       this.enemyRangeGraphics.clear();
+      this.playRoomClearedFeedback();
     }
+  }
+
+  /** 포탈이 화면 밖에 있어도 방 클리어를 즉시 읽을 수 있게 알림을 표시함. */
+  private playRoomClearedFeedback() {
+    const { accentSecondary } = this.stage.palette;
+    const labelColor = `#${accentSecondary.toString(16).padStart(6, '0')}`;
+    const pulse = this.add
+      .circle(GAME_WIDTH / 2, GAME_HEIGHT / 2, 22, accentSecondary, 0)
+      .setStrokeStyle(3, accentSecondary, 0.9)
+      .setDepth(30)
+      .setScrollFactor(0);
+    const label = this.add
+      .text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 72, 'ROOM CLEARED', {
+        color: labelColor,
+        fontFamily: 'Arial, sans-serif',
+        fontSize: '22px',
+        fontStyle: 'bold',
+        stroke: '#070a0b',
+        strokeThickness: 5,
+      })
+      .setOrigin(0.5)
+      .setDepth(31)
+      .setScrollFactor(0)
+      .setAlpha(0);
+
+    this.tweens.add({
+      targets: pulse,
+      scale: 18,
+      alpha: 0,
+      duration: 520,
+      ease: 'Sine.easeOut',
+      onComplete: () => pulse.destroy(),
+    });
+    this.tweens.add({
+      targets: label,
+      alpha: 1,
+      scale: 1.08,
+      duration: 150,
+      ease: 'Back.easeOut',
+      yoyo: true,
+      hold: 620,
+      onComplete: () => label.destroy(),
+    });
   }
 
   private handleRestartInput() {
@@ -1122,10 +1168,9 @@ export class GameScene extends Phaser.Scene {
    * 방을 영원히 열 수 없었다. 플레이어 추락은 handlePitFall로 복귀하는 위험이지만
    * 적에게는 돌아올 방법이 없다.
    *
-   * 적은 착지 지점에서 죽지 않고 화면 밖으로 떨어진다. 월드 바닥에서 처치하면
-   * 화면 아래쪽에 사망 폭발이 생겨 추락이 아니라 지상 폭발처럼 보였다. 따라서
-   * 바닥선을 넘으면 교전 대상과 탄환을 정리하고 충돌을 해제한 뒤, 완전히 화면을
-   * 벗어났을 때 표시 객체를 제거한다.
+   * 적은 착지 지점에서 죽지 않고 화면 밖으로 떨어진다. 바닥선을 넘으면 전투와
+   * 탄환을 정리하고 충돌을 해제한다. 이어 화면 하단보다 96px 아래로 내려가면
+   * 죽음 모션을 재생하지 않고 즉시 제거해, 추락이 지상 폭발처럼 보이지 않게 한다.
    */
   private handleEnemyPitFalls() {
     for (const enemy of this.enemies) {
@@ -1139,9 +1184,9 @@ export class GameScene extends Phaser.Scene {
       }
 
       if (this.fallingEnemies.has(enemy)) {
-        if (body.top > GAME_HEIGHT) {
+        if (body.top > ENEMY_PIT_DEATH_Y) {
           this.fallingEnemies.delete(enemy);
-          enemy.defeat();
+          enemy.despawnAfterPitFall();
         }
         continue;
       }

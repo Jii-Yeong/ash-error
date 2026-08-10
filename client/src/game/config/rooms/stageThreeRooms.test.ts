@@ -21,6 +21,20 @@ describe('stage three combat rooms', () => {
     }
   });
 
+  it('keeps every catwalk off the pit it follows', () => {
+    for (const room of combatRooms) {
+      for (const platform of room.terrain ?? []) {
+        expect(
+          (room.pits ?? []).some(
+            (pit) =>
+              platform.x < pit.x + pit.width && platform.x + platform.width > pit.x,
+          ),
+          `${room.id} platform x=${platform.x} bridges a pit`,
+        ).toBe(false);
+      }
+    }
+  });
+
   it('binds every ceiling maintainer to a visible upper pipe span', () => {
     for (const room of combatRooms) {
       expect(room.ceilingPipes?.length).toBeGreaterThan(0);
