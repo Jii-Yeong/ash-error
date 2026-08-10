@@ -6,6 +6,7 @@ type HealthMeterProps = {
   maxValue: number;
   variant: 'player' | 'enemy';
   bossPhase?: BossPhase | null;
+  showValue?: boolean;
 };
 
 export function HealthMeter({
@@ -14,6 +15,7 @@ export function HealthMeter({
   maxValue,
   variant,
   bossPhase = null,
+  showValue = true,
 }: HealthMeterProps) {
   const percentage =
     maxValue > 0 ? Math.min(100, Math.max(0, (value / maxValue) * 100)) : 0;
@@ -46,9 +48,11 @@ export function HealthMeter({
         />
         {bossPhase && <span className='hud__phase-threshold' aria-hidden />}
       </div>
-      <span className='hud__value'>
-        {value}/{maxValue}
-      </span>
+      {showValue && (
+        <span className='hud__value'>
+          {value}/{maxValue}
+        </span>
+      )}
     </aside>
   );
 }
