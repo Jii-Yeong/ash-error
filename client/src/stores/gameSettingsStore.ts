@@ -13,11 +13,13 @@ import {
 
 type GameSettingsState = {
   invincible: boolean;
+  showEnemyRanges: boolean;
   audioMix: AudioMix;
   graphics: GraphicsSettings;
   settingsOpen: boolean;
   setInvincible: (invincible: boolean) => void;
   toggleInvincible: () => void;
+  toggleEnemyRanges: () => void;
   setAudioMix: (channel: keyof AudioMix, value: number) => void;
   resetAudioMix: () => void;
   setDisplayResolution: (resolution: DisplayResolution) => void;
@@ -30,12 +32,15 @@ export const useGameSettingsStore = create<GameSettingsState>()(
   persist(
     (set) => ({
       invincible: false,
+      showEnemyRanges: false,
       audioMix: { ...AUDIO_MIX_CONFIG },
       graphics: { ...DEFAULT_GRAPHICS_SETTINGS },
       settingsOpen: false,
       setInvincible: (invincible) => set({ invincible }),
       toggleInvincible: () =>
         set((state) => ({ invincible: !state.invincible })),
+      toggleEnemyRanges: () =>
+        set((state) => ({ showEnemyRanges: !state.showEnemyRanges })),
       setAudioMix: (channel, value) =>
         set((state) => ({
           audioMix: {

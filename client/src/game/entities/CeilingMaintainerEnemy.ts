@@ -5,6 +5,10 @@ import {
   type CeilingMaintainerState,
 } from '@/game/combat/stageThreeEnemyCombat';
 import type { CeilingPipe } from '@/game/config/roomConfig';
+import {
+  STAGE_THREE_CEILING_MAINTAINER_BOMB,
+  STAGE_THREE_CEILING_MAINTAINER_BOMB_IMPACT,
+} from '@/game/config/ceilingMaintainerAnimationConfig';
 import { CEILING_MAINTAINER_CONFIG } from '@/game/config/stageThreeEnemyConfig';
 import {
   Enemy,
@@ -33,12 +37,14 @@ export class CeilingMaintainerEnemy extends Enemy {
   private lockedDropX = 0;
   private warningMarker?: Phaser.GameObjects.Ellipse;
   private groundMarker?: Phaser.GameObjects.Ellipse;
-  private activeFragment?: Phaser.GameObjects.Rectangle;
+  private activeFragment?: Phaser.GameObjects.Image;
   private dropTween?: Phaser.Tweens.Tween;
   private contactReadyAt = 0;
   private lockedGroundTargetX = 0;
   private groundDashDirection = 1;
+  private groundDashStarted = false;
   private floorSpriteAligned = false;
+  private healthPhase: 1 | 2 = 1;
 
   constructor(
     scene: Phaser.Scene,
@@ -69,6 +75,10 @@ export class CeilingMaintainerEnemy extends Enemy {
 
   private readonly pipe: CeilingPipe;
 
+  get phase() {
+    return this.healthPhase;
+  }
+
   override refreshAtlasSprite() {
     this.setScale(CEILING_MAINTAINER_CONFIG.scale);
     const anims = CEILING_MAINTAINER_CONFIG.animations;
@@ -94,12 +104,11 @@ export class CeilingMaintainerEnemy extends Enemy {
       this.aggroRadius;
 
     if (
+      this.healthPhase === 2 &&
       this.maintainerState !== 'falling' &&
       this.maintainerState !== 'ground-mark' &&
       this.maintainerState !== 'ground-dash' &&
-      this.maintainerState !== 'floor-idle' &&
-      this.currentHealth / this.maxHealth <=
-        CEILING_MAINTAINER_CONFIG.lowHealthRatio
+      this.maintainerState !== 'floor-idle'
     ) {
       this.dropFromPipe();
     }
@@ -163,12 +172,39 @@ export class CeilingMaintainerEnemy extends Enemy {
     return CEILING_MAINTAINER_CONFIG.groundDashDamage;
   }
 
+  override takeDamage(amount: number) {
+    const defeated = super.takeDamage(amount);
+    if (!defeated || this.healthPhase === 2) {
+      return defeated;
+    }
+
+    this.healthPhase = 2;
+    this.restoreHealth();
+    this.dropFromPipe();
+    return false;
+  }
+
+  override applyKnockback(
+    angle: number,
+    force: number,
+    time: number,
+    durationMs?: number,
+  ) {
+    if (this.maintainerState !== 'falling') {
+      super.applyKnockback(angle, force, time, durationMs);
+      this.setVelocityY(0);
+    }
+  }
+
   override takeProjectileDamage(
     amount: number,
     hitX: number,
     hitY: number,
   ): ProjectileDamageResult {
-    if (!canDamageCeilingMaintainer(this.maintainerState)) {
+    if (
+      !canDamageCeilingMaintainer(this.maintainerState) ||
+      (this.healthPhase === 2 && !this.groundDashStarted)
+    ) {
       return { applied: false, defeated: false };
     }
     return super.takeProjectileDamage(amount, hitX, hitY);
@@ -191,22 +227,37 @@ export class CeilingMaintainerEnemy extends Enemy {
     this.stateEndsAt = time + CEILING_MAINTAINER_CONFIG.warningDuration;
     this.lockedDropX = targetX;
     this.warningMarker = this.scene.add
-      .ellipse(targetX, FLOOR_SURFACE_Y - 4, DROP_BLAST_RADIUS * 2, 18, 0x78ff9c, 0.12)
-      .setStrokeStyle(2, 0x78ff9c, 0.9)
+      .ellipse(
+        targetX,
+        FLOOR_SURFACE_Y + 3,
+        DROP_BLAST_RADIUS * 2,
+        18,
+        0xff3b30,
+        0.5,
+      )
       .setDepth(7);
   }
 
   private launchDrop(target: Phaser.Physics.Arcade.Sprite) {
     this.clearTint();
     const fragment = this.scene.add
-      .rectangle(this.x, this.y + 18, 12, 24, 0x8fa4a7)
-      .setStrokeStyle(2, 0x9cff9b)
+      .image(
+        this.x,
+        this.y + 18,
+        STAGE_THREE_CEILING_MAINTAINER_BOMB.texture,
+      )
+      .setDisplaySize(
+        STAGE_THREE_CEILING_MAINTAINER_BOMB.width,
+        STAGE_THREE_CEILING_MAINTAINER_BOMB.height,
+      )
       .setDepth(9);
     this.activeFragment = fragment;
     this.dropTween = this.scene.tweens.add({
       targets: fragment,
       x: this.lockedDropX,
-      y: FLOOR_SURFACE_Y - 12,
+      y:
+        FLOOR_SURFACE_Y -
+        STAGE_THREE_CEILING_MAINTAINER_BOMB.height / 2,
       rotation: Math.PI * 2,
       duration: 420,
       ease: 'Quad.easeIn',
@@ -235,23 +286,34 @@ export class CeilingMaintainerEnemy extends Enemy {
 
   private flashDropImpact(x: number) {
     const pulse = this.scene.add
-      .ellipse(x, FLOOR_SURFACE_Y - 4, 30, 10, 0x89ff9c, 0.45)
+      .image(
+        x,
+        FLOOR_SURFACE_Y + 10,
+        STAGE_THREE_CEILING_MAINTAINER_BOMB_IMPACT.texture,
+      )
+      .setOrigin(0.5, STAGE_THREE_CEILING_MAINTAINER_BOMB_IMPACT.originY)
+      .setDisplaySize(
+        STAGE_THREE_CEILING_MAINTAINER_BOMB_IMPACT.width,
+        STAGE_THREE_CEILING_MAINTAINER_BOMB_IMPACT.height,
+      )
       .setDepth(9);
+    const targetScaleX = pulse.scaleX;
+    const targetScaleY = pulse.scaleY;
+    pulse.setScale(targetScaleX * 0.72, targetScaleY * 0.72);
     this.scene.tweens.add({
       targets: pulse,
-      scaleX: 4,
-      scaleY: 2,
+      scaleX: targetScaleX,
+      scaleY: targetScaleY,
       alpha: 0,
-      duration: 180,
+      duration: 220,
       onComplete: () => pulse.destroy(),
     });
   }
 
   private dropFromPipe() {
+    this.clearAttackObjects();
     this.maintainerState = 'falling';
     this.play(CEILING_MAINTAINER_CONFIG.animations.falling, true);
-    this.warningMarker?.destroy();
-    this.warningMarker = undefined;
     this.setVelocity(0, 80);
     (this.body as Phaser.Physics.Arcade.Body).setAllowGravity(true);
   }
@@ -260,8 +322,18 @@ export class CeilingMaintainerEnemy extends Enemy {
     time: number,
     target: Phaser.Physics.Arcade.Sprite,
   ) {
+    const body = this.body as Phaser.Physics.Arcade.Body;
+
+    // 지상 상태에서 발밑이 비면(구덩이 위) 그대로 추락에 돌입한다. 반대편
+    // 구덩이 ledge 타일 벽에 걸려 멈추거나 위로 튕기지 않도록 바닥 재충돌을
+    // 끊고 낙하시켜, handleEnemyPitFalls가 화면 밖에서 처치하게 한다.
+    if (this.maintainerState !== 'falling' && !body.blocked.down) {
+      this.commitPitFall();
+      return;
+    }
+
     if (this.maintainerState === 'falling') {
-      if (!this.body?.blocked.down) {
+      if (!body.blocked.down) {
         return;
       }
       this.beginGroundMark(time, target.x);
@@ -284,7 +356,6 @@ export class CeilingMaintainerEnemy extends Enemy {
       this.beginGroundDash(time);
     }
 
-    const body = this.body as Phaser.Physics.Arcade.Body;
     const reachedTarget =
       this.groundDashDirection < 0
         ? this.x <=
@@ -300,6 +371,21 @@ export class CeilingMaintainerEnemy extends Enemy {
     this.setVelocityX(
       this.groundDashDirection * CEILING_MAINTAINER_CONFIG.groundDashSpeed,
     );
+  }
+
+  private commitPitFall() {
+    this.maintainerState = 'falling';
+    this.play(CEILING_MAINTAINER_CONFIG.animations.falling, true);
+    const body = this.body as Phaser.Physics.Arcade.Body;
+    // 바닥/ledge 타일·월드 경계와 더는 충돌하지 않게 해 구덩이로 완전히 추락시킨다.
+    body.checkCollision.none = true;
+    body.setCollideWorldBounds(false);
+    this.setVelocityX(0);
+    if (body.velocity.y < 80) {
+      this.setVelocityY(80);
+    }
+    this.groundMarker?.destroy();
+    this.groundMarker = undefined;
   }
 
   private beginGroundMark(time: number, targetX: number) {
@@ -327,8 +413,7 @@ export class CeilingMaintainerEnemy extends Enemy {
 
     const body = this.body as Phaser.Physics.Arcade.Body;
     const lift = CEILING_MAINTAINER_CONFIG.floorBodyOffsetY - body.offset.y;
-    // 바디의 월드 위치는 유지하고 바닥용 납작한 그림만 위로 올림. 바디가
-    // 그림 전체와 바닥 사이를 덮으므로 투사체/접촉 판정도 끊기지 않음.
+    // 바디 하단을 유지한 채 오프셋만 바꿔 불투명 픽셀 하단과 맞춤.
     this.setY(this.y - lift);
     body.setOffset(body.offset.x, CEILING_MAINTAINER_CONFIG.floorBodyOffsetY);
     body.updateFromGameObject();
@@ -337,6 +422,7 @@ export class CeilingMaintainerEnemy extends Enemy {
 
   private beginGroundDash(time: number) {
     this.maintainerState = 'ground-dash';
+    this.groundDashStarted = true;
     const distance = Math.abs(this.lockedGroundTargetX - this.x);
     this.stateEndsAt =
       time +

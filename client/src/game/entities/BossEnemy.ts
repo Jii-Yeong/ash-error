@@ -3,7 +3,7 @@ import type {
   BossCombatConfig,
   BossPatternConfig,
 } from '@/game/config/bossConfigTypes';
-import { Enemy } from '@/game/entities/Enemy';
+import { Enemy, type ProjectileDamageResult } from '@/game/entities/Enemy';
 
 export abstract class BossEnemy<
   Pattern extends BossPatternConfig = BossPatternConfig,
@@ -13,6 +13,10 @@ export abstract class BossEnemy<
   override readonly usesHitFlash: boolean = false;
 
   private contactDamageReadyAt = 0;
+
+  protected get isInvulnerable() {
+    return false;
+  }
 
   constructor(
     scene: Phaser.Scene,
@@ -34,6 +38,22 @@ export abstract class BossEnemy<
 
     this.contactDamageReadyAt = time + this.config.contactDamageCooldown;
     return this.config.contactDamage;
+  }
+
+  override takeDamage(amount: number) {
+    return this.isInvulnerable ? false : super.takeDamage(amount);
+  }
+
+  override takeProjectileDamage(
+    amount: number,
+    hitX: number,
+    hitY: number,
+  ): ProjectileDamageResult {
+    if (this.isInvulnerable) {
+      this.showProjectileBlockedImpact(hitX, hitY, 'boss');
+      return { applied: false, defeated: false };
+    }
+    return super.takeProjectileDamage(amount, hitX, hitY);
   }
 
   override applyKnockback(

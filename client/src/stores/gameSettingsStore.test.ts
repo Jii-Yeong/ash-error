@@ -7,6 +7,7 @@ describe('gameSettingsStore', () => {
   beforeEach(() => {
     useGameSettingsStore.setState({
       invincible: false,
+      showEnemyRanges: false,
       audioMix: { ...AUDIO_MIX_CONFIG },
       graphics: { ...DEFAULT_GRAPHICS_SETTINGS },
       settingsOpen: false,
@@ -19,6 +20,16 @@ describe('gameSettingsStore', () => {
 
     useGameSettingsStore.getState().toggleInvincible();
     expect(useGameSettingsStore.getState().invincible).toBe(false);
+  });
+
+  it('keeps enemy ranges hidden until admin enables them', () => {
+    expect(useGameSettingsStore.getState().showEnemyRanges).toBe(false);
+
+    useGameSettingsStore.getState().toggleEnemyRanges();
+    expect(useGameSettingsStore.getState().showEnemyRanges).toBe(true);
+
+    useGameSettingsStore.getState().toggleEnemyRanges();
+    expect(useGameSettingsStore.getState().showEnemyRanges).toBe(false);
   });
 
   it('keeps each audio channel in the supported range', () => {

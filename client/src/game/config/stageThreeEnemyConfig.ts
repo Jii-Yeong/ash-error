@@ -13,7 +13,6 @@ export const CEILING_MAINTAINER_CONFIG = {
   warningDuration: 650,
   attackCooldown: 1450,
   dropDamage: 12,
-  lowHealthRatio: 0.3,
   groundDashSpeed: 330,
   groundDashDamage: 14,
 } as const;

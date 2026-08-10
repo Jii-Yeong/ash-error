@@ -58,8 +58,20 @@ export const projectileCollisionFaces = {
 /** 모든 지형 조각은 플레이어와 적 탄환을 막는다. */
 export const terrainBlocksProjectiles = (_type: TerrainPiece['type']) => true;
 
+/** 1·2스테이지 비행형 탄환은 발판을 통과하고 벽에만 막힌다. */
+export const terrainBlocksFlyingProjectiles = (
+  type: TerrainPiece['type'],
+) => type === 'wall';
+
 export const isProjectileBlocker = (terrain: Phaser.GameObjects.GameObject) =>
   terrainBlocksProjectiles(
+    terrain.getData(TERRAIN_TYPE_DATA_KEY) as TerrainPiece['type'],
+  );
+
+export const isFlyingProjectileBlocker = (
+  terrain: Phaser.GameObjects.GameObject,
+) =>
+  terrainBlocksFlyingProjectiles(
     terrain.getData(TERRAIN_TYPE_DATA_KEY) as TerrainPiece['type'],
   );
 

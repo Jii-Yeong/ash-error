@@ -1,0 +1,99 @@
+{
+  "assets": [
+    {
+      "asset_id": "5e83cc9b-e0dd-4cf4-ab93-4a937607cc25",
+      "sha12": "6786927708a9",
+      "label": "Soot Stage 2 Boss Head Reference"
+    },
+    {
+      "asset_id": "85e34995-d6d7-59f6-8b35-67a604c185f7",
+      "sha12": "d133c815d765",
+      "label": "Soot Stage 2 Boss Mint Energy Orb Transparent"
+    },
+    {
+      "asset_id": "5419105c-d687-4bf0-bd4c-4ac6a9596f05",
+      "sha12": "3a573085297d",
+      "label": "Soot Stage 2 Boss Searchlight"
+    },
+    {
+      "asset_id": "358aa589-e5fe-5d26-a07d-470fa0155f6e",
+      "sha12": "0cfac7d842f5",
+      "label": "Soot Stage 3 Boss Seismic Pressure Shockwave"
+    },
+    {
+      "asset_id": "fb111d57-839d-55fd-b46a-5303e35f9b84",
+      "sha12": "ac9f82144832",
+      "label": "Soot Stage 1-2 Melee Staff Swing Effect"
+    },
+    {
+      "asset_id": "7ec9c03f-a01c-4f30-8d84-3f370a9d9f58",
+      "sha12": "86a7d31a9989",
+      "label": "Soot Stage 4 Magma Shard Source"
+    },
+    {
+      "asset_id": "d45f070a-9c8e-4947-9c09-9017d29caf92",
+      "sha12": "60b09167a648",
+      "label": "Soot Stage 4 Colossal Magma Meteor"
+    },
+    {
+      "asset_id": "42b3ae50-d4a1-4b32-9a6f-6db7317b4688",
+      "sha12": "ff7a23797a25",
+      "label": "Soot Stage 4 Magma Meteor Ground Impact"
+    },
+    {
+      "asset_id": "13c81342-91d3-5eaf-a414-abfcfe858d01",
+      "sha12": "81afb0eba7ae",
+      "label": "Soot Stage 4 Magma Rupture Warning Transparent"
+    },
+    {
+      "asset_id": "a92a4589-e793-5664-922f-638b6aace19f",
+      "sha12": "dbc7cabac212",
+      "label": "Soot Stage 4 Magma Rupture Fire Pillar Transparent"
+    },
+    {
+      "asset_id": "d69955a5-0871-4ba8-b209-b959aa269ff0",
+      "sha12": "e0d207380ba1",
+      "label": "Soot Stage 3 Ceiling Maintainer Style Reference"
+    },
+    {
+      "asset_id": "80603338-71e8-50e6-93dc-37b24684d5d3",
+      "sha12": "c359f63c2f55",
+      "label": "Soot Stage 3 Maintainer Flat Bomb"
+    },
+    {
+      "asset_id": "ca34708d-1876-59e1-a384-5bbb81500e1e",
+      "sha12": "75455327a248",
+      "label": "Soot Stage 3 Maintainer Bomb Impact"
+    },
+    {
+      "asset_id": "bf8346c6-6be4-4ede-ad31-470d33a9184b",
+      "sha12": "16b4f44857af",
+      "label": "Soot Stage 4 Judgment Eye Reticle"
+    },
+    {
+      "asset_id": "7c79d97f-374c-4a7c-9025-af02e577b388",
+      "sha12": "4aa59e8c0a99",
+      "label": "Soot Stage 4 Judgment Eye Orb"
+    },
+    {
+      "asset_id": "792a1438-a4b1-4603-b3e0-d61193babd8e",
+      "sha12": "36368c5e2396",
+      "label": "Soot Stage 3 Trend Suction Vortex Animation"
+    },
+    {
+      "asset_id": "d5e2fbe8-4d84-4017-9e76-2aeab8274152",
+      "sha12": "220a5f22834e",
+      "label": "Soot Stage 5 Architect Player Lock Sigil Transparent"
+    },
+    {
+      "asset_id": "41bbf8b7-9eba-4710-96df-4751bc0b82f1",
+      "sha12": "3f71867483c8",
+      "label": "Soot Stage 5 Architect Floating Judgment Sigil"
+    },
+    {
+      "asset_id": "208957ca-b36c-5887-9f2e-9acba23456c6",
+      "sha12": "147d66d1d0a4",
+      "label": "Soot Stage 5 Architect Wing Fan Warning Transparent"
+    }
+  ]
+}

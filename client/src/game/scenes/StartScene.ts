@@ -1,5 +1,4 @@
 import Phaser from 'phaser';
-import { GAME_HEIGHT, GAME_WIDTH } from '@/game/config/gameDimensions';
 import { gameEvents } from '@/game/events/gameEvents';
 
 /**
@@ -14,11 +13,13 @@ export class StartScene extends Phaser.Scene {
 
   create() {
     gameEvents.emit('scene-changed', 'start');
+    const viewportWidth = this.scale.width;
+    const viewportHeight = this.scale.height;
 
     this.add
       .text(
-        GAME_WIDTH / 2,
-        GAME_HEIGHT / 2,
+        viewportWidth / 2,
+        viewportHeight / 2,
         'CLICK OR PRESS ANY KEY TO START',
         {
         color: '#b6ffe4',

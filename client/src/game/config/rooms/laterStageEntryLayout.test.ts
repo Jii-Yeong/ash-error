@@ -16,6 +16,11 @@ import {
   INFERNAL_HOUND_CONFIG,
   JUDGMENT_EYE_CONFIG,
 } from '@/game/config/stageFourEnemyConfig';
+import {
+  CELESTIAL_ORACLE_CONFIG,
+  CHOIR_SUPPORTER_CONFIG,
+  SANCTUM_ENFORCER_CONFIG,
+} from '@/game/config/stageFiveEnemyConfig';
 import { INFERNO_ROOM_ONE, INFERNO_ROOM_TWO } from './stageFourRooms';
 import { RETURN_ROOM_ONE, RETURN_ROOM_TWO } from './stageFiveRooms';
 import {
@@ -57,6 +62,12 @@ function activationX(spawn: EnemySpawnConfig, playerY: number) {
       return spawn.x - EXECUTIONER_DOLL_CONFIG.aggroRadius;
     case 'judgment-eye':
       return spawn.x - JUDGMENT_EYE_CONFIG.aggroRadius;
+    case 'choir-supporter':
+      return spawn.x - CHOIR_SUPPORTER_CONFIG.aggroRadius;
+    case 'sanctum-enforcer':
+      return spawn.x - SANCTUM_ENFORCER_CONFIG.aggroRadius;
+    case 'celestial-oracle':
+      return spawn.x - CELESTIAL_ORACLE_CONFIG.aggroRadius;
     case 'boss':
       throw new Error('combat room does not contain a boss');
   }

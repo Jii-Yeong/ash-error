@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import { STAGE_FOUR_PLAYER_SPRITE } from '@/game/config/playerAnimationConfig';
 import { MovementMode } from '@/game/config/playerMovementConfig';
 import { PlayerController } from '@/game/controllers/PlayerController';
 
@@ -24,7 +25,7 @@ vi.mock('phaser', () => ({
 }));
 
 describe('PlayerController stage transition', () => {
-  it('clamps flight entry against the current scroll instead of stale worldView', () => {
+  it('clamps flight entry against the current wide viewport instead of stale worldView', () => {
     const keys = {
       left: {},
       right: {},
@@ -42,7 +43,8 @@ describe('PlayerController stage transition', () => {
       },
       cameras: {
         main: {
-          scrollX: 0,
+          width: 2048,
+          scrollX: 2152,
           worldView: { left: 4720 },
         },
       },
@@ -53,7 +55,7 @@ describe('PlayerController stage transition', () => {
       setVelocity: vi.fn(),
     };
     const player = {
-      x: 180,
+      x: 4136,
       y: 566,
       body,
       anims: { stop: vi.fn() },
@@ -70,7 +72,32 @@ describe('PlayerController stage transition', () => {
 
     controller.setMovementMode(MovementMode.FLIGHT);
 
-    expect(player.setPosition).toHaveBeenCalledWith(180, 566);
+    expect(player.setPosition).toHaveBeenCalledWith(4136, 566);
+  });
+
+  it('uses the stage-specific ground animations after a sprite swap', () => {
+    const scene = {
+      input: {
+        keyboard: {
+          addKeys: vi.fn(() => ({})),
+          createCursorKeys: vi.fn(() => ({})),
+        },
+        mouse: { disableContextMenu: vi.fn() },
+      },
+      anims: { exists: vi.fn(() => true) },
+    };
+    const player = { play: vi.fn() };
+    const controller = new PlayerController(scene as never, player as never, {
+      moveSpeed: 300,
+      flightSpeed: 300,
+      jumpSpeed: 560,
+      fastFallSpeed: 720,
+      dash: { speed: 760, duration: 170, cooldown: 800 },
+    });
+
+    controller.setAnimations(STAGE_FOUR_PLAYER_SPRITE.animations);
+
+    expect(player.play).toHaveBeenCalledWith('stage-4-player-idle', true);
   });
 });
 

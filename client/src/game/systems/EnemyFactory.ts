@@ -1,7 +1,9 @@
 import Phaser from 'phaser';
 import {
+  ARCHITECT_BOSS_SPRITES,
   BOSS_COMBAT_CONFIGS,
   HOUND_BOSS_SPRITES,
+  INFERNAL_BOSS_SPRITES,
   LASER_BOSS_SPRITES,
   PURIFIER_BOSS_SPRITES,
   hasBossPattern,
@@ -23,7 +25,9 @@ import type {
 import { ArchitectBossEnemy } from '@/game/entities/ArchitectBossEnemy';
 import { BlockerEnemy } from '@/game/entities/BlockerEnemy';
 import { CaptorEnemy } from '@/game/entities/CaptorEnemy';
+import { CelestialOracleEnemy } from '@/game/entities/CelestialOracleEnemy';
 import { CeilingMaintainerEnemy } from '@/game/entities/CeilingMaintainerEnemy';
+import { ChoirSupporterEnemy } from '@/game/entities/ChoirSupporterEnemy';
 import type { Enemy } from '@/game/entities/Enemy';
 import { ExecutionerDollEnemy } from '@/game/entities/ExecutionerDollEnemy';
 import { FlyingEnemy } from '@/game/entities/FlyingEnemy';
@@ -36,6 +40,7 @@ import { MeleeEnemy } from '@/game/entities/MeleeEnemy';
 import { PurifierBossEnemy } from '@/game/entities/PurifierBossEnemy';
 import { JudgmentEyeEnemy } from '@/game/entities/JudgmentEyeEnemy';
 import { RangedEnemy } from '@/game/entities/RangedEnemy';
+import { SanctumEnforcerEnemy } from '@/game/entities/SanctumEnforcerEnemy';
 import type { BossPhase } from '@/game/state/bossPhase';
 import { EnemyAttackCoordinator } from '@/game/systems/EnemyAttackCoordinator';
 import {
@@ -96,6 +101,7 @@ export class EnemyFactory {
   private readonly rangedSprite?: RangedSpriteConfig;
   private readonly meleeSprite?: MeleeSpriteConfig;
   private readonly stageFourAttackCoordinator = new EnemyAttackCoordinator(2);
+  private readonly stageFiveAttackCoordinator = new EnemyAttackCoordinator(2);
 
   constructor(options: EnemyFactoryOptions) {
     this.scene = options.scene;
@@ -144,6 +150,12 @@ export class EnemyFactory {
         return this.createExecutionerDoll(spawn);
       case 'judgment-eye':
         return this.createJudgmentEye(spawn);
+      case 'choir-supporter':
+        return this.createChoirSupporter(spawn);
+      case 'sanctum-enforcer':
+        return this.createSanctumEnforcer(spawn);
+      case 'celestial-oracle':
+        return this.createCelestialOracle(spawn);
       case 'boss':
         return this.createBossEnemy(spawn);
     }
@@ -155,8 +167,9 @@ export class EnemyFactory {
       throw new Error(`Missing ceiling pipe: ${spawn.pipeId}`);
     }
 
-    // 발판(2층)에 걸리지 않고 천장에서 1층 바닥까지 떨어져 돌진하도록 지형
-    // 충돌은 끄고, 바닥 착지와 구덩이 가장자리 장벽은 그대로 둔다.
+    // 발판(2층)에 걸리지 않고 천장에서 1층 바닥까지 떨어지도록 지형 충돌은 끈다.
+    // 구덩이 장벽도 무시한다. 이 적은 구덩이에 빠뜨려 처리하는 것이 공략이고,
+    // 장벽을 켜면 구덩이 위 허공(바닥에서 160px)에 착지해 회수되지 않는다.
     return this.finishSpawn(
       new CeilingMaintainerEnemy(
         this.scene,
@@ -164,7 +177,7 @@ export class EnemyFactory {
         pipe,
         this.damagePlayer,
       ),
-      { collidesWithTerrain: false },
+      { collidesWithTerrain: false, collidesWithPitBarriers: false },
     );
   }
 
@@ -224,6 +237,45 @@ export class EnemyFactory {
         spawn.x,
         spawn.y,
         this.stageFourAttackCoordinator,
+        this.damagePlayer,
+      ),
+      { collidesWithFloor: false, collidesWithTerrain: false },
+    );
+  }
+
+  private createChoirSupporter(spawn: SpawnOf<'choir-supporter'>) {
+    return this.finishSpawn(
+      new ChoirSupporterEnemy(
+        this.scene,
+        spawn.x,
+        spawn.y,
+        this.stageFiveAttackCoordinator,
+        this.damagePlayer,
+      ),
+      { collidesWithFloor: false, collidesWithTerrain: false },
+    );
+  }
+
+  private createSanctumEnforcer(spawn: SpawnOf<'sanctum-enforcer'>) {
+    return this.finishSpawn(
+      new SanctumEnforcerEnemy(
+        this.scene,
+        spawn.x,
+        spawn.y,
+        this.stageFiveAttackCoordinator,
+        this.damagePlayer,
+      ),
+      { collidesWithFloor: false, collidesWithTerrain: false },
+    );
+  }
+
+  private createCelestialOracle(spawn: SpawnOf<'celestial-oracle'>) {
+    return this.finishSpawn(
+      new CelestialOracleEnemy(
+        this.scene,
+        spawn.x,
+        spawn.y,
+        this.stageFiveAttackCoordinator,
         this.damagePlayer,
       ),
       { collidesWithFloor: false, collidesWithTerrain: false },
@@ -350,6 +402,7 @@ export class EnemyFactory {
           this.damagePlayer,
           this.bossArena,
           this.onBossPhaseChanged,
+          INFERNAL_BOSS_SPRITES[spawn.variant],
         ),
       );
     }
@@ -365,6 +418,7 @@ export class EnemyFactory {
           this.damagePlayer,
           this.bossArena,
           this.onBossPhaseChanged,
+          ARCHITECT_BOSS_SPRITES[spawn.variant],
         ),
         { collidesWithFloor: false },
       );

@@ -1,3 +1,5 @@
+import type { EnemyAnimationAtlasConfig } from '@/game/config/enemyAnimationAtlasConfig';
+
 /**
  * 스테이지 1 보스(city warden)의 실제 스프라이트 아틀라스.
  *
@@ -9,6 +11,39 @@ const frameName = (index: number) => `stage-1-boss ${index}.aseprite`;
 export const STAGE_ONE_BOSS_ATLAS_KEY = 'stage-1-boss';
 export const STAGE_ONE_BOSS_ATLAS_PNG = '/assets/bosses/stage-1-boss.png';
 export const STAGE_ONE_BOSS_ATLAS_JSON = '/assets/bosses/stage-1-boss.json';
+
+export const STAGE_ONE_BOSS_WEAPON_ASSETS = {
+  charge: {
+    key: 'stage-1-boss-charge-weapon',
+    url: '/assets/bosses/stage-1-boss-charge-weapon.png',
+    gripOffsetX: 5,
+    gripOffsetY: -16,
+    flippedGripOffsetY: -26,
+    originX: 0,
+    originY: 0,
+    barrelAngle: Math.atan2(28, 46),
+    barrelLength: Math.hypot(46, 28),
+    flippedBarrelAngle: Math.atan2(10, 46),
+    flippedBarrelLength: Math.hypot(46, 10),
+    muzzleOffsetY: 0,
+    flippedMuzzleOffsetY: 35,
+  },
+  fire: {
+    key: 'stage-1-boss-weapon',
+    url: '/assets/bosses/stage-1-boss-weapon.png',
+    gripOffsetX: -8,
+    gripOffsetY: 9,
+    flippedGripOffsetY: 9,
+    originX: 0,
+    originY: 0.5,
+    barrelAngle: Math.atan2(2.5, 77),
+    barrelLength: Math.hypot(77, 2.5),
+    flippedBarrelAngle: Math.atan2(-2.5, 77),
+    flippedBarrelLength: Math.hypot(77, 2.5),
+    muzzleOffsetY: 0,
+    flippedMuzzleOffsetY: 0,
+  },
+} as const;
 
 export const STAGE_ONE_BOSS_LASER_ASSETS = {
   back: {
@@ -57,18 +92,16 @@ export const STAGE_ONE_BOSS_TAG_FRAMES: Record<
     duration: [180, 240, 180, 240][index],
   })),
   walk: [4, 5].map((index) => ({ frame: frameName(index), duration: 350 })),
-  charge: [7, 8, 9].map((index) => ({ frame: frameName(index), duration: 120 })),
+  // 6번 프레임에는 팔이 포함되어 있어 별도 회전 팔과 겹치므로 제외함.
+  charge: [{ frame: frameName(7), duration: 120 }],
   fire: [
-    { frame: frameName(10), duration: 90 },
-    { frame: frameName(11), duration: 60 },
+    { frame: frameName(8), duration: 90 },
+    { frame: frameName(9), duration: 60 },
   ],
-  recoil: [
+  recoil: [{ frame: frameName(10), duration: 100 }],
+  death: [
     { frame: frameName(12), duration: 100 },
     { frame: frameName(13), duration: 180 },
-  ],
-  death: [
-    { frame: frameName(14), duration: 100 },
-    { frame: frameName(15), duration: 180 },
   ],
 };
 
@@ -87,6 +120,18 @@ export const STAGE_ONE_BOSS_LOOPING_TAGS = new Set<StageOneBossTag>([
 export const STAGE_TWO_BOSS_ATLAS_KEY = 'stage-2-boss';
 export const STAGE_TWO_BOSS_ATLAS_PNG = '/assets/bosses/stage-2-boss.png';
 export const STAGE_TWO_BOSS_ATLAS_JSON = '/assets/bosses/stage-2-boss.json';
+export const STAGE_TWO_BOSS_HEAD = {
+  texture: 'stage-2-boss-head',
+  png: '/assets/bosses/stage-2-boss-head.png',
+} as const;
+export const STAGE_TWO_BOSS_ENERGY_ORB = {
+  texture: 'stage-2-boss-energy-orb',
+  png: '/assets/bosses/stage-2-energy-orb.png',
+} as const;
+export const STAGE_TWO_BOSS_SEARCHLIGHT = {
+  texture: 'stage-2-boss-searchlight-asymmetric',
+  png: '/assets/bosses/stage-2-searchlight-asymmetric.png',
+} as const;
 
 export const STAGE_TWO_BOSS_TAGS = {
   idle: 'idle',
@@ -139,6 +184,20 @@ export const STAGE_TWO_BOSS_LOOPING_TAGS = new Set<StageTwoBossTag>([
 export const STAGE_THREE_BOSS_ATLAS_KEY = 'stage-3-boss';
 export const STAGE_THREE_BOSS_ATLAS_PNG = '/assets/bosses/stage-3-boss.png';
 export const STAGE_THREE_BOSS_ATLAS_JSON = '/assets/bosses/stage-3-boss.json';
+export const STAGE_THREE_BOSS_SHOCKWAVE = {
+  texture: 'stage-3-boss-shockwave',
+  png: '/assets/bosses/stage-3-shockwave.png',
+} as const;
+export const STAGE_THREE_BOSS_VACUUM = {
+  texture: 'stage-3-boss-vacuum-suction',
+  png: '/assets/bosses/stage-3-vacuum-suction.png',
+  animation: 'stage-3-boss-vacuum-suction-loop',
+  frameWidth: 139,
+  frameHeight: 130,
+  frameCount: 8,
+  frameRate: 8,
+  height: 96,
+} as const;
 
 export const STAGE_THREE_BOSS_ANIMATIONS = {
   idle: 'stage-3-boss-idle',
@@ -181,3 +240,175 @@ export const STAGE_THREE_BOSS_LOOPING_TAGS = new Set<StageThreeBossTag>([
   'walk',
   'suction',
 ]);
+
+/** 4스테이지 보스(지옥 집행체)의 실제 스프라이트 아틀라스. */
+export const STAGE_FOUR_BOSS_ATLAS_KEY = 'stage-4-boss';
+export const STAGE_FOUR_BOSS_ATLAS_PNG = '/assets/bosses/stage-4-boss.png';
+export const STAGE_FOUR_BOSS_ATLAS_JSON = '/assets/bosses/stage-4-boss.json';
+export const STAGE_FOUR_MAGMA_SHARD = {
+  texture: 'stage-4-magma-shard',
+  png: '/assets/bosses/stage-4-magma-shard.png',
+  height: 182,
+} as const;
+export const STAGE_FOUR_MAGMA_SHARD_IMPACT = {
+  texture: 'stage-4-magma-shard-impact',
+  png: '/assets/bosses/stage-4-magma-shard-impact.png',
+  width: 220,
+  groundAnchorY: 155 / 220,
+} as const;
+export const STAGE_FOUR_MAGMA_RUPTURE_WARNING = {
+  texture: 'stage-4-magma-rupture-warning',
+  png: '/assets/bosses/stage-4-magma-rupture-warning.png',
+  width: 240,
+  groundAnchorY: 109 / 131,
+} as const;
+export const STAGE_FOUR_MAGMA_RUPTURE_FIRE_PILLAR = {
+  texture: 'stage-4-magma-rupture-fire-pillar',
+  png: '/assets/bosses/stage-4-magma-rupture-fire-pillar.png',
+  height: 226,
+  groundAnchorY: 225 / 226,
+} as const;
+
+export const STAGE_FOUR_BOSS_ANIMATIONS = {
+  idle: 'stage-4-boss-idle',
+  walk: 'stage-4-boss-walk',
+  gush: 'stage-4-boss-gush',
+  rush: 'stage-4-boss-rush',
+  getDown: 'stage-4-boss-get-down',
+  death: 'stage-4-boss-death',
+} as const;
+
+type StageFourBossTag = keyof typeof STAGE_FOUR_BOSS_ANIMATIONS;
+
+/** 제공된 아틀라스 JSON의 태그별 프레임과 재생 시간. */
+export const STAGE_FOUR_BOSS_TAG_FRAMES: Record<
+  StageFourBossTag,
+  readonly { frame: string; duration: number }[]
+> = {
+  idle: [0, 1].map((frame) => ({ frame: String(frame), duration: 180 })),
+  walk: [
+    { frame: '2', duration: 220 },
+    { frame: '3', duration: 280 },
+  ],
+  gush: [
+    { frame: '4', duration: 500 },
+    { frame: '5', duration: 700 },
+  ],
+  rush: [6, 7].map((frame) => ({ frame: String(frame), duration: 100 })),
+  getDown: [{ frame: '8', duration: 100 }],
+  death: [
+    { frame: '9', duration: 450 },
+    { frame: '10', duration: 900 },
+  ],
+};
+
+export const STAGE_FOUR_BOSS_LOOPING_TAGS = new Set<StageFourBossTag>([
+  'idle',
+  'walk',
+  'rush',
+]);
+
+/** 5스테이지 보스(귀환한 설계자)의 실제 스프라이트 아틀라스. */
+export const STAGE_FIVE_BOSS_ATLAS_KEY = 'stage-5-boss';
+export const STAGE_FIVE_BOSS_ATLAS_PNG = '/assets/bosses/stage-5-boss.png';
+export const STAGE_FIVE_BOSS_ATLAS_JSON = '/assets/bosses/stage-5-boss.json';
+export const STAGE_FIVE_BOSS_EYE_LOCK_SIGIL = {
+  texture: 'stage-5-boss-eye-lock-sigil',
+  png: '/assets/bosses/stage-5-architect-player-lock-sigil.png',
+} as const;
+export const STAGE_FIVE_BOSS_FLOATING_JUDGMENT_SIGIL = {
+  texture: 'stage-5-boss-floating-judgment-sigil',
+  png: '/assets/bosses/stage-5-architect-floating-judgment-sigil.png',
+} as const;
+export const STAGE_FIVE_BOSS_WING_FAN_WARNING = {
+  texture: 'stage-5-boss-wing-fan-warning',
+  png: '/assets/bosses/stage-5-architect-wing-fan-warning.png',
+} as const;
+
+export const STAGE_FIVE_BOSS_ANIMATIONS = {
+  idle: 'stage-5-boss-idle',
+  eyeTrack: 'stage-5-boss-eye-track',
+  eyeFire: 'stage-5-boss-eye-fire',
+  haloCharge: 'stage-5-boss-halo-charge',
+  haloFire: 'stage-5-boss-halo-fire',
+  wingsLeft: 'stage-5-boss-wings-left',
+  wingsRight: 'stage-5-boss-wings-right',
+  wingsBoth: 'stage-5-boss-wings-both',
+  falseSalvation: 'stage-5-boss-false-salvation',
+  phaseTransition: 'stage-5-boss-phase-transition',
+  coreExposed: 'stage-5-boss-core-exposed',
+  chorus: 'stage-5-boss-chorus',
+  death: 'stage-5-boss-death',
+} as const;
+
+type StageFiveBossTag = keyof typeof STAGE_FIVE_BOSS_ANIMATIONS;
+
+/** 중복된 원본 `eye_track` 태그를 추적(2)과 발사(8) 자세로 분리함. */
+export const STAGE_FIVE_BOSS_TAG_FRAMES: Record<
+  StageFiveBossTag,
+  readonly { frame: string; duration: number }[]
+> = {
+  idle: [{ frame: '0', duration: 100 }],
+  eyeTrack: [{ frame: '1', duration: 100 }],
+  eyeFire: [{ frame: '7', duration: 100 }],
+  haloCharge: [{ frame: '2', duration: 100 }],
+  haloFire: [{ frame: '11', duration: 100 }],
+  wingsLeft: [{ frame: '3', duration: 100 }],
+  wingsRight: [{ frame: '4', duration: 100 }],
+  wingsBoth: [{ frame: '5', duration: 100 }],
+  falseSalvation: [{ frame: '6', duration: 100 }],
+  phaseTransition: [{ frame: '8', duration: 100 }],
+  coreExposed: [{ frame: '9', duration: 100 }],
+  chorus: [{ frame: '10', duration: 100 }],
+  death: [{ frame: '12', duration: 100 }],
+};
+
+export const STAGE_FIVE_BOSS_LOOPING_TAGS = new Set<StageFiveBossTag>([
+  'idle',
+]);
+
+/** 4스테이지 진입 시 미리 불러오는 5스테이지 보스 아틀라스. */
+export const STAGE_FIVE_BOSS_ANIMATION_ATLAS = {
+  texture: STAGE_FIVE_BOSS_ATLAS_KEY,
+  png: STAGE_FIVE_BOSS_ATLAS_PNG,
+  json: STAGE_FIVE_BOSS_ATLAS_JSON,
+  animations: STAGE_FIVE_BOSS_ANIMATIONS,
+  tagFrames: STAGE_FIVE_BOSS_TAG_FRAMES,
+  loopingTags: STAGE_FIVE_BOSS_LOOPING_TAGS,
+} as const satisfies EnemyAnimationAtlasConfig<StageFiveBossTag>;
+
+/** 초기 부팅에서 불러오는 1~4스테이지 보스 아틀라스. */
+export const BOSS_ANIMATION_ATLASES = [
+  {
+    texture: STAGE_ONE_BOSS_ATLAS_KEY,
+    png: STAGE_ONE_BOSS_ATLAS_PNG,
+    json: STAGE_ONE_BOSS_ATLAS_JSON,
+    animations: STAGE_ONE_BOSS_ANIMATIONS,
+    tagFrames: STAGE_ONE_BOSS_TAG_FRAMES,
+    loopingTags: STAGE_ONE_BOSS_LOOPING_TAGS,
+  },
+  {
+    texture: STAGE_TWO_BOSS_ATLAS_KEY,
+    png: STAGE_TWO_BOSS_ATLAS_PNG,
+    json: STAGE_TWO_BOSS_ATLAS_JSON,
+    animations: STAGE_TWO_BOSS_ANIMATIONS,
+    tagFrames: STAGE_TWO_BOSS_TAG_FRAMES,
+    loopingTags: STAGE_TWO_BOSS_LOOPING_TAGS,
+  },
+  {
+    texture: STAGE_THREE_BOSS_ATLAS_KEY,
+    png: STAGE_THREE_BOSS_ATLAS_PNG,
+    json: STAGE_THREE_BOSS_ATLAS_JSON,
+    animations: STAGE_THREE_BOSS_ANIMATIONS,
+    tagFrames: STAGE_THREE_BOSS_TAG_FRAMES,
+    loopingTags: STAGE_THREE_BOSS_LOOPING_TAGS,
+  },
+  {
+    texture: STAGE_FOUR_BOSS_ATLAS_KEY,
+    png: STAGE_FOUR_BOSS_ATLAS_PNG,
+    json: STAGE_FOUR_BOSS_ATLAS_JSON,
+    animations: STAGE_FOUR_BOSS_ANIMATIONS,
+    tagFrames: STAGE_FOUR_BOSS_TAG_FRAMES,
+    loopingTags: STAGE_FOUR_BOSS_LOOPING_TAGS,
+  },
+] as const satisfies readonly EnemyAnimationAtlasConfig<string>[];

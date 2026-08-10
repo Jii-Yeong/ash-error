@@ -224,6 +224,9 @@ describe('front arm pose', () => {
     // on opposite sides of the body, so they belong on opposite sides of it in
     // the stack — anything else draws a limb the camera cannot see.
     expect(PLAYER_STACK_DEPTH.backArm).toBeLessThan(PLAYER_STACK_DEPTH.body);
+    expect(PLAYER_STACK_DEPTH.halo).toBeLessThan(
+      PLAYER_STACK_DEPTH.backArm,
+    );
     expect(PLAYER_STACK_DEPTH.frontArm).toBeGreaterThan(
       PLAYER_STACK_DEPTH.body,
     );

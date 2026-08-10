@@ -12,12 +12,6 @@ import {
 } from '@/game/entities/Enemy';
 import { FLOOR_SURFACE_Y } from '@/game/systems/FloorBuilder';
 
-/** 격추된 비행체가 떨어지는 속도(px/s). 낙하 tween 시간에 사용됨. */
-const DEATH_FALL_SPEED = 720;
-/** 찌그러진 잔해가 사라지기 전에 바닥에 머무는 시간. */
-const DEATH_WRECK_HOLD_MS = 400;
-/** 머무름이 끝난 뒤 페이드아웃 시간. */
-const DEATH_FADE_MS = 350;
 /**
  * 플레이어가 거의 바로 아래(이 수평 거리 이내)에 있으면 추적을 멈춤. 없으면
  * sign()이 매 프레임 부호를 뒤집어 좌우로 진동함.
@@ -118,44 +112,13 @@ export class FlyingEnemy extends Enemy {
 
     this.dying = true;
     this.onDefeated();
-    // 전투/충돌을 즉시 중단. 이후 잔해가 tween으로 떨어져 부서지고
-    // (물리는 꺼진 채) 오브젝트가 제거됨.
-    const body = this.body as Phaser.Physics.Arcade.Body;
-    body.enable = false;
-
     const sprite = this.sprite;
-    // 1단계: 바닥으로 떨어지는 동안 첫 death 프레임을 유지.
-    this.play(sprite.animations.deathFall);
     const restY = FLOOR_SURFACE_Y - this.displayHeight * 0.3;
-    const fallDistance = Math.max(0, restY - this.y);
-    this.scene.tweens.add({
-      targets: this,
-      y: this.y + fallDistance,
-      duration: Phaser.Math.Clamp(
-        (fallDistance / DEATH_FALL_SPEED) * 1000,
-        120,
-        900,
-      ),
-      ease: 'Quad.easeIn',
-      onComplete: () => {
-        // 2단계: 충돌 시 찌그러지고, 잔해를 잠깐 유지한 뒤 페이드아웃.
-        this.play(sprite.animations.deathLand);
-        this.once(Phaser.Animations.Events.ANIMATION_COMPLETE, () => {
-          this.scene.time.delayedCall(DEATH_WRECK_HOLD_MS, () => {
-            if (!this.active) {
-              return;
-            }
-            this.scene.tweens.add({
-              targets: this,
-              alpha: 0,
-              duration: DEATH_FADE_MS,
-              ease: 'Sine.easeIn',
-              onComplete: () => this.disableBody(true, true),
-            });
-          });
-        });
-      },
-    });
+    this.playAerialDeath(
+      sprite.animations.deathFall,
+      sprite.animations.deathLand,
+      restY,
+    );
   }
 
   updateCombat(

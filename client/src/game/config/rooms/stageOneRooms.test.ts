@@ -38,6 +38,9 @@ function activationX(spawn: EnemySpawnConfig) {
     case 'infernal-hound':
     case 'executioner-doll':
     case 'judgment-eye':
+    case 'choir-supporter':
+    case 'sanctum-enforcer':
+    case 'celestial-oracle':
     case 'boss':
       throw new Error('stage 1 combat room does not contain this enemy type');
   }

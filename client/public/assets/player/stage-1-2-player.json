@@ -1,0 +1,144 @@
+{ "frames": {
+   "shoot-posture-hand 0.aseprite": {
+    "frame": { "x": 1, "y": 1, "w": 94, "h": 97 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 3, "y": 1, "w": 92, "h": 95 },
+    "sourceSize": { "w": 96, "h": 96 },
+    "duration": 450
+   },
+   "shoot-posture-hand 1.aseprite": {
+    "frame": { "x": 96, "y": 1, "w": 94, "h": 97 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 3, "y": 1, "w": 92, "h": 95 },
+    "sourceSize": { "w": 96, "h": 96 },
+    "duration": 300
+   },
+   "shoot-posture-hand 2.aseprite": {
+    "frame": { "x": 191, "y": 1, "w": 94, "h": 97 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 3, "y": 1, "w": 92, "h": 95 },
+    "sourceSize": { "w": 96, "h": 96 },
+    "duration": 450
+   },
+   "shoot-posture-hand 3.aseprite": {
+    "frame": { "x": 96, "y": 1, "w": 94, "h": 97 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 3, "y": 1, "w": 92, "h": 95 },
+    "sourceSize": { "w": 96, "h": 96 },
+    "duration": 300
+   },
+   "shoot-posture-hand 4.aseprite": {
+    "frame": { "x": 286, "y": 1, "w": 94, "h": 97 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 3, "y": 1, "w": 92, "h": 95 },
+    "sourceSize": { "w": 96, "h": 96 },
+    "duration": 160
+   },
+   "shoot-posture-hand 5.aseprite": {
+    "frame": { "x": 1, "y": 99, "w": 94, "h": 97 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 3, "y": 1, "w": 92, "h": 95 },
+    "sourceSize": { "w": 96, "h": 96 },
+    "duration": 100
+   },
+   "shoot-posture-hand 6.aseprite": {
+    "frame": { "x": 96, "y": 99, "w": 94, "h": 97 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 3, "y": 1, "w": 92, "h": 95 },
+    "sourceSize": { "w": 96, "h": 96 },
+    "duration": 100
+   },
+   "shoot-posture-hand 7.aseprite": {
+    "frame": { "x": 191, "y": 99, "w": 94, "h": 97 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 3, "y": 1, "w": 92, "h": 95 },
+    "sourceSize": { "w": 96, "h": 96 },
+    "duration": 200
+   },
+   "shoot-posture-hand 8.aseprite": {
+    "frame": { "x": 286, "y": 99, "w": 94, "h": 97 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 3, "y": 1, "w": 92, "h": 95 },
+    "sourceSize": { "w": 96, "h": 96 },
+    "duration": 200
+   },
+   "shoot-posture-hand 9.aseprite": {
+    "frame": { "x": 1, "y": 197, "w": 94, "h": 97 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 3, "y": 1, "w": 92, "h": 95 },
+    "sourceSize": { "w": 96, "h": 96 },
+    "duration": 200
+   },
+   "shoot-posture-hand 10.aseprite": {
+    "frame": { "x": 96, "y": 197, "w": 94, "h": 97 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 3, "y": 1, "w": 92, "h": 95 },
+    "sourceSize": { "w": 96, "h": 96 },
+    "duration": 200
+   },
+   "shoot-posture-hand 11.aseprite": {
+    "frame": { "x": 191, "y": 197, "w": 94, "h": 97 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 3, "y": 1, "w": 92, "h": 95 },
+    "sourceSize": { "w": 96, "h": 96 },
+    "duration": 200
+   },
+   "shoot-posture-hand 12.aseprite": {
+    "frame": { "x": 286, "y": 197, "w": 94, "h": 97 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 3, "y": 1, "w": 92, "h": 95 },
+    "sourceSize": { "w": 96, "h": 96 },
+    "duration": 200
+   },
+   "shoot-posture-hand 13.aseprite": {
+    "frame": { "x": 1, "y": 295, "w": 94, "h": 97 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 3, "y": 1, "w": 92, "h": 95 },
+    "sourceSize": { "w": 96, "h": 96 },
+    "duration": 200
+   },
+   "shoot-posture-hand 14.aseprite": {
+    "frame": { "x": 96, "y": 295, "w": 94, "h": 97 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 3, "y": 1, "w": 92, "h": 95 },
+    "sourceSize": { "w": 96, "h": 96 },
+    "duration": 200
+   }
+ },
+ "meta": {
+  "app": "https://www.aseprite.org/",
+  "version": "1.3.18.1-arm64",
+  "image": "stage-1-2-player.png",
+  "format": "RGBA8888",
+  "size": { "w": 381, "h": 393 },
+  "scale": "1",
+  "frameTags": [
+   { "name": "player_idle_rifle", "from": 0, "to": 3, "direction": "forward", "color": "#000000ff" },
+   { "name": "player_jump_down", "from": 4, "to": 6, "direction": "reverse", "color": "#000000ff" },
+   { "name": "player_run", "from": 7, "to": 12, "direction": "forward", "color": "#000000ff" },
+   { "name": "death", "from": 13, "to": 14, "direction": "forward", "color": "#000000ff" }
+  ],
+  "layers": [
+   { "name": "Layer", "opacity": 255, "blendMode": "normal" },
+   { "name": "Layer 1", "opacity": 255, "blendMode": "normal" },
+   { "name": "Layer 3", "opacity": 255, "blendMode": "normal" }
+  ],
+  "slices": [
+  ]
+ }
+}

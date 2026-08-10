@@ -1,17 +1,13 @@
-import { GAME_HEIGHT, GAME_WIDTH } from '@/game/config/gameDimensions';
+import { GAME_HEIGHT } from '@/game/config/gameDimensions';
 
 export enum MovementMode {
   GROUND = 'GROUND',
   FLIGHT = 'FLIGHT',
 }
 
-/**
- * Screen-space centre bounds for flight. Horizontal values move with the
- * camera; vertical values reserve the HUD and visible floor margins.
- */
+/** 비행 중 화면 가장자리와 HUD·바닥을 피해 이동할 수 있는 범위. */
 export const PLAYER_FLIGHT_BOUNDS = {
-  minScreenX: 48,
-  maxScreenX: GAME_WIDTH - 48,
+  horizontalScreenInset: 48,
   minY: 128,
   maxY: GAME_HEIGHT - 120,
 } as const;

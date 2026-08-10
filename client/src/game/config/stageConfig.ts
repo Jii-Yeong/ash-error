@@ -1,4 +1,5 @@
 import type { MusicKey } from '@/game/config/audioConfig';
+import { STAGE_FIVE_BOSS_ANIMATION_ATLAS } from '@/game/config/bossAnimationConfig';
 import { BLOCKER_ANIMATION_ATLASES } from '@/game/config/blockerAnimationConfig';
 import { CAPTOR_ANIMATION_ATLASES } from '@/game/config/captorAnimationConfig';
 import { CEILING_MAINTAINER_ANIMATION_ATLASES } from '@/game/config/ceilingMaintainerAnimationConfig';
@@ -18,6 +19,15 @@ import {
 } from '@/game/config/meleeEnemyAnimationConfig';
 import { MovementMode } from '@/game/config/playerMovementConfig';
 import {
+  STAGE_FIVE_PLAYER_SPRITE,
+  STAGE_FOUR_PLAYER_SPRITE,
+  STAGE_ONE_TWO_PLAYER_SPRITE,
+  STAGE_THREE_PLAYER_SPRITE,
+  type PlayerSpriteConfig,
+} from '@/game/config/playerAnimationConfig';
+import { STAGE_FOUR_ENEMY_ANIMATION_ATLASES } from '@/game/config/stageFourEnemyConfig';
+import { STAGE_FIVE_ENEMY_ANIMATION_ATLASES } from '@/game/config/stageFiveEnemyConfig';
+import {
   STAGE_ONE_RANGED_SPRITE,
   STAGE_TWO_RANGED_SPRITE,
   type RangedSpriteConfig,
@@ -25,6 +35,8 @@ import {
 import {
   STAGE_ONE_FLOOR_SKIN,
   STAGE_ONE_STOOL_SKIN,
+  STAGE_FOUR_FLOOR_SKIN,
+  STAGE_FOUR_STOOL_SKIN,
   STAGE_THREE_FLOOR_SKIN,
   STAGE_THREE_PIPE_SKIN,
   STAGE_THREE_STOOL_SKIN,
@@ -53,9 +65,11 @@ export type StagePalette = {
 /**
  * A scripted beat that plays instead of a normal exit when the stage's final
  * room is cleared. 'siege' = androids close in, blackout, fall (act 3 → hell).
- * Future stages will add their own ('crack', 'return', …).
+ * 'shatter' = 화면이 점차 깨지며 다음 스테이지가 드러남(act 4 → return).
+ * 'ascension' = 보스 처치 3초 뒤 화면이 하얘지며 적에게 포위된 화면으로 복귀,
+ *   3초 뒤 클리어(act 5 종료).
  */
-export type StageEndEvent = 'siege';
+export type StageEndEvent = 'siege' | 'shatter' | 'ascension';
 
 /** Backdrop art whose source width determines its horizontal parallax speed. */
 export type StageBackground = {
@@ -69,6 +83,8 @@ export type StageConfig = {
   playerMaxHealth: number;
   movementMode: MovementMode;
   palette: StagePalette;
+  /** 배경 팔레트와 별도로 포탈에 적용할 색상. */
+  portalTint?: number;
   music: MusicKey;
   rooms: StageRooms;
   endEvent?: StageEndEvent;
@@ -94,6 +110,8 @@ export type StageConfig = {
   meleeSprite?: MeleeSpriteConfig;
   /** 스테이지 고유 잡몹이 사용하는 추가 애니메이션 아틀라스. */
   enemyAtlases?: readonly EnemyAnimationAtlasConfig<string>[];
+  /** 이 스테이지에서만 사용하는 플레이어 스프라이트. */
+  playerSprite?: PlayerSpriteConfig;
 };
 
 export const STAGE_ONE_CONFIG: StageConfig = {
@@ -117,6 +135,7 @@ export const STAGE_ONE_CONFIG: StageConfig = {
   rangedSprite: STAGE_ONE_RANGED_SPRITE,
   meleeSwing: MELEE_SWING_CONFIG,
   meleeSprite: STAGE_ONE_MELEE_SPRITE,
+  playerSprite: STAGE_ONE_TWO_PLAYER_SPRITE,
   showFloor: true,
   floorSkin: STAGE_ONE_FLOOR_SKIN,
   terrainSkin: STAGE_ONE_STOOL_SKIN,
@@ -136,6 +155,7 @@ export const STAGE_TWO_CONFIG: StageConfig = {
     accentSecondary: 0x3b4a6b,
     neonFlicker: true,
   },
+  portalTint: 0xb6ffe4,
   music: 'bgm-alley',
   background: {
     key: 'stage-02-bg',
@@ -145,6 +165,7 @@ export const STAGE_TWO_CONFIG: StageConfig = {
   rangedSprite: STAGE_TWO_RANGED_SPRITE,
   meleeSwing: MELEE_SWING_CONFIG,
   meleeSprite: STAGE_TWO_MELEE_SPRITE,
+  playerSprite: STAGE_ONE_TWO_PLAYER_SPRITE,
   showFloor: true,
   floorSkin: STAGE_TWO_FLOOR_SKIN,
   terrainSkin: STAGE_TWO_STOOL_SKIN,
@@ -174,6 +195,7 @@ export const STAGE_THREE_CONFIG: StageConfig = {
     ...CAPTOR_ANIMATION_ATLASES,
     ...BLOCKER_ANIMATION_ATLASES,
   ] as readonly EnemyAnimationAtlasConfig<string>[],
+  playerSprite: STAGE_THREE_PLAYER_SPRITE,
   showFloor: true,
   floorSkin: STAGE_THREE_FLOOR_SKIN,
   terrainSkin: STAGE_THREE_STOOL_SKIN,
@@ -200,7 +222,14 @@ export const STAGE_FOUR_CONFIG: StageConfig = {
     key: 'stage-04-bg',
     path: '/assets/backgrounds/stage-04.webp',
   },
+  enemyAtlases:
+    STAGE_FOUR_ENEMY_ANIMATION_ATLASES as readonly EnemyAnimationAtlasConfig<string>[],
+  playerSprite: STAGE_FOUR_PLAYER_SPRITE,
+  showFloor: true,
+  floorSkin: STAGE_FOUR_FLOOR_SKIN,
+  terrainSkin: STAGE_FOUR_STOOL_SKIN,
   rooms: INFERNO_ROOMS,
+  endEvent: 'shatter',
 };
 
 export const STAGE_FIVE_CONFIG: StageConfig = {
@@ -221,7 +250,13 @@ export const STAGE_FIVE_CONFIG: StageConfig = {
     key: 'stage-05-bg',
     path: '/assets/backgrounds/stage-05.webp',
   },
+  enemyAtlases: [
+    ...STAGE_FIVE_ENEMY_ANIMATION_ATLASES,
+    STAGE_FIVE_BOSS_ANIMATION_ATLAS,
+  ] as readonly EnemyAnimationAtlasConfig<string>[],
+  playerSprite: STAGE_FIVE_PLAYER_SPRITE,
   rooms: RETURN_ROOMS,
+  endEvent: 'ascension',
 };
 
 export const STAGES: readonly StageConfig[] = [

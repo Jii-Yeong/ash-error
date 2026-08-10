@@ -54,13 +54,14 @@ export function useGameUiEvents() {
     const handlePauseChanged = (paused: boolean) => {
       useGameUiStore.getState().setPaused(paused);
     };
-    /**
-     * Listened for on the window rather than through Phaser's keyboard plugin:
-     * that plugin pauses along with the scene, so a key bound through it could
-     * pause the game and then never be heard again to unpause it.
-     */
+    /** Phaser 입력도 씬과 함께 멈추므로, 일시정지 해제용 ESC는 window에서 받는다. */
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key !== 'Escape' || event.repeat) {
+        return;
+      }
+
+      const guide = document.getElementById('control-guide');
+      if (guide instanceof HTMLDialogElement && guide.open) {
         return;
       }
 

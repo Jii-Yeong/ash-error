@@ -1,4 +1,4 @@
-import { GAME_HEIGHT } from '@/game/config/gameDimensions';
+import { GAME_HEIGHT, GAME_WIDTH } from '@/game/config/gameDimensions';
 import {
   defineBossRoom,
   defineRoom,
@@ -104,3 +104,46 @@ export const UNDERGROUND_ROOMS = [
   UNDERGROUND_ROOM_TWO,
   UNDERGROUND_BOSS_ROOM,
 ] as const satisfies StageRooms;
+
+/**
+ * 보스 처치 후 포탈로 진입하는 연출용 빈 방. `Scale.EXPAND`가 넓힌 실제
+ * 뷰포트 폭만큼 바닥을 만들고 구멍을 중앙에 둔다. 플레이어가 구멍에 떨어지면
+ * 강하 컷신이 시작된다. 방 배열의 3방·보스 마지막 불변식을 지키기 위해
+ * 런타임에서만 생성한다.
+ */
+export function createUndergroundDescentRoom(viewportWidth: number) {
+  const worldWidth = Math.max(GAME_WIDTH, viewportWidth);
+  const pitWidth = 400;
+  return defineRoom({
+    id: 'underground-descent',
+    label: '지하 강하 // DESCENT',
+    kind: 'descent',
+    worldWidth,
+    enemySpawns: [],
+    pits: [{ x: (worldWidth - pitWidth) / 2, width: pitWidth }],
+  });
+}
+
+/**
+ * 구멍으로 사라진 플레이어가 떨어져 착지하는 지하 착지 방. 구멍 없는 단단한
+ * 바닥에 플레이어가 방 중앙에 착지한다. 착지 후 두리번 연출과 적 등장 컷신이
+ * 이어진다. 강하 방과 마찬가지로 런타임에서 주입한다.
+ *
+ * 화면 스케일이 EXPAND라 넓은 화면에서는 뷰포트가 한 화면(GAME_WIDTH)보다
+ * 넓어진다. 바닥이 화면 가장자리까지 꽉 차도록 방 너비를 화면보다 넉넉하게 둔다.
+ */
+export const UNDERGROUND_LANDING_ROOM = defineRoom({
+  id: 'underground-landing',
+  label: '지하 심부 // SUBLEVEL',
+  kind: 'descent',
+  worldWidth: GAME_WIDTH * 4,
+  enemySpawns: [],
+  ceilingPipes: [
+    {
+      id: 'landing-overhead',
+      x: GAME_WIDTH,
+      y: 72,
+      width: GAME_WIDTH * 2,
+    },
+  ],
+});

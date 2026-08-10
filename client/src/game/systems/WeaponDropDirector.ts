@@ -67,6 +67,11 @@ export class WeaponDropDirector {
     return weapon;
   }
 
+  /** 바닥에 아직 남아 있는 드랍이 있는지. */
+  get hasPickups() {
+    return this.pickups.size > 0;
+  }
+
   clear() {
     for (const pickup of this.pickups) {
       pickup.destroy();

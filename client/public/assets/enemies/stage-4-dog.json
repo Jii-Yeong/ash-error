@@ -1,0 +1,94 @@
+{ "frames": {
+   "0": {
+    "frame": { "x": 1, "y": 1, "w": 119, "h": 73 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 1, "y": 2, "w": 117, "h": 71 },
+    "sourceSize": { "w": 120, "h": 80 },
+    "duration": 180
+   },
+   "1": {
+    "frame": { "x": 121, "y": 1, "w": 119, "h": 73 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 1, "y": 2, "w": 117, "h": 71 },
+    "sourceSize": { "w": 120, "h": 80 },
+    "duration": 180
+   },
+   "2": {
+    "frame": { "x": 241, "y": 1, "w": 119, "h": 73 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 1, "y": 2, "w": 117, "h": 71 },
+    "sourceSize": { "w": 120, "h": 80 },
+    "duration": 180
+   },
+   "3": {
+    "frame": { "x": 1, "y": 75, "w": 119, "h": 73 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 1, "y": 2, "w": 117, "h": 71 },
+    "sourceSize": { "w": 120, "h": 80 },
+    "duration": 300
+   },
+   "4": {
+    "frame": { "x": 121, "y": 75, "w": 119, "h": 73 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 1, "y": 2, "w": 117, "h": 71 },
+    "sourceSize": { "w": 120, "h": 80 },
+    "duration": 180
+   },
+   "5": {
+    "frame": { "x": 241, "y": 75, "w": 119, "h": 73 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 1, "y": 2, "w": 117, "h": 71 },
+    "sourceSize": { "w": 120, "h": 80 },
+    "duration": 180
+   },
+   "6": {
+    "frame": { "x": 1, "y": 149, "w": 119, "h": 73 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 1, "y": 2, "w": 117, "h": 71 },
+    "sourceSize": { "w": 120, "h": 80 },
+    "duration": 180
+   },
+   "7": {
+    "frame": { "x": 121, "y": 149, "w": 119, "h": 73 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 1, "y": 2, "w": 117, "h": 71 },
+    "sourceSize": { "w": 120, "h": 80 },
+    "duration": 180
+   },
+   "8": {
+    "frame": { "x": 241, "y": 149, "w": 119, "h": 73 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 1, "y": 2, "w": 117, "h": 71 },
+    "sourceSize": { "w": 120, "h": 80 },
+    "duration": 180
+   }
+ },
+ "meta": {
+  "app": "https://www.aseprite.org/",
+  "version": "1.3.18.1-arm64",
+  "image": "stage-4-dog.png",
+  "format": "RGBA8888",
+  "size": { "w": 361, "h": 223 },
+  "scale": "1",
+  "frameTags": [
+   { "name": "idle", "from": 0, "to": 1, "direction": "forward", "color": "#000000ff" },
+   { "name": "attack", "from": 2, "to": 4, "direction": "forward", "color": "#000000ff" },
+   { "name": "walk", "from": 5, "to": 6, "direction": "forward", "color": "#000000ff" },
+   { "name": "death", "from": 7, "to": 8, "direction": "forward", "color": "#000000ff" }
+  ],
+  "layers": [
+   { "name": "Layer 1", "opacity": 255, "blendMode": "normal" }
+  ],
+  "slices": [
+  ]
+ }
+}

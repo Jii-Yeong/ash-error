@@ -37,7 +37,7 @@ const BLOCKER_ATLAS_SET = defineEnemyAtlasSet({
   sprite: {
     scale: 1,
     bodyWidth: 96,
-    bodyHeight: 105,
+    bodyHeight: 91,
     bodyOffsetX: 28,
     bodyOffsetY: 29,
   },

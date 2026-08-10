@@ -1,34 +1,48 @@
 import Phaser from 'phaser';
 import { resolveAudioAssets } from '@/game/config/audioAssets';
-import { MUSIC_CONFIG } from '@/game/config/audioConfig';
 import {
-  STAGE_ONE_BOSS_ANIMATIONS,
-  STAGE_ONE_BOSS_ATLAS_JSON,
-  STAGE_ONE_BOSS_ATLAS_KEY,
-  STAGE_ONE_BOSS_ATLAS_PNG,
-  STAGE_ONE_BOSS_LOOPING_TAGS,
+  DEFERRED_SFX_KEYS,
+  MUSIC_CONFIG,
+} from '@/game/config/audioConfig';
+import {
+  BOSS_ANIMATION_ATLASES,
+  STAGE_FIVE_BOSS_ATLAS_KEY,
+  STAGE_FIVE_BOSS_EYE_LOCK_SIGIL,
+  STAGE_FIVE_BOSS_FLOATING_JUDGMENT_SIGIL,
+  STAGE_FIVE_BOSS_WING_FAN_WARNING,
+  STAGE_FOUR_MAGMA_RUPTURE_FIRE_PILLAR,
+  STAGE_FOUR_MAGMA_RUPTURE_WARNING,
+  STAGE_FOUR_MAGMA_SHARD,
+  STAGE_FOUR_MAGMA_SHARD_IMPACT,
   STAGE_ONE_BOSS_LASER_ASSETS,
-  STAGE_ONE_BOSS_TAG_FRAMES,
-  STAGE_TWO_BOSS_ANIMATIONS,
-  STAGE_TWO_BOSS_ATLAS_JSON,
-  STAGE_TWO_BOSS_ATLAS_KEY,
-  STAGE_TWO_BOSS_ATLAS_PNG,
-  STAGE_TWO_BOSS_LOOPING_TAGS,
-  STAGE_TWO_BOSS_TAG_FRAMES,
-  STAGE_THREE_BOSS_ANIMATIONS,
-  STAGE_THREE_BOSS_ATLAS_JSON,
-  STAGE_THREE_BOSS_ATLAS_KEY,
-  STAGE_THREE_BOSS_ATLAS_PNG,
-  STAGE_THREE_BOSS_LOOPING_TAGS,
-  STAGE_THREE_BOSS_TAG_FRAMES,
+  STAGE_ONE_BOSS_WEAPON_ASSETS,
+  STAGE_TWO_BOSS_ENERGY_ORB,
+  STAGE_TWO_BOSS_HEAD,
+  STAGE_TWO_BOSS_SEARCHLIGHT,
+  STAGE_THREE_BOSS_SHOCKWAVE,
+  STAGE_THREE_BOSS_VACUUM,
 } from '@/game/config/bossAnimationConfig';
 import { BOSS_COMBAT_CONFIGS } from '@/game/config/bossConfig';
-import type { EnemyAnimationAtlasConfig } from '@/game/config/enemyAnimationAtlasConfig';
 import {
-  PLAYER_ANIMATIONS,
-  PLAYER_ATLAS_KEY,
+  STAGE_THREE_CEILING_MAINTAINER_BOMB,
+  STAGE_THREE_CEILING_MAINTAINER_BOMB_IMPACT,
+} from '@/game/config/ceilingMaintainerAnimationConfig';
+import { STAGE_THREE_CAPTOR_TETHER } from '@/game/config/captorAnimationConfig';
+import { MELEE_SWING_EFFECT } from '@/game/config/meleeEnemyAnimationConfig';
+import {
+  JUDGMENT_EYE_ORB,
+  JUDGMENT_EYE_RETICLE,
+} from '@/game/config/stageFourEnemyConfig';
+import {
   PLAYER_IDLE_FRAMES,
   PLAYER_RUN_FRAMES,
+  PLAYER_SPRITE_CONFIG,
+  STAGE_ENDING_DRONE,
+  STAGE_FIVE_PLAYER_HALO,
+  STAGE_FIVE_PLAYER_SPRITE,
+  STAGE_FOUR_PLAYER_SPRITE,
+  STAGE_ONE_TWO_PLAYER_SPRITE,
+  STAGE_THREE_PLAYER_SPRITE,
 } from '@/game/config/playerAnimationConfig';
 import { BACK_ARM, FRONT_ARM } from '@/game/config/playerRigConfig';
 import {
@@ -39,32 +53,26 @@ import { UI_PANEL_TEXTURES } from '@/game/config/uiAssetConfig';
 import { WEAPON_CONFIGS } from '@/game/config/weaponConfig';
 import { createAtlasAnimations } from '@/game/systems/createAtlasAnimations';
 
-const BOSS_ANIMATION_ATLASES = [
-  {
-    texture: STAGE_ONE_BOSS_ATLAS_KEY,
-    png: STAGE_ONE_BOSS_ATLAS_PNG,
-    json: STAGE_ONE_BOSS_ATLAS_JSON,
-    animations: STAGE_ONE_BOSS_ANIMATIONS,
-    tagFrames: STAGE_ONE_BOSS_TAG_FRAMES,
-    loopingTags: STAGE_ONE_BOSS_LOOPING_TAGS,
-  },
-  {
-    texture: STAGE_TWO_BOSS_ATLAS_KEY,
-    png: STAGE_TWO_BOSS_ATLAS_PNG,
-    json: STAGE_TWO_BOSS_ATLAS_JSON,
-    animations: STAGE_TWO_BOSS_ANIMATIONS,
-    tagFrames: STAGE_TWO_BOSS_TAG_FRAMES,
-    loopingTags: STAGE_TWO_BOSS_LOOPING_TAGS,
-  },
-  {
-    texture: STAGE_THREE_BOSS_ATLAS_KEY,
-    png: STAGE_THREE_BOSS_ATLAS_PNG,
-    json: STAGE_THREE_BOSS_ATLAS_JSON,
-    animations: STAGE_THREE_BOSS_ANIMATIONS,
-    tagFrames: STAGE_THREE_BOSS_TAG_FRAMES,
-    loopingTags: STAGE_THREE_BOSS_LOOPING_TAGS,
-  },
-] as const satisfies readonly EnemyAnimationAtlasConfig<string>[];
+const PLAYER_SPRITES = [
+  PLAYER_SPRITE_CONFIG,
+  STAGE_ONE_TWO_PLAYER_SPRITE,
+  STAGE_THREE_PLAYER_SPRITE,
+  STAGE_FOUR_PLAYER_SPRITE,
+  STAGE_FIVE_PLAYER_SPRITE,
+];
+
+const CELESTIAL_PROJECTILE_COLORS = {
+  shadow: 0x123f3a,
+  midtone: 0x58d6b3,
+  highlight: 0xd8fff4,
+  orbHighlight: 0xffe38a,
+} as const;
+
+const BOSS_PROJECTILE_TONES = {
+  shadow: 0x999999,
+  midtone: 0xeeeeee,
+  highlight: 0xffffff,
+} as const;
 
 export class BootScene extends Phaser.Scene {
   constructor() {
@@ -72,14 +80,88 @@ export class BootScene extends Phaser.Scene {
   }
 
   preload() {
+    for (const sprite of PLAYER_SPRITES) {
+      this.load.atlas(sprite.texture, sprite.png, sprite.json);
+    }
     this.load.atlas(
-      PLAYER_ATLAS_KEY,
-      '/assets/player/player.png',
-      '/assets/player/player.json',
+      STAGE_ENDING_DRONE.texture,
+      STAGE_ENDING_DRONE.png,
+      STAGE_ENDING_DRONE.json,
     );
     for (const atlas of BOSS_ANIMATION_ATLASES) {
       this.load.atlas(atlas.texture, atlas.png, atlas.json);
     }
+    this.load.image(MELEE_SWING_EFFECT.texture, MELEE_SWING_EFFECT.png);
+    this.load.image(
+      STAGE_THREE_CEILING_MAINTAINER_BOMB.texture,
+      STAGE_THREE_CEILING_MAINTAINER_BOMB.png,
+    );
+    this.load.image(
+      STAGE_THREE_CEILING_MAINTAINER_BOMB_IMPACT.texture,
+      STAGE_THREE_CEILING_MAINTAINER_BOMB_IMPACT.png,
+    );
+    this.load.image(
+      STAGE_THREE_CAPTOR_TETHER.line.texture,
+      STAGE_THREE_CAPTOR_TETHER.line.png,
+    );
+    this.load.image(
+      STAGE_THREE_CAPTOR_TETHER.claw.texture,
+      STAGE_THREE_CAPTOR_TETHER.claw.png,
+    );
+    for (const asset of Object.values(STAGE_ONE_BOSS_WEAPON_ASSETS)) {
+      this.load.image(asset.key, asset.url);
+    }
+    this.load.image(
+      STAGE_TWO_BOSS_ENERGY_ORB.texture,
+      STAGE_TWO_BOSS_ENERGY_ORB.png,
+    );
+    this.load.image(STAGE_TWO_BOSS_HEAD.texture, STAGE_TWO_BOSS_HEAD.png);
+    this.load.image(
+      STAGE_TWO_BOSS_SEARCHLIGHT.texture,
+      STAGE_TWO_BOSS_SEARCHLIGHT.png,
+    );
+    this.load.image(
+      STAGE_THREE_BOSS_SHOCKWAVE.texture,
+      STAGE_THREE_BOSS_SHOCKWAVE.png,
+    );
+    this.load.spritesheet(
+      STAGE_THREE_BOSS_VACUUM.texture,
+      STAGE_THREE_BOSS_VACUUM.png,
+      {
+        frameWidth: STAGE_THREE_BOSS_VACUUM.frameWidth,
+        frameHeight: STAGE_THREE_BOSS_VACUUM.frameHeight,
+      },
+    );
+    this.load.image(
+      STAGE_FOUR_MAGMA_SHARD.texture,
+      STAGE_FOUR_MAGMA_SHARD.png,
+    );
+    this.load.image(
+      STAGE_FOUR_MAGMA_SHARD_IMPACT.texture,
+      STAGE_FOUR_MAGMA_SHARD_IMPACT.png,
+    );
+    this.load.image(
+      STAGE_FOUR_MAGMA_RUPTURE_WARNING.texture,
+      STAGE_FOUR_MAGMA_RUPTURE_WARNING.png,
+    );
+    this.load.image(
+      STAGE_FOUR_MAGMA_RUPTURE_FIRE_PILLAR.texture,
+      STAGE_FOUR_MAGMA_RUPTURE_FIRE_PILLAR.png,
+    );
+    this.load.image(JUDGMENT_EYE_RETICLE.texture, JUDGMENT_EYE_RETICLE.png);
+    this.load.image(JUDGMENT_EYE_ORB.texture, JUDGMENT_EYE_ORB.png);
+    this.load.image(
+      STAGE_FIVE_BOSS_EYE_LOCK_SIGIL.texture,
+      STAGE_FIVE_BOSS_EYE_LOCK_SIGIL.png,
+    );
+    this.load.image(
+      STAGE_FIVE_BOSS_FLOATING_JUDGMENT_SIGIL.texture,
+      STAGE_FIVE_BOSS_FLOATING_JUDGMENT_SIGIL.png,
+    );
+    this.load.image(
+      STAGE_FIVE_BOSS_WING_FAN_WARNING.texture,
+      STAGE_FIVE_BOSS_WING_FAN_WARNING.png,
+    );
     for (const asset of Object.values(STAGE_ONE_BOSS_LASER_ASSETS)) {
       this.load.image(asset.key, asset.url);
     }
@@ -98,14 +180,40 @@ export class BootScene extends Phaser.Scene {
     });
     this.load.image(BACK_ARM.texture, BACK_ARM.url);
     this.load.image(FRONT_ARM.texture, FRONT_ARM.url);
+    this.load.spritesheet(
+      STAGE_FIVE_PLAYER_HALO.texture,
+      STAGE_FIVE_PLAYER_HALO.png,
+      {
+        frameWidth: STAGE_FIVE_PLAYER_HALO.frameWidth,
+        frameHeight: STAGE_FIVE_PLAYER_HALO.frameHeight,
+        spacing: STAGE_FIVE_PLAYER_HALO.spacing,
+      },
+    );
 
     const { assets, missingKeys, unusedFiles } = resolveAudioAssets();
+
+    /**
+     * 지연 로드는 `decodeAudio`를 쓰는 Web Audio 매니저에서만 가능하다.
+     * HTML5 오디오로 폴백한 브라우저에서는 AudioDirector가 큐를 아예 가져오지
+     * 못하므로, 여기서 미뤄 두면 그 큐들은 **영원히 무음이 된다.**
+     * 그런 환경에서는 예전처럼 전량 즉시 로드한다 — 타이틀이 늦어지는 편이
+     * 발소리와 보스 큐 52개가 통째로 사라지는 것보다 낫다.
+     */
+    const canDeferSfx = typeof (
+      this.sound as Partial<{ decodeAudio: unknown }>
+    ).decodeAudio === 'function';
 
     for (const asset of assets) {
       // 타이틀 곡은 후반 스테이지용 선택 자원이 아니라 타이틀 화면의 일부이므로,
       // 타이틀 진입 즉시 재생을 시도할 수 있도록 미리 불러온다. 나머지 음악은
       // AudioDirector에서 지연 로드해 초기 다운로드를 첫 화면과 작은 효과음으로 제한한다.
       if (asset.key in MUSIC_CONFIG && asset.key !== 'bgm-title') {
+        continue;
+      }
+
+      // 스테이지 전용 효과음도 같은 이유로 미룬다. 여기 남는 것은 어느
+      // 스테이지에서도 나는 공용 큐뿐이다 — 무기, 피격, 방 잠금 같은 것들.
+      if (canDeferSfx && DEFERRED_SFX_KEYS.has(asset.key)) {
         continue;
       }
 
@@ -262,6 +370,67 @@ export class BootScene extends Phaser.Scene {
     graphics.fillRect(47, 55, 11, 2);
     graphics.generateTexture('judgment-eye-placeholder', 72, 72);
 
+    // 성가의 소형 서포터: 작은 날개와 밝아지는 후광을 가진 천사 드론.
+    graphics.clear();
+    graphics.lineStyle(4, 0xffeaa1, 0.95);
+    graphics.strokeCircle(28, 24, 20);
+    graphics.fillStyle(0xe9edf0);
+    graphics.fillCircle(28, 28, 15);
+    graphics.fillTriangle(14, 28, 0, 18, 7, 38);
+    graphics.fillTriangle(42, 28, 56, 18, 49, 38);
+    graphics.fillStyle(0x8fffe0);
+    graphics.fillCircle(28, 28, 5);
+    graphics.fillStyle(0x88959b);
+    graphics.fillRect(24, 42, 8, 10);
+    graphics.generateTexture('choir-supporter-placeholder', 56, 54);
+
+    // 성역의 집행자: 창 발사기와 금속 날개를 단 중형 안드로이드.
+    graphics.clear();
+    graphics.fillStyle(0xd7dde0);
+    graphics.fillRoundedRect(18, 8, 36, 68, 7);
+    graphics.fillTriangle(18, 20, 0, 34, 18, 48);
+    graphics.fillTriangle(54, 20, 72, 34, 54, 48);
+    graphics.fillStyle(0xffd66f);
+    graphics.fillRect(25, 19, 22, 8);
+    graphics.fillStyle(0x69767c);
+    graphics.fillRect(4, 38, 52, 8);
+    graphics.fillStyle(0x8fffe0);
+    graphics.fillRect(31, 32, 10, 26);
+    graphics.generateTexture('sanctum-enforcer-placeholder', 72, 84);
+
+    // 천계의 오라클: 후광과 성서 조각이 둘러싼 대형 카메라 코어.
+    graphics.clear();
+    graphics.lineStyle(7, 0xffe59a, 0.9);
+    graphics.strokeCircle(48, 48, 40);
+    graphics.fillStyle(0xf0f2ee);
+    graphics.fillCircle(48, 48, 30);
+    graphics.fillStyle(0x3a4248);
+    graphics.fillEllipse(48, 48, 42, 20);
+    graphics.fillStyle(0x8fffe0);
+    graphics.fillCircle(48, 48, 7);
+    graphics.fillStyle(0xfff1b8);
+    graphics.fillRect(0, 23, 18, 28);
+    graphics.fillRect(78, 45, 18, 28);
+    graphics.generateTexture('celestial-oracle-placeholder', 96, 96);
+
+    graphics.clear();
+    graphics.fillStyle(CELESTIAL_PROJECTILE_COLORS.shadow);
+    graphics.fillCircle(6, 6, 6);
+    graphics.fillStyle(CELESTIAL_PROJECTILE_COLORS.midtone);
+    graphics.fillCircle(6, 6, 4);
+    graphics.fillStyle(CELESTIAL_PROJECTILE_COLORS.orbHighlight);
+    graphics.fillCircle(5, 5, 2);
+    graphics.generateTexture('celestial-bullet-placeholder', 12, 12);
+
+    graphics.clear();
+    graphics.fillStyle(CELESTIAL_PROJECTILE_COLORS.shadow);
+    graphics.fillTriangle(0, 4, 25, 0, 25, 8);
+    graphics.fillStyle(CELESTIAL_PROJECTILE_COLORS.midtone);
+    graphics.fillTriangle(3, 4, 24, 1, 24, 7);
+    graphics.fillStyle(CELESTIAL_PROJECTILE_COLORS.highlight);
+    graphics.fillRect(8, 3, 22, 2);
+    graphics.generateTexture('celestial-spear-placeholder', 30, 8);
+
     graphics.clear();
     graphics.fillStyle(0x6f0713);
     graphics.fillCircle(5, 5, 5);
@@ -277,10 +446,12 @@ export class BootScene extends Phaser.Scene {
     graphics.generateTexture('flying-enemy-bullet-placeholder', 10, 10);
 
     graphics.clear();
-    graphics.fillStyle(0xffffff);
+    graphics.fillStyle(BOSS_PROJECTILE_TONES.shadow);
     graphics.fillCircle(7, 7, 7);
-    graphics.fillStyle(0xfff4c7);
-    graphics.fillCircle(7, 7, 3);
+    graphics.fillStyle(BOSS_PROJECTILE_TONES.midtone);
+    graphics.fillCircle(7, 7, 6);
+    graphics.fillStyle(BOSS_PROJECTILE_TONES.highlight);
+    graphics.fillCircle(6, 5, 2);
     graphics.generateTexture('architect-bullet-placeholder', 14, 14);
 
     const createBossPlaceholder = (
@@ -306,9 +477,12 @@ export class BootScene extends Phaser.Scene {
     };
 
     for (const config of Object.values(BOSS_COMBAT_CONFIGS)) {
-      // Bosses with a real atlas (loaded in preload) keep it; only the rest
-      // fall back to a generated placeholder.
-      if (this.textures.exists(config.texture)) {
+      // 실제 아틀라스 키에는 placeholder를 만들지 않아 지연 로더가 캐시로
+      // 오인하지 않게 함. 아직 없는 텍스처는 로드 완료 후 현재 보스가 갱신함.
+      if (
+        this.textures.exists(config.texture) ||
+        config.texture === STAGE_FIVE_BOSS_ATLAS_KEY
+      ) {
         continue;
       }
       createBossPlaceholder(
@@ -330,6 +504,15 @@ export class BootScene extends Phaser.Scene {
 
   private createAnimations() {
     this.anims.create({
+      key: STAGE_THREE_BOSS_VACUUM.animation,
+      frames: this.anims.generateFrameNumbers(
+        STAGE_THREE_BOSS_VACUUM.texture,
+        { start: 0, end: STAGE_THREE_BOSS_VACUUM.frameCount - 1 },
+      ),
+      frameRate: STAGE_THREE_BOSS_VACUUM.frameRate,
+      repeat: -1,
+    });
+    this.anims.create({
       key: ROOM_PORTAL_ANIMATION.key,
       frames: this.anims.generateFrameNumbers(ROOM_PORTAL_TEXTURE.key, {
         start: 0,
@@ -338,22 +521,73 @@ export class BootScene extends Phaser.Scene {
       frameRate: ROOM_PORTAL_ANIMATION.frameRate,
       repeat: -1,
     });
+    for (const sprite of PLAYER_SPRITES) {
+      this.anims.create({
+        key: sprite.animations.idle,
+        frames: PLAYER_IDLE_FRAMES.map((frame) => ({
+          key: sprite.texture,
+          frame,
+        })),
+        duration: 1500,
+        repeat: -1,
+      });
+      this.anims.create({
+        key: sprite.animations.run,
+        frames: PLAYER_RUN_FRAMES.map((frame) => ({
+          key: sprite.texture,
+          frame,
+        })),
+        duration: 480,
+        repeat: -1,
+      });
+      if (sprite.flyFrames) {
+        this.anims.create({
+          key: sprite.animations.flyIdle,
+          frames: sprite.flyFrames.map((frame) => ({
+            key: sprite.texture,
+            frame,
+          })),
+          duration: 200,
+          repeat: -1,
+        });
+      }
+      if (sprite.deathFrames) {
+        this.anims.create({
+          key: sprite.animations.death,
+          frames: sprite.deathFrames.map((frame) => ({
+            key: sprite.texture,
+            frame,
+          })),
+          duration: 400,
+        });
+      }
+      if (sprite.aliveFrames) {
+        this.anims.create({
+          key: sprite.animations.alive,
+          frames: sprite.aliveFrames.map((frame) => ({
+            key: sprite.texture,
+            frame,
+          })),
+          duration: 1200,
+        });
+      }
+    }
     this.anims.create({
-      key: PLAYER_ANIMATIONS.idle,
-      frames: PLAYER_IDLE_FRAMES.map((frame) => ({
-        key: PLAYER_ATLAS_KEY,
+      key: STAGE_ENDING_DRONE.animation,
+      frames: STAGE_ENDING_DRONE.frames.map((frame) => ({
+        key: STAGE_ENDING_DRONE.texture,
         frame,
       })),
-      duration: 1500,
+      duration: 500,
       repeat: -1,
     });
     this.anims.create({
-      key: PLAYER_ANIMATIONS.run,
-      frames: PLAYER_RUN_FRAMES.map((frame) => ({
-        key: PLAYER_ATLAS_KEY,
-        frame,
-      })),
-      duration: 480,
+      key: STAGE_FIVE_PLAYER_HALO.animation,
+      frames: this.anims.generateFrameNumbers(
+        STAGE_FIVE_PLAYER_HALO.texture,
+        { start: 0, end: STAGE_FIVE_PLAYER_HALO.frameCount - 1 },
+      ),
+      duration: 400,
       repeat: -1,
     });
     for (const atlas of BOSS_ANIMATION_ATLASES) {

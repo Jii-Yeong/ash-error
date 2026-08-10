@@ -1,14 +1,20 @@
 import Phaser from 'phaser';
 import { GAME_HEIGHT } from '@/game/config/gameDimensions';
-import { JUDGMENT_EYE_CONFIG } from '@/game/config/stageFourEnemyConfig';
+import {
+  JUDGMENT_EYE_CONFIG,
+  JUDGMENT_EYE_ORB,
+  JUDGMENT_EYE_RETICLE,
+} from '@/game/config/stageFourEnemyConfig';
 import {
   ENEMY_DEPTH,
   type EnemyProjectileAttack,
 } from '@/game/entities/Enemy';
 import { HallucinatedAndroidEnemy } from '@/game/entities/HallucinatedAndroidEnemy';
 import type { EnemyAttackCoordinator } from '@/game/systems/EnemyAttackCoordinator';
+import { SceneUpdateLoop } from '@/game/systems/SceneUpdateLoop';
 
 type EyeState = 'ready' | 'tracking' | 'orb' | 'repositioning';
+const POSE = JUDGMENT_EYE_CONFIG.animations;
 
 type EyeBullet = {
   sprite: Phaser.Physics.Arcade.Image;
@@ -24,13 +30,17 @@ export class JudgmentEyeEnemy extends HallucinatedAndroidEnemy {
   private nextAttackAt = 0;
   private lockedTarget = new Phaser.Math.Vector2();
   private repositionTarget = new Phaser.Math.Vector2();
-  private orb?: Phaser.GameObjects.Arc;
+  private orb?: Phaser.GameObjects.Image;
   private firedOrb = false;
   private radialVolleyIndex = 0;
-  private readonly reticle: Phaser.GameObjects.Graphics;
+  private readonly reticle: Phaser.GameObjects.Image;
   private readonly bullets: EyeBullet[] = [];
   /** 방사 탄막을 매번 새로 만들지 않고 재사용하는 탄환 풀(비활성 스프라이트). */
   private readonly bulletPool: Phaser.Physics.Arcade.Image[] = [];
+  private bulletTarget?: Phaser.Physics.Arcade.Sprite;
+  /** 사망 뒤 남은 탄환을 씬 갱신으로 굴리는 자체 정지 루프. */
+  private readonly detachLoop: SceneUpdateLoop;
+  private dying = false;
 
   constructor(
     scene: Phaser.Scene,
@@ -47,11 +57,61 @@ export class JudgmentEyeEnemy extends HallucinatedAndroidEnemy {
       JUDGMENT_EYE_CONFIG.maxHealth,
       attackCoordinator,
     );
+    this.setScale(JUDGMENT_EYE_CONFIG.scale);
+    this.playPose(POSE.idle);
     (this.body as Phaser.Physics.Arcade.Body)
       .setAllowGravity(false)
-      .setCircle(JUDGMENT_EYE_CONFIG.bodySize / 2);
+      .setCircle(
+        JUDGMENT_EYE_CONFIG.bodyWidth / 2,
+        JUDGMENT_EYE_CONFIG.bodyOffsetX,
+        JUDGMENT_EYE_CONFIG.bodyOffsetY,
+      );
     this.setDepth(ENEMY_DEPTH);
-    this.reticle = scene.add.graphics().setDepth(8);
+    this.reticle = scene.add
+      .image(0, 0, JUDGMENT_EYE_RETICLE.texture)
+      .setDepth(8)
+      .setBlendMode(Phaser.BlendModes.ADD)
+      .setVisible(false);
+    this.detachLoop = new SceneUpdateLoop(scene, (time) => {
+      this.updateBullets(time, this.bulletTarget);
+      if (this.bullets.length === 0) {
+        this.detachLoop.stop();
+      }
+    });
+  }
+
+  override get playsOwnDeathAnimation() {
+    return true;
+  }
+
+  override refreshAtlasSprite() {
+    this.setScale(JUDGMENT_EYE_CONFIG.scale);
+    this.playPose(
+      this.eyeState === 'tracking' || this.eyeState === 'orb'
+        ? POSE.attack
+        : POSE.idle,
+    );
+  }
+
+  override defeat() {
+    if (!this.active || this.dying) {
+      return;
+    }
+    if (
+      !this.scene.anims.exists(POSE.deathFall) ||
+      !this.scene.anims.exists(POSE.deathLand)
+    ) {
+      super.defeat();
+      return;
+    }
+
+    this.dying = true;
+    this.onDefeated();
+    this.playFallingDeath(
+      POSE.deathFall,
+      POSE.deathLand,
+      JUDGMENT_EYE_CONFIG.deathLandOffsetY,
+    );
   }
 
   updateCombat(
@@ -59,7 +119,14 @@ export class JudgmentEyeEnemy extends HallucinatedAndroidEnemy {
     target: Phaser.Physics.Arcade.Sprite,
     _fireProjectile: EnemyProjectileAttack,
   ) {
-    this.updateBullets(time, target);
+    this.bulletTarget = target;
+    if (!this.detachLoop.isRunning) {
+      this.updateBullets(time, target);
+    }
+    if (!this.active || this.dying) {
+      return false;
+    }
+
     const targetInRange =
       Phaser.Math.Distance.Between(this.x, this.y, target.x, target.y) <=
       this.aggroRadius;
@@ -107,6 +174,7 @@ export class JudgmentEyeEnemy extends HallucinatedAndroidEnemy {
       ) {
         this.eyeState = 'ready';
         this.setVelocity(0);
+        this.playPose(POSE.idle);
       }
       return targetInRange;
     }
@@ -118,6 +186,7 @@ export class JudgmentEyeEnemy extends HallucinatedAndroidEnemy {
       this.tryBeginAttack()
     ) {
       this.eyeState = 'tracking';
+      this.playPose(POSE.attack);
       this.stateEndsAt = time + JUDGMENT_EYE_CONFIG.trackingDuration;
       this.lockedTarget.set(target.x, target.y);
       this.setVelocity(0);
@@ -127,37 +196,40 @@ export class JudgmentEyeEnemy extends HallucinatedAndroidEnemy {
 
   protected override onDefeated() {
     super.onDefeated();
-    this.clearAttackObjects();
+    this.clearAttackTelegraph();
+    this.detachBullets();
   }
 
   override destroy(fromScene?: boolean) {
-    this.clearAttackObjects();
+    this.clearAttackTelegraph();
+    this.detachLoop.stop();
+    this.clearBullets();
     this.destroyBulletPool();
     super.destroy(fromScene);
   }
 
   private drawReticle(time: number) {
-    const pulse = Math.floor(time / 90) % 2 ? 18 : 24;
-    this.reticle.clear();
-    this.reticle.lineStyle(2, 0xff3544, 0.95);
-    this.reticle.strokeCircle(this.lockedTarget.x, this.lockedTarget.y, pulse);
-    this.reticle.lineBetween(
-      this.lockedTarget.x - pulse - 8,
-      this.lockedTarget.y,
-      this.lockedTarget.x + pulse + 8,
-      this.lockedTarget.y,
-    );
+    const size = Math.floor(time / 90) % 2 ? 60 : 72;
+    this.reticle
+      .setPosition(this.lockedTarget.x, this.lockedTarget.y)
+      .setDisplaySize(size, size)
+      .setVisible(true);
   }
 
   private beginOrb(time: number) {
     this.eyeState = 'orb';
     this.stateEndsAt = time + JUDGMENT_EYE_CONFIG.orbLifetime;
     this.firedOrb = false;
-    this.reticle.clear();
+    this.reticle.setVisible(false);
     this.orb = this.scene.add
-      .circle(this.lockedTarget.x, this.lockedTarget.y, 18, 0x6c0611, 0.86)
-      .setStrokeStyle(3, 0xff4050, 0.95)
-      .setDepth(9);
+      .image(
+        this.lockedTarget.x,
+        this.lockedTarget.y,
+        JUDGMENT_EYE_ORB.texture,
+      )
+      .setDisplaySize(48, 48)
+      .setDepth(9)
+      .setBlendMode(Phaser.BlendModes.ADD);
   }
 
   private fireRadialVolley(time: number) {
@@ -182,7 +254,7 @@ export class JudgmentEyeEnemy extends HallucinatedAndroidEnemy {
 
   private updateBullets(
     time: number,
-    target: Phaser.Physics.Arcade.Sprite,
+    target?: Phaser.Physics.Arcade.Sprite,
   ) {
     for (let index = this.bullets.length - 1; index >= 0; index -= 1) {
       const bullet = this.bullets[index];
@@ -197,7 +269,7 @@ export class JudgmentEyeEnemy extends HallucinatedAndroidEnemy {
         continue;
       }
       if (
-        target.active &&
+        target?.active &&
         Phaser.Math.Distance.Between(
           bullet.sprite.x,
           bullet.sprite.y,
@@ -214,6 +286,7 @@ export class JudgmentEyeEnemy extends HallucinatedAndroidEnemy {
 
   private beginReposition(time: number, targetX: number) {
     this.eyeState = 'repositioning';
+    this.playPose(POSE.idle);
     this.stateEndsAt = time + JUDGMENT_EYE_CONFIG.repositionDuration;
     this.nextAttackAt = time + JUDGMENT_EYE_CONFIG.attackCooldown;
     const worldWidth = this.scene.physics.world.bounds.width;
@@ -262,13 +335,23 @@ export class JudgmentEyeEnemy extends HallucinatedAndroidEnemy {
     this.bulletPool.push(sprite);
   }
 
-  private clearAttackObjects() {
-    this.reticle.clear();
+  /** 사망 뒤 활성 탄환만 씬 갱신으로 넘기고 경고 연출은 즉시 정리함. */
+  private detachBullets() {
+    if (this.bullets.length === 0) {
+      return;
+    }
+    this.detachLoop.start();
+  }
+
+  private clearAttackTelegraph() {
     if (this.reticle.active) {
       this.reticle.destroy();
     }
     this.orb?.destroy();
     this.orb = undefined;
+  }
+
+  private clearBullets() {
     for (const bullet of this.bullets) {
       this.releaseBullet(bullet.sprite);
     }
@@ -280,5 +363,11 @@ export class JudgmentEyeEnemy extends HallucinatedAndroidEnemy {
       sprite.destroy();
     }
     this.bulletPool.length = 0;
+  }
+
+  private playPose(pose: string) {
+    if (this.scene.anims.exists(pose)) {
+      this.play(pose, true);
+    }
   }
 }

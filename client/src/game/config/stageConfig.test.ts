@@ -7,6 +7,7 @@ import {
   STAGES,
   STAGE_FIVE_CONFIG,
   STAGE_FOUR_CONFIG,
+  STAGE_ONE_CONFIG,
   STAGE_THREE_CONFIG,
   STAGE_TWO_CONFIG,
 } from '@/game/config/stageConfig';
@@ -60,6 +61,20 @@ describe('stage configuration', () => {
       key: 'stage-02-bg',
       path: '/assets/backgrounds/stage-02.webp',
     });
+    expect(STAGE_TWO_CONFIG.portalTint).toBe(0xb6ffe4);
+  });
+
+  it('uses one player atlas with a death pose in stages one and two', () => {
+    for (const stage of [STAGE_ONE_CONFIG, STAGE_TWO_CONFIG]) {
+      expect(stage.playerSprite).toMatchObject({
+        texture: 'stage-1-2-player',
+        animations: {
+          idle: 'stage-1-2-player-idle',
+          run: 'stage-1-2-player-run',
+          death: 'stage-1-2-player-death',
+        },
+      });
+    }
   });
 
   it('skins the stage 2 upper platforms with the supplied 3-slice art', () => {
@@ -131,6 +146,14 @@ describe('stage configuration', () => {
         key: 'stage-04-bg',
         path: '/assets/backgrounds/stage-04.webp',
       },
+      playerSprite: {
+        texture: 'stage-4-player',
+        animations: {
+          idle: 'stage-4-player-idle',
+          run: 'stage-4-player-run',
+          death: 'stage-4-player-death',
+        },
+      },
     });
     expect(STAGE_FOUR_CONFIG.rooms.at(-1)?.enemySpawns[0]).toMatchObject({
       type: 'boss',
@@ -151,6 +174,17 @@ describe('stage configuration', () => {
         key: 'stage-05-bg',
         path: '/assets/backgrounds/stage-05.webp',
       },
+      playerSprite: {
+        texture: 'stage-5-player',
+        animations: {
+          idle: 'stage-5-player-idle',
+          run: 'stage-5-player-run',
+          flyIdle: 'stage-5-player-fly',
+          flyMove: 'stage-5-player-fly',
+          flyDash: 'stage-5-player-fly',
+          death: 'stage-5-player-death',
+        },
+      },
     });
     expect(STAGE_FIVE_CONFIG.rooms.at(-1)?.enemySpawns[0]).toMatchObject({
       type: 'boss',
@@ -158,13 +192,16 @@ describe('stage configuration', () => {
     });
   });
 
-  it('uses independently configured aerial enemies throughout stage five', () => {
+  it('uses stage-specific bullet-pattern enemies throughout stage five', () => {
+    const expectedTypes = new Set([
+      'choir-supporter',
+      'sanctum-enforcer',
+      'celestial-oracle',
+    ]);
     for (const room of STAGE_FIVE_CONFIG.rooms.slice(0, 2)) {
-      expect(
-        room.enemySpawns.every(
-          (spawn) => spawn.type === 'flying' && Boolean(spawn.movement),
-        ),
-      ).toBe(true);
+      expect(new Set(room.enemySpawns.map(({ type }) => type))).toEqual(
+        expectedTypes,
+      );
     }
   });
 

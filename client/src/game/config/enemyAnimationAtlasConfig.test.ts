@@ -1,7 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import { FLYING_ENEMY_ANIMATION_ATLASES } from '@/game/config/flyingEnemyAnimationConfig';
-import { MELEE_ENEMY_ANIMATION_ATLASES } from '@/game/config/meleeEnemyAnimationConfig';
-import { RANGED_ENEMY_ANIMATION_ATLASES } from '@/game/config/rangedEnemyAnimationConfig';
+import {
+  MELEE_ENEMY_ANIMATION_ATLASES,
+  STAGE_ONE_MELEE_SPRITE,
+  STAGE_TWO_MELEE_SPRITE,
+} from '@/game/config/meleeEnemyAnimationConfig';
+import {
+  RANGED_ENEMY_ANIMATION_ATLASES,
+  STAGE_ONE_RANGED_SPRITE,
+  STAGE_TWO_RANGED_SPRITE,
+} from '@/game/config/rangedEnemyAnimationConfig';
 
 const atlases = [
   ...FLYING_ENEMY_ANIMATION_ATLASES,
@@ -50,6 +58,15 @@ describe('enemy animation atlases', () => {
 
     expect(new Set(textureKeys).size).toBe(textureKeys.length);
     expect(new Set(animationKeys).size).toBe(animationKeys.length);
+  });
+
+  it('sizes stage one and two melee enemies three pixels above ranged enemies', () => {
+    for (const [melee, ranged] of [
+      [STAGE_ONE_MELEE_SPRITE, STAGE_ONE_RANGED_SPRITE],
+      [STAGE_TWO_MELEE_SPRITE, STAGE_TWO_RANGED_SPRITE],
+    ]) {
+      expect(melee.scale * 122 - ranged.scale * 101).toBeCloseTo(3);
+    }
   });
 
   for (const atlas of atlases) {

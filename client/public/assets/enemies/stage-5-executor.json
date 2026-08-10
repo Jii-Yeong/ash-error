@@ -1,0 +1,96 @@
+{ "frames": {
+   "0": {
+    "frame": { "x": 1, "y": 1, "w": 140, "h": 117 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 0, "y": 23, "w": 138, "h": 115 },
+    "sourceSize": { "w": 140, "h": 140 },
+    "duration": 180
+   },
+   "1": {
+    "frame": { "x": 142, "y": 1, "w": 140, "h": 117 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 0, "y": 23, "w": 138, "h": 115 },
+    "sourceSize": { "w": 140, "h": 140 },
+    "duration": 180
+   },
+   "2": {
+    "frame": { "x": 283, "y": 1, "w": 140, "h": 117 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 0, "y": 23, "w": 138, "h": 115 },
+    "sourceSize": { "w": 140, "h": 140 },
+    "duration": 180
+   },
+   "3": {
+    "frame": { "x": 1, "y": 119, "w": 140, "h": 117 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 0, "y": 23, "w": 138, "h": 115 },
+    "sourceSize": { "w": 140, "h": 140 },
+    "duration": 180
+   },
+   "4": {
+    "frame": { "x": 142, "y": 119, "w": 140, "h": 117 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 0, "y": 23, "w": 138, "h": 115 },
+    "sourceSize": { "w": 140, "h": 140 },
+    "duration": 100
+   },
+   "5": {
+    "frame": { "x": 283, "y": 119, "w": 140, "h": 117 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 0, "y": 23, "w": 138, "h": 115 },
+    "sourceSize": { "w": 140, "h": 140 },
+    "duration": 100
+   },
+   "6": {
+    "frame": { "x": 1, "y": 237, "w": 140, "h": 117 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 0, "y": 23, "w": 138, "h": 115 },
+    "sourceSize": { "w": 140, "h": 140 },
+    "duration": 100
+   },
+   "7": {
+    "frame": { "x": 142, "y": 237, "w": 140, "h": 117 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 0, "y": 23, "w": 138, "h": 115 },
+    "sourceSize": { "w": 140, "h": 140 },
+    "duration": 180
+   },
+   "8": {
+    "frame": { "x": 283, "y": 237, "w": 140, "h": 117 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 0, "y": 23, "w": 138, "h": 115 },
+    "sourceSize": { "w": 140, "h": 140 },
+    "duration": 180
+   }
+ },
+ "meta": {
+  "app": "https://www.aseprite.org/",
+  "version": "1.3.18.1-arm64",
+  "image": "stage-5-executor.png",
+  "format": "RGBA8888",
+  "size": { "w": 424, "h": 355 },
+  "scale": "1",
+  "frameTags": [
+   { "name": "idle", "from": 0, "to": 1, "direction": "forward", "color": "#000000ff" },
+   { "name": "fly", "from": 2, "to": 3, "direction": "forward", "color": "#000000ff" },
+   { "name": "fan_shot", "from": 4, "to": 4, "direction": "forward", "color": "#000000ff" },
+   { "name": "cross_shot", "from": 5, "to": 5, "direction": "forward", "color": "#000000ff" },
+   { "name": "spear_throw", "from": 6, "to": 6, "direction": "forward", "color": "#000000ff" },
+   { "name": "death", "from": 7, "to": 8, "direction": "forward", "color": "#000000ff" }
+  ],
+  "layers": [
+   { "name": "Layer 1", "opacity": 255, "blendMode": "normal" }
+  ],
+  "slices": [
+  ]
+ }
+}

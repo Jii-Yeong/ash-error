@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import {
   PLAYER_ANIMATIONS,
   PLAYER_JUMP_FRAMES,
+  type PlayerAnimationSet,
 } from '@/game/config/playerAnimationConfig';
 import {
   MovementMode,
@@ -46,6 +47,8 @@ const JUMP_SUPPRESS_AFTER_PORTAL = 200;
 const FLIGHT_ENTRY_LANDING_DURATION = 180;
 /** 비행 밴드 중앙보다 높게 잡는 포탈 진입 점프의 정점. */
 const FLIGHT_ENTRY_JUMP_APEX_HEIGHT = 90;
+/** 480ms 달리기 루프에서 양발이 한 번씩 닿는 간격. */
+const PLAYER_FOOTSTEP_INTERVAL = 240;
 
 export class PlayerController {
   private readonly movementKeys: MovementKeys;
@@ -61,7 +64,9 @@ export class PlayerController {
   private jumpSuppressedUntil = 0;
   private wasGrounded = true;
   private landingPoseUntil = 0;
+  private nextFootstepAt = 0;
   private currentPose: string | null = null;
+  private animations: PlayerAnimationSet = PLAYER_ANIMATIONS;
   private movementMode = MovementMode.GROUND;
   private flightEntryLift?: {
     startY: number;
@@ -136,6 +141,7 @@ export class PlayerController {
     this.jumpBufferedUntil = 0;
     this.wasGrounded = mode === MovementMode.GROUND;
     this.landingPoseUntil = 0;
+    this.nextFootstepAt = 0;
     this.currentPose = null;
     this.flightEntryLift = undefined;
 
@@ -147,13 +153,23 @@ export class PlayerController {
     if (mode === MovementMode.FLIGHT) {
       this.clampFlightPosition();
       this.playAnimationWithFallback(
-        PLAYER_ANIMATIONS.flyIdle,
-        PLAYER_ANIMATIONS.idle,
+        this.animations.flyIdle,
+        this.animations.idle,
       );
       return;
     }
 
-    this.playAnimation(PLAYER_ANIMATIONS.idle);
+    this.playAnimation(this.animations.idle);
+  }
+
+  setAnimations(animations: PlayerAnimationSet) {
+    this.animations = animations;
+    this.currentPose = null;
+    if (this.movementMode === MovementMode.FLIGHT) {
+      this.playAnimationWithFallback(animations.flyIdle, animations.idle);
+      return;
+    }
+    this.playAnimation(animations.idle);
   }
 
   private updateGroundMovement(time: number) {
@@ -236,6 +252,7 @@ export class PlayerController {
     this.wasGrounded = grounded;
 
     if (!grounded) {
+      this.nextFootstepAt = 0;
       const velocityY = body?.velocity.y ?? 0;
       this.setPose(
         Math.abs(velocityY) < JUMP_APEX_VELOCITY_THRESHOLD
@@ -246,14 +263,30 @@ export class PlayerController {
     }
 
     if (time < this.landingPoseUntil) {
+      this.nextFootstepAt = 0;
       this.setPose(PLAYER_JUMP_FRAMES.landing);
       return;
     }
 
     const isRunning = Math.abs(body?.velocity.x ?? 0) > 1;
+    this.updateFootsteps(time, isRunning);
     this.playAnimation(
-      isRunning ? PLAYER_ANIMATIONS.run : PLAYER_ANIMATIONS.idle,
+      isRunning ? this.animations.run : this.animations.idle,
     );
+  }
+
+  private updateFootsteps(time: number, isRunning: boolean) {
+    if (!isRunning) {
+      this.nextFootstepAt = 0;
+      return;
+    }
+
+    if (time < this.nextFootstepAt) {
+      return;
+    }
+
+    this.nextFootstepAt = time + PLAYER_FOOTSTEP_INTERVAL;
+    gameEvents.emit('player-stepped');
   }
 
   private setPose(frameName: string) {
@@ -286,12 +319,12 @@ export class PlayerController {
       Math.abs(this.movementVelocity.x) > 1 ||
       Math.abs(this.movementVelocity.y) > 1;
     const desiredAnimation = dashing
-      ? PLAYER_ANIMATIONS.flyDash
+      ? this.animations.flyDash
       : moving
-        ? PLAYER_ANIMATIONS.flyMove
-        : PLAYER_ANIMATIONS.flyIdle;
+        ? this.animations.flyMove
+        : this.animations.flyIdle;
     const fallbackAnimation =
-      dashing || moving ? PLAYER_ANIMATIONS.run : PLAYER_ANIMATIONS.idle;
+      dashing || moving ? this.animations.run : this.animations.idle;
     this.playAnimationWithFallback(desiredAnimation, fallbackAnimation);
   }
 
@@ -324,6 +357,12 @@ export class PlayerController {
   stop() {
     this.finishDash();
     this.flightEntryLift = undefined;
+    this.nextFootstepAt = 0;
+    // 방 전환 시 중력을 스테이지 모드에 맞춰 강제 복원한다. 보스 그랩·포박·대시
+    // 등으로 중력이 꺼진 채 다음 방으로 넘어가 플레이어가 공중에 멈추는 것을 막는다.
+    (this.player.body as Phaser.Physics.Arcade.Body).setAllowGravity(
+      this.movementMode === MovementMode.GROUND,
+    );
     this.player.setVelocity(0);
   }
 
@@ -423,6 +462,20 @@ export class PlayerController {
       return false;
     }
 
+    // 진입 연출은 짧은 연출일 뿐이다. 플레이어가 이동 입력을 시작하면 즉시
+    // 끝내고 제어를 넘겨, 연출이 어떤 이유로든 끝나지 않아 플레이어가 제자리에서
+    // 파닥이며 움직이지 못하는 상태에 갇히지 않게 한다. 시간 상한도 함께 둔다.
+    const completesAt =
+      FLIGHT_ENTRY_JUMP_RISE_DURATION +
+      FLIGHT_ENTRY_JUMP_FALL_DURATION +
+      FLIGHT_ENTRY_LANDING_DURATION;
+    if (this.hasFlightMovementInput() || time - lift.startsAt >= completesAt) {
+      this.flightEntryLift = undefined;
+      this.currentPose = null;
+      this.updateFlightAnimation(false);
+      return false;
+    }
+
     const elapsed = time - lift.startsAt;
     const apexY = Phaser.Math.Clamp(
       lift.targetY - FLIGHT_ENTRY_JUMP_APEX_HEIGHT,
@@ -431,7 +484,6 @@ export class PlayerController {
     );
     const fallStartsAt = FLIGHT_ENTRY_JUMP_RISE_DURATION;
     const landingStartsAt = fallStartsAt + FLIGHT_ENTRY_JUMP_FALL_DURATION;
-    const completesAt = landingStartsAt + FLIGHT_ENTRY_LANDING_DURATION;
 
     if (elapsed < fallStartsAt) {
       this.moveFlightEntryBodyTo(
@@ -461,12 +513,6 @@ export class PlayerController {
       this.setPose(PLAYER_JUMP_FRAMES.landing);
     }
     this.player.setVelocity(0);
-
-    if (elapsed >= completesAt) {
-      this.flightEntryLift = undefined;
-      this.currentPose = null;
-      this.updateFlightAnimation(false);
-    }
 
     return true;
   }
@@ -510,14 +556,26 @@ export class PlayerController {
     this.player.setPosition(
       Phaser.Math.Clamp(
         this.player.x,
-        viewportLeft + PLAYER_FLIGHT_BOUNDS.minScreenX,
-        viewportLeft + PLAYER_FLIGHT_BOUNDS.maxScreenX,
+        viewportLeft + PLAYER_FLIGHT_BOUNDS.horizontalScreenInset,
+        viewportLeft +
+          camera.width -
+          PLAYER_FLIGHT_BOUNDS.horizontalScreenInset,
       ),
       Phaser.Math.Clamp(
         this.player.y,
         PLAYER_FLIGHT_BOUNDS.minY,
         PLAYER_FLIGHT_BOUNDS.maxY,
       ),
+    );
+  }
+
+  /** 비행 중 어느 방향으로든 이동 입력이 있는지. */
+  private hasFlightMovementInput() {
+    return (
+      this.isMovingLeft() ||
+      this.isMovingRight() ||
+      this.isMovingUp() ||
+      this.isMovingDown()
     );
   }
 

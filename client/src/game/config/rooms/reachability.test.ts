@@ -417,10 +417,11 @@ describe('level geometry against player metrics', () => {
         const heights: number[] = [];
 
         for (const spawn of room.enemySpawns) {
-          if (spawn.type !== 'flying') continue;
+          if (spawn.type === 'boss' || !('y' in spawn)) continue;
           heights.push(spawn.y);
           // 순찰 또는 궤도 이동은 시작점 양쪽으로 이만큼 움직인다.
-          const swing = spawn.movement?.rangeY ?? 0;
+          const swing =
+            spawn.type === 'flying' ? (spawn.movement?.rangeY ?? 0) : 0;
           if (spawn.y - swing < minY || spawn.y + swing > maxY) {
             outOfReach.push(
               `${stage.id}/${room.id} y=${spawn.y}±${swing} — 비행 범위 ${minY}~${maxY} 밖`,

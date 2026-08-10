@@ -5,15 +5,24 @@ import {
   getFanAngles,
   getRingAngles,
 } from '@/game/combat/architectPattern';
+import {
+  STAGE_FIVE_BOSS_FLOATING_JUDGMENT_SIGIL,
+} from '@/game/config/bossAnimationConfig';
 import type {
+  ArchitectBossSpriteConfig,
   ArchitectBossCombatConfig,
   ArchitectBossPatternConfig,
 } from '@/game/config/bossConfigTypes';
 import type { BossArenaBounds } from '@/game/config/bossArena';
 import { GAME_HEIGHT } from '@/game/config/gameDimensions';
 import { ArchitectBossView } from '@/game/entities/ArchitectBossView';
+import { getRailArmoredDamage } from '@/game/combat/bossDamage';
 import { BossEnemy } from '@/game/entities/BossEnemy';
-import type { EnemyProjectileAttack } from '@/game/entities/Enemy';
+import type {
+  EnemyProjectileAttack,
+  ProjectileDamageResult,
+} from '@/game/entities/Enemy';
+import { gameEvents } from '@/game/events/gameEvents';
 import type { BossPhase } from '@/game/state/bossPhase';
 import { BossProjectileField } from '@/game/systems/BossProjectileField';
 import { CleanupRegistry } from '@/game/systems/CleanupRegistry';
@@ -45,6 +54,8 @@ const BULLET_TEXTURE = 'architect-bullet-placeholder';
 const BULLET_DEPTH = 9;
 const JUDGMENT_ORB_DEPTH = 7;
 const PLAYER_HURTBOX_SIZE = 16;
+const DEATH_POSE_HOLD_MS = 1_600;
+const DEATH_FADE_MS = 600;
 
 /**
  * Stage-5 final boss. Every pattern is built for unrestricted flight:
@@ -52,6 +63,12 @@ const PLAYER_HURTBOX_SIZE = 16;
  * At 10% health damage is clamped until False Salvation exposes the eye.
  */
 export class ArchitectBossEnemy extends BossEnemy<ArchitectBossPatternConfig> {
+  override readonly usesHitFlash = true;
+
+  override get deathAnimationDuration() {
+    return DEATH_POSE_HOLD_MS + DEATH_FADE_MS;
+  }
+
   private readonly projectiles: BossProjectileField;
   private readonly view: ArchitectBossView;
   private readonly effectCleanups = new CleanupRegistry();
@@ -62,6 +79,7 @@ export class ArchitectBossEnemy extends BossEnemy<ArchitectBossPatternConfig> {
   private phaseTwo = false;
   private phaseOneAttackIndex = 0;
   private phaseTwoAttackIndex = 0;
+  private chorusActive = false;
 
   private haloRingsToFire = 0;
   private haloRingsFired = 0;
@@ -82,6 +100,8 @@ export class ArchitectBossEnemy extends BossEnemy<ArchitectBossPatternConfig> {
   private salvationCenterX = 0;
   private salvationCenterY = 0;
   private salvationGapAngle = 0;
+  private activeSpriteAnimation?: string;
+  private dying = false;
 
   constructor(
     scene: Phaser.Scene,
@@ -92,12 +112,14 @@ export class ArchitectBossEnemy extends BossEnemy<ArchitectBossPatternConfig> {
     private readonly damagePlayer: (damage: number) => void,
     private readonly arena: BossArenaBounds,
     private readonly onPhaseChanged: (phase: BossPhase) => void,
+    private readonly sprite?: ArchitectBossSpriteConfig,
   ) {
     super(scene, x, y, texture, config);
 
     this.stateEndsAt = scene.time.now + config.pattern.firstAttackDelay;
     (this.body as Phaser.Physics.Arcade.Body).setAllowGravity(false);
     this.setDepth(6);
+    this.applyBossSprite();
 
     this.projectiles = new BossProjectileField(scene, {
       texture: BULLET_TEXTURE,
@@ -115,9 +137,63 @@ export class ArchitectBossEnemy extends BossEnemy<ArchitectBossPatternConfig> {
       },
       damageTarget: damagePlayer,
     });
-    this.view = new ArchitectBossView(scene, config.pattern, x, y);
+    this.view = new ArchitectBossView(scene, config.pattern);
 
     this.onPhaseChanged(1);
+  }
+
+  override get playsOwnDeathAnimation() {
+    return Boolean(this.sprite);
+  }
+
+  override takeProjectileDamage(
+    amount: number,
+    hitX: number,
+    hitY: number,
+    weaponId?: string,
+  ): ProjectileDamageResult {
+    return super.takeProjectileDamage(
+      getRailArmoredDamage(
+        amount,
+        this.pattern.railRifleDamageMultiplier,
+        weaponId,
+      ),
+      hitX,
+      hitY,
+    );
+  }
+
+  override refreshAtlasSprite() {
+    const animation =
+      this.activeSpriteAnimation ?? this.sprite?.animations.idle ?? '';
+    this.activeSpriteAnimation = undefined;
+    this.applyBossSprite(animation);
+  }
+
+  private applyBossSprite(animation = this.sprite?.animations.idle ?? '') {
+    if (!this.sprite) {
+      return;
+    }
+
+    this.texture.setFilter(Phaser.Textures.FilterMode.LINEAR);
+    this.setScale(this.sprite.scale);
+    this.playSpriteAnimation(animation);
+    (this.body as Phaser.Physics.Arcade.Body).setSize(
+      this.sprite.bodyWidth,
+      this.sprite.bodyHeight,
+      true,
+    );
+  }
+
+  private playSpriteAnimation(animation: string) {
+    if (!this.sprite || this.activeSpriteAnimation === animation) {
+      return;
+    }
+
+    this.activeSpriteAnimation = animation;
+    if (this.scene.anims.exists(animation)) {
+      this.play(animation, true);
+    }
   }
 
   updateCombat(
@@ -127,10 +203,9 @@ export class ArchitectBossEnemy extends BossEnemy<ArchitectBossPatternConfig> {
   ) {
     this.projectiles.syncTarget(target);
     this.projectiles.update(time);
-    this.view.sync(this.x, this.y, time, this.phaseTwo);
     this.view.clearTelegraph();
 
-    if (!this.active) {
+    if (!this.active || this.dying) {
       return false;
     }
 
@@ -157,7 +232,7 @@ export class ArchitectBossEnemy extends BossEnemy<ArchitectBossPatternConfig> {
         this.updateRecover(time, target);
         break;
       case 'phase-transition':
-        this.updatePhaseTransition(time);
+        this.updatePhaseTransition(time, target);
         break;
       case 'halo-warning':
         this.updateHaloWarning(time);
@@ -201,6 +276,16 @@ export class ArchitectBossEnemy extends BossEnemy<ArchitectBossPatternConfig> {
   }
 
   override takeDamage(amount: number) {
+    if (!this.phaseTwo) {
+      const allowedDamage = damageBeforeThreshold(
+        this.currentHealth,
+        this.maxHealth,
+        this.pattern.enrageHealthRatio,
+        amount,
+      );
+      return allowedDamage > 0 ? super.takeDamage(allowedDamage) : false;
+    }
+
     if (this.salvationStarted && this.attackState !== 'core-exposed') {
       return false;
     }
@@ -228,6 +313,15 @@ export class ArchitectBossEnemy extends BossEnemy<ArchitectBossPatternConfig> {
     );
   }
 
+  protected override get isInvulnerable() {
+    return (
+      (!this.phaseTwo && this.isEnraged) ||
+      this.attackState === 'phase-transition' ||
+      this.chorusActive ||
+      (this.salvationStarted && this.attackState !== 'core-exposed')
+    );
+  }
+
   override tryContactAttack(time: number) {
     if (
       this.attackState === 'phase-transition' ||
@@ -242,11 +336,41 @@ export class ArchitectBossEnemy extends BossEnemy<ArchitectBossPatternConfig> {
 
   protected override onDefeated() {
     super.onDefeated();
+    gameEvents.emit('ending-ascension-cue', 'silence');
     this.projectiles.clear();
     this.effectCleanups.clear();
     this.projectiles.setMarkerVisible(false);
     this.view.defeat(this.x, this.y);
     this.scene.cameras.main.flash(750, 255, 250, 235);
+  }
+
+  override defeat() {
+    if (!this.active || this.dying) {
+      return;
+    }
+    if (!this.sprite) {
+      super.defeat();
+      return;
+    }
+
+    this.dying = true;
+    this.onDefeated();
+    this.clearTint().setAlpha(1);
+    this.setVelocity(0, 0);
+    this.playSpriteAnimation(this.sprite.animations.death);
+    (this.body as Phaser.Physics.Arcade.Body).enable = false;
+    this.scene.time.delayedCall(DEATH_POSE_HOLD_MS, () => {
+      if (!this.scene || !this.visible) {
+        return;
+      }
+      this.scene.tweens.add({
+        targets: this,
+        alpha: 0,
+        duration: DEATH_FADE_MS,
+        ease: 'Sine.easeIn',
+        onComplete: () => this.disableBody(true, true),
+      });
+    });
   }
 
   override destroy(fromScene?: boolean) {
@@ -258,8 +382,7 @@ export class ArchitectBossEnemy extends BossEnemy<ArchitectBossPatternConfig> {
 
   private updateRecover(time: number, target: Phaser.Physics.Arcade.Sprite) {
     this.moveTowardArenaCenter();
-    this.clearTint();
-    this.view.showRecovery(this.phaseTwo);
+    this.playSpriteAnimation(this.sprite?.animations.idle ?? '');
 
     if (time < this.stateEndsAt) {
       return;
@@ -300,20 +423,22 @@ export class ArchitectBossEnemy extends BossEnemy<ArchitectBossPatternConfig> {
     this.stateStartedAt = time;
     this.stateEndsAt = time + this.pattern.phaseTransitionDuration;
     this.setVelocity(0, 0);
-    this.setTint(0xd4c6e8);
-    this.view.beginPhaseTwo();
+    this.playSpriteAnimation(this.sprite?.animations.phaseTransition ?? '');
     this.scene.cameras.main.flash(260, 210, 224, 255);
     this.scene.cameras.main.shake(420, 0.009);
+    gameEvents.emit('boss-architect-cue', 'phase-shift');
   }
 
-  private updatePhaseTransition(time: number) {
+  private updatePhaseTransition(
+    time: number,
+    target: Phaser.Physics.Arcade.Sprite,
+  ) {
     this.setVelocity(0, 0);
     this.view.drawPhaseTransition(time);
 
     if (time >= this.stateEndsAt) {
       this.view.endPhaseTransition();
-      this.clearTint();
-      this.beginRecover(time);
+      this.beginHalo(time, target, true);
     }
   }
 
@@ -332,6 +457,7 @@ export class ArchitectBossEnemy extends BossEnemy<ArchitectBossPatternConfig> {
         : this.pattern.halo.phaseOneRings;
     this.haloRingsFired = 0;
     this.haloFollowUpWings = followWithWings;
+    this.chorusActive = followWithWings;
     this.haloGapAngle = Phaser.Math.Angle.Between(
       this.x,
       this.y - 64,
@@ -339,22 +465,25 @@ export class ArchitectBossEnemy extends BossEnemy<ArchitectBossPatternConfig> {
       target.y,
     );
     this.setVelocity(0, 0);
+    this.playSpriteAnimation(
+      followWithWings
+        ? (this.sprite?.animations.chorus ?? '')
+        : (this.sprite?.animations.haloCharge ?? ''),
+    );
+    gameEvents.emit('boss-architect-cue', 'halo-warn');
   }
 
   private updateHaloWarning(time: number) {
     this.setVelocity(0, 0);
-    const progress = this.stateProgress(time);
-    this.view.drawHaloWarning(
-      this.x,
-      this.y,
-      this.haloGapAngle,
-      time,
-      progress,
-    );
 
     if (time >= this.stateEndsAt) {
       this.attackState = 'halo-firing';
       this.nextHaloRingAt = time;
+      this.playSpriteAnimation(
+        this.haloFollowUpWings
+          ? (this.sprite?.animations.chorus ?? '')
+          : (this.sprite?.animations.haloFire ?? ''),
+      );
     }
   }
 
@@ -374,7 +503,6 @@ export class ArchitectBossEnemy extends BossEnemy<ArchitectBossPatternConfig> {
       this.haloRingsFired >= this.haloRingsToFire &&
       time >= this.nextHaloRingAt
     ) {
-      this.view.endHalo();
       if (this.haloFollowUpWings) {
         this.beginWings(time, 2, 2);
       } else {
@@ -410,6 +538,7 @@ export class ArchitectBossEnemy extends BossEnemy<ArchitectBossPatternConfig> {
 
     this.haloGapAngle += this.pattern.halo.gapStep;
     this.scene.cameras.main.shake(70, 0.003);
+    gameEvents.emit('boss-architect-cue', 'halo-ring');
   }
 
   private beginWings(time: number, firstStep = 0, finalStep = 2) {
@@ -419,6 +548,8 @@ export class ArchitectBossEnemy extends BossEnemy<ArchitectBossPatternConfig> {
     this.wingFinalStep = finalStep;
     this.nextWingStepAt = time + this.pattern.wings.warnDuration;
     this.setVelocity(0, 0);
+    this.playSpriteAnimation(this.wingAnimation(firstStep));
+    gameEvents.emit('boss-architect-cue', 'wings-warn');
   }
 
   private updateWings(time: number, target: Phaser.Physics.Arcade.Sprite) {
@@ -439,6 +570,9 @@ export class ArchitectBossEnemy extends BossEnemy<ArchitectBossPatternConfig> {
 
     this.fireWingVolley(this.wingStep, target);
     this.wingStep += 1;
+    if (this.wingStep <= this.wingFinalStep) {
+      this.playSpriteAnimation(this.wingAnimation(this.wingStep));
+    }
     this.nextWingStepAt =
       time +
       (this.wingStep > this.wingFinalStep
@@ -478,6 +612,8 @@ export class ArchitectBossEnemy extends BossEnemy<ArchitectBossPatternConfig> {
     }
 
     this.scene.cameras.main.shake(80, 0.0035);
+    // Step 2 fires two fans at once; they are one volley and get one cue.
+    gameEvents.emit('boss-architect-cue', 'wings-fan');
   }
 
   private fireFan(
@@ -521,6 +657,8 @@ export class ArchitectBossEnemy extends BossEnemy<ArchitectBossPatternConfig> {
     this.stateEndsAt = time + this.pattern.eye.trackingDuration;
     this.updateLockedTarget(target);
     this.setVelocity(0, 0);
+    this.playSpriteAnimation(this.sprite?.animations.eyeTrack ?? '');
+    gameEvents.emit('boss-architect-cue', 'eye-track');
   }
 
   private updateEyeTracking(
@@ -530,6 +668,8 @@ export class ArchitectBossEnemy extends BossEnemy<ArchitectBossPatternConfig> {
     this.setVelocity(0, 0);
     this.updateLockedTarget(target);
     this.view.drawEyeTracking(
+      this.x,
+      this.y,
       this.lockedTargetX,
       this.lockedTargetY,
       time,
@@ -540,7 +680,9 @@ export class ArchitectBossEnemy extends BossEnemy<ArchitectBossPatternConfig> {
       this.attackState = 'eye-locked';
       this.stateStartedAt = time;
       this.stateEndsAt = time + this.pattern.eye.lockedWarningDuration;
+      this.playSpriteAnimation(this.sprite?.animations.eyeFire ?? '');
       this.scene.cameras.main.flash(90, 120, 220, 255);
+      gameEvents.emit('boss-architect-cue', 'eye-lock');
     }
   }
 
@@ -607,12 +749,14 @@ export class ArchitectBossEnemy extends BossEnemy<ArchitectBossPatternConfig> {
       );
     }
     this.scene.cameras.main.shake(120, 0.005);
+    gameEvents.emit('boss-architect-cue', 'eye-orb');
   }
 
   private spawnJudgmentOrb(x: number, y: number) {
-    let orb: Phaser.GameObjects.Arc | undefined = this.scene.add
-      .circle(x, y, this.pattern.eye.orbRadius, this.pattern.skyColor, 0.24)
-      .setStrokeStyle(4, this.pattern.goldColor, 0.85)
+    const size = this.pattern.eye.orbRadius * 2;
+    let orb: Phaser.GameObjects.Image | undefined = this.scene.add
+      .image(x, y, STAGE_FIVE_BOSS_FLOATING_JUDGMENT_SIGIL.texture)
+      .setDisplaySize(size, size)
       .setDepth(JUDGMENT_ORB_DEPTH);
     let cleaned = false;
     const timer = this.scene.time.delayedCall(
@@ -654,9 +798,10 @@ export class ArchitectBossEnemy extends BossEnemy<ArchitectBossPatternConfig> {
     this.salvationCenterY = center.y;
     this.salvationGapAngle =
       center.x < (this.arena.left + this.arena.right) / 2 ? Math.PI : 0;
-    this.setTint(this.pattern.goldColor);
+    this.playSpriteAnimation(this.sprite?.animations.falseSalvation ?? '');
     this.scene.cameras.main.flash(600, 255, 224, 135);
     this.scene.cameras.main.shake(500, 0.01);
+    gameEvents.emit('boss-architect-cue', 'salvation');
   }
 
   private updateSalvationTransition(time: number) {
@@ -717,9 +862,9 @@ export class ArchitectBossEnemy extends BossEnemy<ArchitectBossPatternConfig> {
   private exposeCore() {
     this.attackState = 'core-exposed';
     this.projectiles.clear();
-    this.clearTint();
-    this.view.exposeCore();
+    this.playSpriteAnimation(this.sprite?.animations.coreExposed ?? '');
     this.scene.cameras.main.flash(260, 255, 255, 255);
+    gameEvents.emit('boss-architect-cue', 'core-exposed');
   }
 
   private drawExposedCore(time: number) {
@@ -728,6 +873,7 @@ export class ArchitectBossEnemy extends BossEnemy<ArchitectBossPatternConfig> {
 
   private beginRecover(time: number) {
     this.attackState = 'recover';
+    this.chorusActive = false;
     this.stateStartedAt = time;
     this.stateEndsAt =
       time +
@@ -735,7 +881,23 @@ export class ArchitectBossEnemy extends BossEnemy<ArchitectBossPatternConfig> {
         ? this.pattern.enragedRecoveryDuration
         : this.pattern.recoveryDuration);
     this.setVelocity(0, 0);
-    this.view.showRecovery(this.phaseTwo);
+    this.view.clearTelegraph();
+    this.playSpriteAnimation(this.sprite?.animations.idle ?? '');
+  }
+
+  private wingAnimation(step: number) {
+    if (!this.sprite) {
+      return '';
+    }
+    if (this.chorusActive) {
+      return this.sprite.animations.chorus;
+    }
+    if (step === 0) {
+      return this.sprite.animations.wingsLeft;
+    }
+    return step === 1
+      ? this.sprite.animations.wingsRight
+      : this.sprite.animations.wingsBoth;
   }
 
   private spawnBullet(

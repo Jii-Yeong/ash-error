@@ -127,7 +127,7 @@ export class FloorBuilder {
     this.skinObjects = [];
   }
 
-  private isOverPit(x: number) {
+  isOverPit(x: number) {
     return this.pits.some((pit) => x > pit.start && x < pit.end);
   }
 

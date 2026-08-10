@@ -32,6 +32,8 @@
 export const mirrorScaleY = (mirrored: boolean) => (mirrored ? -1 : 1);
 
 export const PLAYER_STACK_DEPTH = {
+  /** 플레이어 뒤에 표시되는 장식 효과. */
+  halo: 7.25,
   /**
    * The support arm — under the torso, because it is the far one.
    *

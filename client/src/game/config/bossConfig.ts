@@ -5,12 +5,18 @@ import {
   STAGE_TWO_BOSS_ATLAS_KEY,
   STAGE_THREE_BOSS_ANIMATIONS,
   STAGE_THREE_BOSS_ATLAS_KEY,
+  STAGE_FOUR_BOSS_ANIMATIONS,
+  STAGE_FOUR_BOSS_ATLAS_KEY,
+  STAGE_FIVE_BOSS_ANIMATIONS,
+  STAGE_FIVE_BOSS_ATLAS_KEY,
 } from '@/game/config/bossAnimationConfig';
 import type {
+  ArchitectBossSpriteConfig,
   BossCombatConfig,
   BossPatternConfig,
   BossSpriteConfig,
   HoundBossSpriteConfig,
+  InfernalBossSpriteConfig,
   PurifierBossSpriteConfig,
 } from '@/game/config/bossConfigTypes';
 
@@ -31,7 +37,7 @@ export const BOSS_COMBAT_CONFIGS = {
       bodyColor: 0x286783,
       accentColor: 0x8ee3ff,
     },
-    maxHealth: 500,
+    maxHealth: 1200,
     aggroRadius: 1500,
     aggroIndicatorColor: 0x61c6ff,
     contactDamage: 18,
@@ -68,13 +74,14 @@ export const BOSS_COMBAT_CONFIGS = {
       bodyColor: 0x7a3821,
       accentColor: 0xffb06f,
     },
-    maxHealth: 650,
+    maxHealth: 2900,
     aggroRadius: 1600,
     aggroIndicatorColor: 0xff9a52,
     contactDamage: 22,
     contactDamageCooldown: 650,
     pattern: {
       type: 'hound',
+      railRifleDamageMultiplier: 0.42,
       moveSpeed: 130,
       enragedMoveSpeed: 190,
       enrageHealthRatio: 0.55,
@@ -84,9 +91,9 @@ export const BOSS_COMBAT_CONFIGS = {
       recoveryDuration: 950,
       enragedRecoveryDuration: 700,
       cone: {
-        color: 0xff3b3b,
         range: 720,
-        halfAngleDegrees: 40,
+        // 전체 감시각 40°.
+        halfAngleDegrees: 20,
         tiltDegrees: 14,
         // 머리(눈)에서 부채꼴이 나오도록 전방·위쪽으로 이동.
         apexOffsetY: -50,
@@ -98,7 +105,6 @@ export const BOSS_COMBAT_CONFIGS = {
         speed: 430,
         radius: 16,
         damage: 22,
-        color: 0xff5a4a,
       },
     },
   },
@@ -108,13 +114,14 @@ export const BOSS_COMBAT_CONFIGS = {
       bodyColor: 0x3f5c28,
       accentColor: 0xc5ec72,
     },
-    maxHealth: 800,
+    maxHealth: 8500,
     aggroRadius: 2600,
     aggroIndicatorColor: 0xa8d65c,
     contactDamage: 25,
     contactDamageCooldown: 600,
     pattern: {
       type: 'purifier',
+      railRifleDamageMultiplier: 0.42,
       moveSpeed: 90,
       enragedMoveSpeed: 120,
       enrageHealthRatio: 0.5,
@@ -147,18 +154,19 @@ export const BOSS_COMBAT_CONFIGS = {
     },
   },
   'infernal-executioner': {
-    texture: 'infernal-executioner-placeholder',
+    texture: STAGE_FOUR_BOSS_ATLAS_KEY,
     placeholder: {
       bodyColor: 0x7d1f16,
       accentColor: 0xff6a3d,
     },
-    maxHealth: 1000,
+    maxHealth: 3500,
     aggroRadius: 2200,
     aggroIndicatorColor: 0xff5a36,
     contactDamage: 20,
     contactDamageCooldown: 560,
     pattern: {
       type: 'infernal',
+      railRifleDamageMultiplier: 0.49,
       enrageHealthRatio: 0.5,
       firstAttackDelay: 1800,
       recoveryDuration: 750,
@@ -199,25 +207,28 @@ export const BOSS_COMBAT_CONFIGS = {
     },
   },
   'returning-architect': {
-    texture: 'returning-architect-placeholder',
+    texture: STAGE_FIVE_BOSS_ATLAS_KEY,
     placeholder: {
       bodyColor: 0x46306f,
       accentColor: 0xf0c8ff,
     },
-    maxHealth: 1200,
+    // 마지막 10% 코어의 2배 피해까지 포함한 유효 체력은 약 15,000임.
+    maxHealth: 15_790,
     aggroRadius: 1900,
     aggroIndicatorColor: 0xd89cff,
     contactDamage: 32,
     contactDamageCooldown: 520,
     pattern: {
       type: 'architect',
+      // 관통 3회 적중을 합쳐도 한 발의 총 피해가 95가 되도록 방어함.
+      railRifleDamageMultiplier: 19 / 45,
       enrageHealthRatio: 0.5,
       salvationHealthRatio: 0.1,
       firstAttackDelay: 1000,
       recoveryDuration: 900,
       enragedRecoveryDuration: 700,
       phaseTransitionDuration: 1000,
-      goldColor: 0xffd86b,
+      goldColor: 0xffff66,
       skyColor: 0x9eeeff,
       corruptionColor: 0x17131f,
       aerial: {
@@ -325,5 +336,31 @@ export const PURIFIER_BOSS_SPRITES: Partial<
     bodyHeight: 132,
     bodyOffsetX: 28,
     bodyOffsetY: 103,
+  },
+};
+
+export const INFERNAL_BOSS_SPRITES: Partial<
+  Record<BossVariant, InfernalBossSpriteConfig>
+> = {
+  'infernal-executioner': {
+    animations: STAGE_FOUR_BOSS_ANIMATIONS,
+    scale: 0.86,
+    bodyWidth: 150,
+    bodyHeight: 200,
+    bodyOffsetX: 53,
+    bodyOffsetY: 49,
+    facesLeft: true,
+  },
+};
+
+export const ARCHITECT_BOSS_SPRITES: Partial<
+  Record<BossVariant, ArchitectBossSpriteConfig>
+> = {
+  'returning-architect': {
+    animations: STAGE_FIVE_BOSS_ANIMATIONS,
+    // 원본 불투명 높이 267px를 게임 내 보스 높이 350px로 표시함.
+    scale: 350 / 267,
+    bodyWidth: 110,
+    bodyHeight: 190,
   },
 };
