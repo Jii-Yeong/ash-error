@@ -61,6 +61,8 @@ export type HoundBossPatternConfig = {
 /** Stage-3 targeted slam and full-arena vacuum patterns. */
 export type PurifierBossPatternConfig = {
   type: 'purifier';
+  /** 레일건의 관통 다단 적중을 장갑으로 줄이는 타격당 피해 배율. */
+  railRifleDamageMultiplier: number;
   moveSpeed: number;
   enragedMoveSpeed: number;
   enrageHealthRatio: number;

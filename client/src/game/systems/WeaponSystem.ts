@@ -315,6 +315,7 @@ export class WeaponSystem {
         config.damage,
         impactX,
         impactY,
+        config.id,
       );
       if (result.applied) {
         this.feedback.playEnemyHit(enemy, config);

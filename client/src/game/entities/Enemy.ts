@@ -234,6 +234,7 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
     amount: number,
     _hitX: number,
     _hitY: number,
+    _weaponId?: string,
   ): ProjectileDamageResult {
     return { applied: true, defeated: this.takeDamage(amount) };
   }

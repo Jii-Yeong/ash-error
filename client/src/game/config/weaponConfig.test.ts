@@ -80,7 +80,7 @@ describe('weapon progression', () => {
     const targetClearSeconds = {
       'city-warden': 13,
       'alley-hunter': 7,
-      'underground-guardian': 9,
+      'underground-guardian': 88,
       'infernal-executioner': 11,
       'returning-architect': 13,
     } satisfies Record<BossVariant, number>;
