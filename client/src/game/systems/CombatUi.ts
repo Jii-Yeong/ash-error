@@ -28,7 +28,7 @@ export class CombatUi {
       UI_PANEL_TEXTURES.victory.key,
       '#ffe9c4',
       'This Is Not the End.',
-      'YOU\'RE AWAKE  //  PRESS R OR ENTER TO REPLAY',
+      'YOU\'RE AWAKE  //  CREDITS FOLLOW',
     );
     this.stageEndOverlay = this.createOverlay(
       UI_PANEL_TEXTURES.danger.key,

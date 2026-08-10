@@ -256,7 +256,7 @@ export class AudioDirector {
   };
 
   private readonly handleSceneChanged = (scene: GameSceneKey) => {
-    if (scene !== 'title') {
+    if (scene !== 'title' && scene !== 'credits') {
       return;
     }
 

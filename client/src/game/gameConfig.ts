@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { GAME_HEIGHT, GAME_WIDTH } from '@/game/config/gameDimensions';
 import { BootScene } from '@/game/scenes/BootScene';
+import { CreditsScene } from '@/game/scenes/CreditsScene';
 import { GameScene } from '@/game/scenes/GameScene';
 import { StartScene } from '@/game/scenes/StartScene';
 import { TitleScene } from '@/game/scenes/TitleScene';
@@ -26,5 +27,5 @@ export const gameConfig: Phaser.Types.Core.GameConfig = {
     pixelArt: true,
     roundPixels: true,
   },
-  scene: [BootScene, StartScene, TitleScene, GameScene],
+  scene: [BootScene, StartScene, TitleScene, CreditsScene, GameScene],
 };

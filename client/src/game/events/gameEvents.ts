@@ -31,6 +31,7 @@ export type GameEventMap = {
   'phase-changed': [phase: GamePhase];
   'room-state-changed': [state: RoomState];
   'scene-changed': [scene: GameSceneKey];
+  'credits-requested': [];
   'stage-changed': [stageId: string];
   'stage-shatter-cue': [cue: 'start' | 'complete'];
   'stage-location-changed': [stageLabel: string, roomNumber: number];

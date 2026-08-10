@@ -18,6 +18,32 @@ vi.hoisted(() => {
 });
 
 describe('GameScene run reset', () => {
+  it('첫 클리어 후 승리 문구를 보여주고 크레딧으로 전환한다', () => {
+    let afterVictory: (() => void) | undefined;
+    const showVictory = vi.fn();
+    const gameScene = Object.assign(Object.create(GameScene.prototype), {
+      cameras: { main: { flash: vi.fn() } },
+      combatUi: { clearEnemyRanges: vi.fn(), showVictory },
+      scene: { start: vi.fn() },
+      setPhase: vi.fn(),
+      time: {
+        delayedCall: vi.fn((_delay: number, callback: () => void) => {
+          afterVictory = callback;
+        }),
+      },
+      weaponSystem: { hide: vi.fn() },
+    }) as GameScene;
+
+    (gameScene as unknown as { handleRunCleared(): void }).handleRunCleared();
+
+    expect(showVictory).toHaveBeenCalledOnce();
+    expect(gameScene.time.delayedCall).toHaveBeenCalledWith(
+      1600,
+      expect.any(Function),
+    );
+    afterVictory?.();
+    expect(gameScene.scene.start).toHaveBeenCalledWith('credits');
+  });
   it('4스테이지 보스가 사라진 뒤 1초 후 화면 파괴 전환을 시작한다', () => {
     let afterDelay: (() => void) | undefined;
     const advanceToNextStage = vi.fn();

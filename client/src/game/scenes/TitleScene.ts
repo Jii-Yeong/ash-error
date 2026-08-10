@@ -18,6 +18,11 @@ export class TitleScene extends Phaser.Scene {
 
   create() {
     gameEvents.emit('scene-changed', 'title');
+    const showCredits = () => this.scene.start('credits');
+    gameEvents.on('credits-requested', showCredits);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () =>
+      gameEvents.off('credits-requested', showCredits),
+    );
     const viewportWidth = this.scale.width;
     const viewportHeight = this.scale.height;
 
