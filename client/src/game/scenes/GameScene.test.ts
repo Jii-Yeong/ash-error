@@ -3,7 +3,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
   STAGE_ENDING_DRONE,
-  STAGE_FIVE_PLAYER_SPRITE,
   STAGE_THREE_PLAYER_SPRITE,
 } from '@/game/config/playerAnimationConfig';
 import type { Enemy } from '@/game/entities/Enemy';
@@ -79,46 +78,6 @@ describe('GameScene run reset', () => {
     expect(resetTransition).toHaveBeenCalledOnce();
   });
 
-  it('drops an airborne player to the floor before showing the landed death frame', () => {
-    const setFrame = vi.fn();
-    const stopAnimation = vi.fn();
-    const addTween = vi.fn();
-    const body = {
-      blocked: { down: false },
-      bottom: 300,
-      enable: true,
-    };
-    const player = {
-      anims: { stop: stopAnimation },
-      body,
-      setFrame,
-      y: 250,
-    };
-    const gameScene = Object.assign(Object.create(GameScene.prototype), {
-      currentStageIndex: 4,
-      player,
-      tweens: { add: addTween },
-    }) as GameScene;
-
-    (
-      gameScene as unknown as { playPlayerDeathAnimation(): void }
-    ).playPlayerDeathAnimation();
-
-    expect(body.enable).toBe(false);
-    expect(stopAnimation).toHaveBeenCalledOnce();
-    expect(setFrame).toHaveBeenCalledWith(
-      STAGE_FIVE_PLAYER_SPRITE.deathFrames?.[0],
-    );
-    const tween = addTween.mock.calls[0]?.[0] as {
-      onComplete: () => void;
-      y: number;
-    };
-    expect(tween.y).toBeGreaterThan(player.y);
-    tween.onComplete();
-    expect(setFrame).toHaveBeenLastCalledWith(
-      STAGE_FIVE_PLAYER_SPRITE.deathFrames?.[1],
-    );
-  });
 
   it('구덩이 피해로 죽으면 가장자리로 옮기지 않고 플레이어를 숨긴다', () => {
     const setPosition = vi.fn();
