@@ -11,6 +11,7 @@ import { useGameUiStore } from '@/stores/gameUiStore';
 
 export function App() {
   const [adminOpen, setAdminOpen] = useState(false);
+  const [adminVisible, setAdminVisible] = useState(false);
   const [guideOpen, setGuideOpen] = useState(false);
   const guideDialogRef = useRef<HTMLDialogElement>(null);
   const resumeAfterGuideRef = useRef(false);
@@ -62,6 +63,20 @@ export function App() {
       guideDialogRef.current?.showModal();
     }
   }, [guideOpen]);
+
+  // 어드민 버튼은 기본적으로 숨기고 백틱(`)으로만 토글한다. 토글할 때 열려 있던
+  // 메뉴는 함께 닫아 숨긴 뒤에도 메뉴가 남지 않게 한다.
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.code !== 'Backquote' || event.repeat) {
+        return;
+      }
+      setAdminVisible((visible) => !visible);
+      setAdminOpen(false);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
 
   const openGuide = () => {
     resumeAfterGuideRef.current =
@@ -200,15 +215,17 @@ export function App() {
               >
                 ?
               </button>
-              <button
-                type='button'
-                className='admin-controls__trigger'
-                aria-expanded={adminOpen}
-                aria-controls='admin-menu'
-                onClick={() => setAdminOpen((open) => !open)}
-              >
-                ADMIN
-              </button>
+              {adminVisible && (
+                <button
+                  type='button'
+                  className='admin-controls__trigger'
+                  aria-expanded={adminOpen}
+                  aria-controls='admin-menu'
+                  onClick={() => setAdminOpen((open) => !open)}
+                >
+                  ADMIN
+                </button>
+              )}
 
               {adminOpen && (
                 <div
