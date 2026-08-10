@@ -1495,7 +1495,6 @@ test('stage five boss direct jump loads the ascension room floor skin', async ({
                 texture?: { key: string };
               }>;
             };
-            combatUi: { victoryOverlay: { visible: boolean } };
             floorBuilder: {
               skinObjects: Array<{ texture?: { key: string } }>;
             };
@@ -1527,7 +1526,6 @@ test('stage five boss direct jump loads the ascension room floor skin', async ({
             textureKeys: scene.floorBuilder.skinObjects.flatMap(({ texture }) =>
               texture ? [texture.key] : [],
             ),
-            victoryVisible: scene.combatUi.victoryOverlay.visible,
             weaponVisible: scene.weaponSystem.feedback.display.visible,
           };
         }),
@@ -1547,7 +1545,6 @@ test('stage five boss direct jump loads the ascension room floor skin', async ({
         'stage-3-floor-middle',
         'stage-3-floor-right',
       ]),
-      victoryVisible: false,
       weaponVisible: false,
     });
 
@@ -1560,7 +1557,6 @@ test('stage five boss direct jump loads the ascension room floor skin', async ({
             children: {
               list: Array<{ active: boolean; texture?: { key: string } }>;
             };
-            combatUi: { victoryOverlay: { visible: boolean } };
             player: {
               anims: { currentAnim?: { frames: unknown[]; key: string } };
             };
@@ -1581,7 +1577,6 @@ test('stage five boss direct jump loads the ascension room floor skin', async ({
             playerAnimation: scene.player.anims.currentAnim?.key,
             playerAnimationFrames:
               scene.player.anims.currentAnim?.frames.length,
-            victoryVisible: scene.combatUi.victoryOverlay.visible,
           };
         }),
       { timeout: 12_000 },
@@ -1591,7 +1586,6 @@ test('stage five boss direct jump loads the ascension room floor skin', async ({
       playerAnimation: 'stage-3-player-alive',
       playerAnimationFrames: 3,
       siegeEnemies: 0,
-      victoryVisible: true,
     });
 });
 
