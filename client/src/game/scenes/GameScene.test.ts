@@ -209,7 +209,7 @@ describe('GameScene run reset', () => {
       currentRoomIndex: 0,
     }) as GameScene;
     Object.defineProperty(scene, 'stage', {
-      value: { palette: { accentSecondary }, rooms: [] },
+      value: { palette: { accentSecondary }, rooms: [{ kind: 'combat' }] },
     });
 
     (
@@ -222,5 +222,30 @@ describe('GameScene run reset', () => {
     expect(clearProjectiles).toHaveBeenCalledOnce();
     expect(clearEnemyRanges).toHaveBeenCalledOnce();
     expect(showRoomCleared).toHaveBeenCalledWith(accentSecondary);
+  });
+  it('keeps the clear notification hidden in a boss room', () => {
+    const showRoomCleared = vi.fn();
+    const scene = Object.assign(Object.create(GameScene.prototype), {
+      roomState: 'locked',
+      setPhase: vi.fn(),
+      enemyCombatDirector: { clearProjectiles: vi.fn() },
+      combatUi: { clearEnemyRanges: vi.fn(), showRoomCleared },
+      stageTransitionDirector: { hasRoomOverride: false },
+      currentRoomIndex: 0,
+    }) as GameScene;
+    Object.defineProperty(scene, 'stage', {
+      value: {
+        palette: { accentSecondary: 0xb6ffe4 },
+        rooms: [{ kind: 'boss' }],
+      },
+    });
+
+    (
+      scene as unknown as {
+        handleRoomStateChanged(state: 'cleared'): void;
+      }
+    ).handleRoomStateChanged('cleared');
+
+    expect(showRoomCleared).not.toHaveBeenCalled();
   });
 });
