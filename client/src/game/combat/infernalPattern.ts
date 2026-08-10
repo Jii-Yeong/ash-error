@@ -21,16 +21,6 @@ export const INFERNAL_PHASE_TWO_SEQUENCE: readonly InfernalAttack[] = [
   'charge',
 ];
 
-/** 레일건에만 보스 장갑 배율을 적용함. */
-export const getInfernalProjectileDamage = (
-  baseDamage: number,
-  railRifleDamageMultiplier: number,
-  weaponId?: string,
-) =>
-  weaponId === 'rail-rifle'
-    ? baseDamage * railRifleDamageMultiplier
-    : baseDamage;
-
 type ShardPatternOptions = {
   arenaLeft: number;
   arenaRight: number;

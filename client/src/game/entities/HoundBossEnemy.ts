@@ -8,6 +8,7 @@ import {
   STAGE_TWO_BOSS_ENERGY_ORB,
   STAGE_TWO_BOSS_HEAD,
 } from '@/game/config/bossAnimationConfig';
+import { getRailArmoredDamage } from '@/game/combat/bossDamage';
 import { isPointInsideCone } from '@/game/combat/coneGeometry';
 import { BossEnemy } from '@/game/entities/BossEnemy';
 import type {
@@ -112,9 +113,11 @@ export class HoundBossEnemy extends BossEnemy<HoundBossPatternConfig> {
     weaponId?: string,
   ): ProjectileDamageResult {
     return super.takeProjectileDamage(
-      weaponId === 'rail-rifle'
-        ? amount * this.pattern.railRifleDamageMultiplier
-        : amount,
+      getRailArmoredDamage(
+        amount,
+        this.pattern.railRifleDamageMultiplier,
+        weaponId,
+      ),
       hitX,
       hitY,
     );

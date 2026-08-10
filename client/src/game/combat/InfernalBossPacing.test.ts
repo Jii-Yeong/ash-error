@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
+import { getRailArmoredDamage } from '@/game/combat/bossDamage';
 import {
   getInfernalBossDamage,
-  getInfernalProjectileDamage,
   INFERNAL_PHASE_ONE_SEQUENCE,
   INFERNAL_PHASE_TWO_SEQUENCE,
   type InfernalAttack,
@@ -119,7 +119,7 @@ const countPatternsUntilPhaseEnd = (
     while (nextShotAt < windowEndsAt) {
       if (window.vulnerable) {
         const damagePerHit = getInfernalBossDamage(
-          getInfernalProjectileDamage(
+          getRailArmoredDamage(
             weapon.damage,
             pattern.railRifleDamageMultiplier,
             weapon.id,

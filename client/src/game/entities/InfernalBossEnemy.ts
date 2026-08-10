@@ -1,8 +1,8 @@
 import Phaser from 'phaser';
 import { damageBeforeThreshold } from '@/game/combat/architectPattern';
+import { getRailArmoredDamage } from '@/game/combat/bossDamage';
 import {
   getInfernalBossDamage,
-  getInfernalProjectileDamage,
   getShardPatternLayout,
   INFERNAL_PHASE_ONE_SEQUENCE,
   INFERNAL_PHASE_TWO_SEQUENCE,
@@ -228,7 +228,7 @@ export class InfernalBossEnemy extends BossEnemy<InfernalBossPatternConfig> {
     weaponId?: string,
   ): ProjectileDamageResult {
     return super.takeProjectileDamage(
-      getInfernalProjectileDamage(
+      getRailArmoredDamage(
         amount,
         this.pattern.railRifleDamageMultiplier,
         weaponId,

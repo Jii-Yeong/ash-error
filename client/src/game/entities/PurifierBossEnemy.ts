@@ -8,6 +8,7 @@ import {
   STAGE_THREE_BOSS_SHOCKWAVE,
   STAGE_THREE_BOSS_VACUUM,
 } from '@/game/config/bossAnimationConfig';
+import { getRailArmoredDamage } from '@/game/combat/bossDamage';
 import { getSlamLeapVelocity } from '@/game/combat/slamLeap';
 import { BossEnemy } from '@/game/entities/BossEnemy';
 import type {
@@ -101,9 +102,11 @@ export class PurifierBossEnemy extends BossEnemy<PurifierBossPatternConfig> {
     weaponId?: string,
   ): ProjectileDamageResult {
     return super.takeProjectileDamage(
-      weaponId === 'rail-rifle'
-        ? amount * this.pattern.railRifleDamageMultiplier
-        : amount,
+      getRailArmoredDamage(
+        amount,
+        this.pattern.railRifleDamageMultiplier,
+        weaponId,
+      ),
       hitX,
       hitY,
     );

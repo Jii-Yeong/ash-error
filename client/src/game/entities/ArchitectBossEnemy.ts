@@ -16,6 +16,7 @@ import type {
 import type { BossArenaBounds } from '@/game/config/bossArena';
 import { GAME_HEIGHT } from '@/game/config/gameDimensions';
 import { ArchitectBossView } from '@/game/entities/ArchitectBossView';
+import { getRailArmoredDamage } from '@/game/combat/bossDamage';
 import { BossEnemy } from '@/game/entities/BossEnemy';
 import type {
   EnemyProjectileAttack,
@@ -152,9 +153,11 @@ export class ArchitectBossEnemy extends BossEnemy<ArchitectBossPatternConfig> {
     weaponId?: string,
   ): ProjectileDamageResult {
     return super.takeProjectileDamage(
-      weaponId === 'rail-rifle'
-        ? amount * this.pattern.railRifleDamageMultiplier
-        : amount,
+      getRailArmoredDamage(
+        amount,
+        this.pattern.railRifleDamageMultiplier,
+        weaponId,
+      ),
       hitX,
       hitY,
     );
